@@ -116,21 +116,28 @@ struct Worker {
 }
 impl Worker {
     fn acquire(&mut self) -> Result<(), String> {
+        if self.controller.is_some() {
+            return Ok(());
+        }
+        self.open_listener = None;
+        self.lease = None;
+        self.data_lock = None;
+        self.diagnostics = None;
         if !self.notifications_ready {
             return Err(
                 "Les notifications Windows sont indisponibles. Relancez PowerPlanSync.".into(),
             );
         }
-        if self.controller.is_some() {
-            return Ok(());
-        }
         if !self.options.demo && !session::is_active_interactive_session(&self.owner) {
             return Err("Cette session n'est pas active. Le contrôle reste suspendu.".into());
         }
+        let mut lease = None;
+        let mut open_listener = None;
+        let mut data_lock = None;
         if self.options.demo {
             std::fs::create_dir_all(&self.options.data_directory)
                 .map_err(|_| "Le dossier de démonstration est inaccessible.")?;
-            self.data_lock = Some(
+            data_lock = Some(
                 OpenOptions::new()
                     .read(true)
                     .write(true)
@@ -141,9 +148,9 @@ impl Worker {
                     .map_err(|_| "Cette démonstration est déjà ouverte dans ce dossier.")?,
             );
         } else {
-            self.lease = Some(ControlLease::acquire_controller().map_err(|_| "Une autre session ou instance contrôle déjà les plans. Aucun plan n'a été modifié.")?);
+            lease = Some(ControlLease::acquire_controller().map_err(|_| "Une autre session ou instance contrôle déjà les plans. Aucun plan n'a été modifié.")?);
             if let Some(sender) = self.sender.clone() {
-                self.open_listener = Some(OpenListener::start(self.owner.clone(), sender)?);
+                open_listener = Some(OpenListener::start(self.owner.clone(), sender)?);
             }
         }
         let directory = if self.options.demo {
@@ -151,7 +158,7 @@ impl Worker {
         } else {
             self.options.data_directory.clone()
         };
-        self.diagnostics = crate::diagnostics::Diagnostics::open(&directory).ok();
+        let diagnostics = crate::diagnostics::Diagnostics::open(&directory).ok();
         let store = FileStore::new(directory).map_err(|e| error_message(&e))?;
         let mut controller = Controller::open(
             RuntimePower::new(self.options.demo),
@@ -187,6 +194,10 @@ impl Worker {
             Err(_) => Some("Le réglage de démarrage Windows ne peut pas être vérifié.".into()), _ => None }
         };
         self.controller = Some(controller);
+        self.open_listener = open_listener;
+        self.lease = lease;
+        self.data_lock = data_lock;
+        self.diagnostics = diagnostics;
         self.error = startup_error;
         Ok(())
     }
@@ -397,9 +408,6 @@ impl Worker {
                 return Ok(());
             }
             UiAction::Retry if self.controller.is_none() => {
-                self.open_listener = None;
-                self.lease = None;
-                self.data_lock = None;
                 return self.acquire();
             }
             UiAction::BrowseForExecutable { .. } => {
@@ -1087,5 +1095,51 @@ mod tests {
             "broken configuration"
         );
         cleanup(worker);
+    }
+
+    #[test]
+    fn failed_setup_releases_the_directory_for_another_controller() {
+        let future = Configuration {
+            schema_version: 2,
+            ..Default::default()
+        };
+        let unsupported_rule = Configuration {
+            rules: vec![AppRule {
+                id: RuleId(i32::MAX as u64 + 1),
+                label: "Témoin".into(),
+                executable: ExecutablePath(vec![65]),
+                plan: PlanId(1),
+                enabled: true,
+            }],
+            ..Default::default()
+        };
+        for contents in [
+            b"invalid configuration".to_vec(),
+            serde_json::to_vec(&future).unwrap(),
+            serde_json::to_vec(&unsupported_rule).unwrap(),
+        ] {
+            let mut worker = demo();
+            let directory = worker.options.data_directory.join("simulation");
+            std::fs::create_dir_all(&directory).unwrap();
+            let configuration_path = directory.join("config.json");
+            std::fs::write(&configuration_path, &contents).unwrap();
+            assert!(worker.acquire().is_err());
+            assert!(worker.controller.is_none());
+            assert!(worker.lease.is_none());
+            assert!(worker.open_listener.is_none());
+            assert!(worker.data_lock.is_none());
+            assert_eq!(std::fs::read(&configuration_path).unwrap(), contents);
+            let independently_acquired = OpenOptions::new()
+                .read(true)
+                .write(true)
+                .share_mode(0)
+                .open(worker.options.data_directory.join("demo.lock"))
+                .unwrap();
+            drop(independently_acquired);
+            assert!(worker.action(UiAction::Retry).is_err());
+            assert!(worker.controller.is_none());
+            assert!(worker.data_lock.is_none());
+            cleanup(worker);
+        }
     }
 }
