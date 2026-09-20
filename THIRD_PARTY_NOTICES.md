@@ -20,13 +20,13 @@ For the Slint Royalty-free Desktop, Mobile, and Web Applications License 2.0, se
 
 Official sources:
 
-- [Slint license overview](https://github.com/slint-ui/slint/blob/master/LICENSE.md)
+- [Slint 1.18.0 license overview](https://github.com/slint-ui/slint/blob/v1.18.0/LICENSE.md)
 - [Slint Royalty-free License 2.0](https://slint.dev/agreements/slint-royalty-free-license.pdf)
 - [AboutSlint reference](https://docs.slint.dev/latest/docs/slint/reference/std-widgets/misc/aboutslint/)
 
 ## Embedded resources
 
-The application source contains no bundled font file or third-party image asset. The tray icon is generated in `src/runtime.rs`. PNG files under `specs/001-app-power-profiles/evidence` are test evidence and are not application resources. Slint uses system fonts in this build.
+The tray icon is generated in `src/runtime.rs`. The official `AboutSlint` component embeds its Slint attribution logo; its source and licensing belong to the Slint package above. PNG files under `specs/001-app-power-profiles/evidence` are test evidence and are not application resources. No font file is bundled by the application; Slint uses system fonts in this build.
 
 ## Locked Windows dependency inventory (246 packages)
 

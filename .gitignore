@@ -2,6 +2,8 @@
 .audit/
 todo.md
 target/
+dist/
+specs/**/evidence/**/*.exe
 debug/
 release/
 *.rs.bk

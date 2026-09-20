@@ -56,6 +56,7 @@ pub struct UiDisplayModel {
     pub show_first_hide_explanation: bool,
     pub return_plan_note: String,
     pub return_plan_index: i32,
+    pub return_plan_confirmed: bool,
     pub rules: Vec<RuleDisplay>,
     pub plans: Vec<PlanDisplay>,
 }
@@ -346,6 +347,12 @@ fn apply_palette(window: &MainWindow, palette: UiPalette) {
     colors.set_system_alternate_background(palette.alternate_background);
     colors.set_system_foreground(palette.foreground);
     colors.set_system_accent(palette.accent);
+    colors.set_dark_system_background(
+        u32::from(palette.background.red()) * 299
+            + u32::from(palette.background.green()) * 587
+            + u32::from(palette.background.blue()) * 114
+            < 128_000,
+    );
     colors.set_high_contrast(palette.high_contrast);
 }
 
@@ -379,6 +386,7 @@ fn apply_model(window: &MainWindow, state: &UiDisplayModel, previous: Option<&Ui
     window.set_show_first_hide_explanation(state.show_first_hide_explanation);
     window.set_return_plan_note(state.return_plan_note.clone().into());
     window.set_return_plan_index(state.return_plan_index);
+    window.set_return_plan_confirmed(state.return_plan_confirmed);
     if previous.is_none_or(|old| old.rules != state.rules) {
         let rows = state
             .rules

@@ -1,0 +1,367 @@
+{
+  "schema_version": 1,
+  "process": {
+    "id": 4148,
+    "name": "power-plan-sync",
+    "executable_path": "C:\\Users\\Utilisateur\\Documents\\Dev\\PowerPlanSync\\target\\release\\power-plan-sync.exe",
+    "started_utc": "2026-09-20T20:07:24.4714297Z"
+  },
+  "environment": {
+    "computer_name": "PC-CLEM",
+    "os_version": "Microsoft Windows 10.0.26200",
+    "logical_processors": 16,
+    "logical_processor_source": "System.Environment.ProcessorCount",
+    "powershell_version": "7.6.6"
+  },
+  "operator_context": {
+    "window_state": "hidden",
+    "window_state_source": "operator declaration; not inspected by this script",
+    "rule_count": 20,
+    "rule_count_source": "C:\\Users\\Utilisateur\\Documents\\Dev\\PowerPlanSync\\.audit\\performance\\v1-20260920-220700\\data\\config.json"
+  },
+  "measurement": {
+    "started_utc": "2026-09-20T20:08:24.5321297Z",
+    "completed_utc": "2026-09-20T20:11:04.5690373Z",
+    "complete": false,
+    "failure": "Le processus mesuré a quitté ou son identité a changé.",
+    "requested_duration_seconds": 1800,
+    "duration_seconds": 155.0077732,
+    "warmup_seconds": 60,
+    "sample_interval_milliseconds": 5000,
+    "sample_count": 32,
+    "clock": "System.Diagnostics.Stopwatch; intervals scheduled from measurement start",
+    "cpu_method": "delta TotalProcessorTime / monotonic elapsed / logical processors * 100",
+    "percentile_method": "nearest rank, ceil(0.95 * sample count)",
+    "scope": "specified process only; no child-process aggregation or ETW; sampler cost excluded from target CPU"
+  },
+  "summary": {
+    "cpu_percent_machine": 0.02772038402523158,
+    "cpu_percent_machine_interval": {
+      "min": 0.0,
+      "max": 0.05850878938693123,
+      "mean": 0.027710806200609575,
+      "p95": 0.05843137971342472
+    },
+    "private_mib": {
+      "min": 2.52734375,
+      "max": 3.08984375,
+      "mean": 2.599853515625,
+      "p95": 2.65234375
+    },
+    "working_set_mib": {
+      "min": 14.6640625,
+      "max": 15.21484375,
+      "mean": 14.7186279296875,
+      "p95": 14.72265625
+    },
+    "handles": {
+      "min": 185.0,
+      "max": 189.0,
+      "mean": 186.0625,
+      "p95": 189.0
+    },
+    "os_process_count": {
+      "min": 216.0,
+      "max": 222.0,
+      "mean": 217.875,
+      "p95": 221.0
+    }
+  },
+  "thresholds": {
+    "cpu_percent_machine_max": 0.1,
+    "private_mib_max": 40,
+    "observed_cpu_within_limit": false,
+    "observed_private_within_limit": false,
+    "qualifies_as_30_minute_run": false
+  },
+  "samples": [
+    {
+      "elapsed_seconds": 0.0011158,
+      "cpu_seconds": 0.0,
+      "cpu_percent_machine_interval": null,
+      "private_mib": 2.640625,
+      "working_set_mib": 14.703125,
+      "handles": 189,
+      "os_process_count": 221
+    },
+    {
+      "elapsed_seconds": 5.0091415,
+      "cpu_seconds": 0.03125,
+      "cpu_percent_machine_interval": 0.03899989970099395,
+      "private_mib": 2.65234375,
+      "working_set_mib": 14.71484375,
+      "handles": 189,
+      "os_process_count": 221
+    },
+    {
+      "elapsed_seconds": 10.0140231,
+      "cpu_seconds": 0.0625,
+      "cpu_percent_machine_interval": 0.03902439969808677,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.703125,
+      "handles": 187,
+      "os_process_count": 220
+    },
+    {
+      "elapsed_seconds": 15.0021132,
+      "cpu_seconds": 0.078125,
+      "cpu_percent_machine_interval": 0.019577884128436248,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.703125,
+      "handles": 187,
+      "os_process_count": 222
+    },
+    {
+      "elapsed_seconds": 20.0205492,
+      "cpu_seconds": 0.109375,
+      "cpu_percent_machine_interval": 0.038918997871049854,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.703125,
+      "handles": 187,
+      "os_process_count": 220
+    },
+    {
+      "elapsed_seconds": 25.0102557,
+      "cpu_seconds": 0.140625,
+      "cpu_percent_machine_interval": 0.039143083866756516,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.703125,
+      "handles": 187,
+      "os_process_count": 220
+    },
+    {
+      "elapsed_seconds": 30.0057888,
+      "cpu_seconds": 0.140625,
+      "cpu_percent_machine_interval": 0.0,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.703125,
+      "handles": 187,
+      "os_process_count": 220
+    },
+    {
+      "elapsed_seconds": 35.0144423,
+      "cpu_seconds": 0.15625,
+      "cpu_percent_machine_interval": 0.019497505666942232,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.703125,
+      "handles": 187,
+      "os_process_count": 220
+    },
+    {
+      "elapsed_seconds": 40.0136224,
+      "cpu_seconds": 0.1875,
+      "cpu_percent_machine_interval": 0.039068906519291006,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.703125,
+      "handles": 187,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 45.0153672,
+      "cpu_seconds": 0.21875,
+      "cpu_percent_machine_interval": 0.03904887350510168,
+      "private_mib": 2.59765625,
+      "working_set_mib": 14.70703125,
+      "handles": 187,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 50.0068143,
+      "cpu_seconds": 0.21875,
+      "cpu_percent_machine_interval": 0.0,
+      "private_mib": 2.59765625,
+      "working_set_mib": 14.70703125,
+      "handles": 187,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 55.012223,
+      "cpu_seconds": 0.234375,
+      "cpu_percent_machine_interval": 0.01951014509564425,
+      "private_mib": 2.59765625,
+      "working_set_mib": 14.70703125,
+      "handles": 187,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 60.0112408,
+      "cpu_seconds": 0.25,
+      "cpu_percent_machine_interval": 0.019535087472583097,
+      "private_mib": 2.59765625,
+      "working_set_mib": 14.70703125,
+      "handles": 187,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 65.014483,
+      "cpu_seconds": 0.25,
+      "cpu_percent_machine_interval": 0.0,
+      "private_mib": 2.59765625,
+      "working_set_mib": 14.70703125,
+      "handles": 187,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 70.0041206,
+      "cpu_seconds": 0.28125,
+      "cpu_percent_machine_interval": 0.03914362437865231,
+      "private_mib": 2.59765625,
+      "working_set_mib": 14.70703125,
+      "handles": 187,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 75.0180147,
+      "cpu_seconds": 0.328125,
+      "cpu_percent_machine_interval": 0.05843137971342472,
+      "private_mib": 2.5390625,
+      "working_set_mib": 14.6796875,
+      "handles": 185,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 80.0165728,
+      "cpu_seconds": 0.359375,
+      "cpu_percent_machine_interval": 0.039073768093242645,
+      "private_mib": 2.5390625,
+      "working_set_mib": 14.6796875,
+      "handles": 185,
+      "os_process_count": 218
+    },
+    {
+      "elapsed_seconds": 85.0197812,
+      "cpu_seconds": 0.375,
+      "cpu_percent_machine_interval": 0.019518725224398042,
+      "private_mib": 2.5390625,
+      "working_set_mib": 14.6796875,
+      "handles": 185,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 90.0195968,
+      "cpu_seconds": 0.375,
+      "cpu_percent_machine_interval": 0.0,
+      "private_mib": 2.52734375,
+      "working_set_mib": 14.6640625,
+      "handles": 185,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 95.0099871,
+      "cpu_seconds": 0.390625,
+      "cpu_percent_machine_interval": 0.019568860175124974,
+      "private_mib": 2.52734375,
+      "working_set_mib": 14.6640625,
+      "handles": 185,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 100.0170265,
+      "cpu_seconds": 0.421875,
+      "cpu_percent_machine_interval": 0.0390075820054462,
+      "private_mib": 2.52734375,
+      "working_set_mib": 14.6640625,
+      "handles": 185,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 105.0077052,
+      "cpu_seconds": 0.4375,
+      "cpu_percent_machine_interval": 0.019567729335090222,
+      "private_mib": 2.52734375,
+      "working_set_mib": 14.6640625,
+      "handles": 185,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 110.0149657,
+      "cpu_seconds": 0.484375,
+      "cpu_percent_machine_interval": 0.05850878938693123,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.72265625,
+      "handles": 185,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 115.0072968,
+      "cpu_seconds": 0.5,
+      "cpu_percent_machine_interval": 0.01956125265810194,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.72265625,
+      "handles": 185,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 120.0192948,
+      "cpu_seconds": 0.53125,
+      "cpu_percent_machine_interval": 0.03896899001156831,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.72265625,
+      "handles": 185,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 125.0100283,
+      "cpu_seconds": 0.546875,
+      "cpu_percent_machine_interval": 0.019567514474575713,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.72265625,
+      "handles": 185,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 130.0160188,
+      "cpu_seconds": 0.578125,
+      "cpu_percent_machine_interval": 0.039015755223666446,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.72265625,
+      "handles": 185,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 135.0161453,
+      "cpu_seconds": 0.59375,
+      "cpu_percent_machine_interval": 0.019530755871876467,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.72265625,
+      "handles": 185,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 140.0143575,
+      "cpu_seconds": 0.625,
+      "cpu_percent_machine_interval": 0.03907647218339402,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.72265625,
+      "handles": 185,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 145.011568,
+      "cpu_seconds": 0.640625,
+      "cpu_percent_machine_interval": 0.019542152566916996,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.72265625,
+      "handles": 185,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 150.0068962,
+      "cpu_seconds": 0.671875,
+      "cpu_percent_machine_interval": 0.03909903257207413,
+      "private_mib": 3.08984375,
+      "working_set_mib": 15.21484375,
+      "handles": 185,
+      "os_process_count": 217
+    },
+    {
+      "elapsed_seconds": 155.0077732,
+      "cpu_seconds": 0.6875,
+      "cpu_percent_machine_interval": 0.019527824819526644,
+      "private_mib": 2.59375,
+      "working_set_mib": 14.72265625,
+      "handles": 185,
+      "os_process_count": 216
+    }
+  ]
+}

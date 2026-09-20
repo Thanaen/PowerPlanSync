@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-09-20T20:02:44.1012889Z",
+  "finished_utc": "2026-09-20T20:02:44.4905927Z",
+  "process": {
+    "id": 5572,
+    "executable_path": "C:\\Users\\Utilisateur\\Documents\\Dev\\PowerPlanSync\\target\\release\\examples\\window_lifecycle.exe",
+    "started_utc": "2026-09-20T20:02:44.2332441Z"
+  },
+  "executable_path": "C:\\Users\\Utilisateur\\Documents\\Dev\\PowerPlanSync\\target\\release\\examples\\window_lifecycle.exe",
+  "expected_cycles": 100,
+  "reported_cycles": null,
+  "reported_successful_opens": null,
+  "reported_hides": null,
+  "phases": [
+    "warmup_begin",
+    "hidden_begin"
+  ],
+  "samples": {
+    "baseline_begin": null,
+    "baseline_end": null
+  },
+  "drift": {
+    "private_bytes": null,
+    "private_mib": null,
+    "handles": null
+  },
+  "thresholds": {
+    "private_bytes_max": 5242880,
+    "private_mib_max": 5,
+    "handles_max": 10
+  },
+  "stdout_path": "C:\\Users\\Utilisateur\\Documents\\Dev\\PowerPlanSync\\specs\\001-app-power-profiles\\evidence\\window-lifecycle\\20260920-220244-07ab0fc6\\stdout.log",
+  "stderr_path": "C:\\Users\\Utilisateur\\Documents\\Dev\\PowerPlanSync\\specs\\001-app-power-profiles\\evidence\\window-lifecycle\\20260920-220244-07ab0fc6\\stderr.log",
+  "exit_code": 1,
+  "measurement_scope": "PrivateMemorySize64 and HandleCount for the launched process at probe phase markers; no ETW.",
+  "stabilization": {
+    "before_baseline_seconds": 5,
+    "after_cycles_seconds": 5,
+    "exit_delay_milliseconds": 500
+  },
+  "passed": false,
+  "failure": "La sonde a quitté avec le code 1. Slint: Failed to create system tray icon: Failed to create a rgba8 buffer from an icon image\nwindow_lifecycle error=counts cycles=0 successful_opens=1 hides=1\n"
+}

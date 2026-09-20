@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "finished_at": "2026-09-20T20:03:59.6087598Z",
+  "application_path": "C:\\Users\\Utilisateur\\Documents\\Dev\\PowerPlanSync\\target\\release\\power-plan-sync.exe",
+  "fixture_path": "C:\\Users\\Utilisateur\\Documents\\Dev\\PowerPlanSync\\target\\release\\examples\\demo_target.exe",
+  "initial_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c",
+  "target_plan": "381b4222-f694-41f0-9685-ff5bb260df2e",
+  "external_plan": "a1841308-3541-4fab-bc81-f71556f20b4a",
+  "transition_timeout_ms": 10000,
+  "expectations": {
+    "two_instances": "target after first exit, initial after last exit",
+    "homonym_other_path": "initial throughout",
+    "launcher_child": "initial after child exit while launcher still runs",
+    "forced_fixture_stop": "initial after forced target exit",
+    "manual_external_override": "external after last target exit",
+    "crash_restart_recovery": "initial recovery plan captured before the crash"
+  },
+  "passed": true,
+  "failure": null,
+  "cases": [
+    {
+      "name": "two-instances",
+      "started_at": "2026-09-20T20:02:29.6118266Z",
+      "passed": true,
+      "measurements": {
+        "activation_ms": 729.833,
+        "plan_after_first_exit": "381b4222-f694-41f0-9685-ff5bb260df2e",
+        "return_ms": 3968.279
+      },
+      "error": null,
+      "finished_at": "2026-09-20T20:02:55.0861598Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    },
+    {
+      "name": "homonym-other-path",
+      "started_at": "2026-09-20T20:02:55.0989624Z",
+      "passed": true,
+      "measurements": {
+        "observed_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+      },
+      "error": null,
+      "finished_at": "2026-09-20T20:03:05.7993979Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    },
+    {
+      "name": "launcher-child",
+      "started_at": "2026-09-20T20:03:05.8067182Z",
+      "passed": true,
+      "measurements": {
+        "activation_ms": 725.655,
+        "child_started_utc": "2026-09-20T20:03:06.3873476Z",
+        "child_exited_utc": "2026-09-20T20:03:16.3967068Z",
+        "return_ms": 3550.776,
+        "launcher_running_after_return": true
+      },
+      "error": null,
+      "finished_at": "2026-09-20T20:03:26.5117984Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    },
+    {
+      "name": "forced-fixture-stop",
+      "started_at": "2026-09-20T20:03:26.5193045Z",
+      "passed": true,
+      "measurements": {
+        "activation_ms": 724.288,
+        "return_ms": 3926.878
+      },
+      "error": null,
+      "finished_at": "2026-09-20T20:03:31.9030468Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    },
+    {
+      "name": "manual-external-override",
+      "started_at": "2026-09-20T20:03:31.9108995Z",
+      "passed": true,
+      "measurements": {
+        "activation_ms": 744.776,
+        "manual_plan": "a1841308-3541-4fab-bc81-f71556f20b4a",
+        "plan_after_last_exit": "a1841308-3541-4fab-bc81-f71556f20b4a"
+      },
+      "error": null,
+      "finished_at": "2026-09-20T20:03:48.2672538Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    },
+    {
+      "name": "crash-restart-recovery",
+      "started_at": "2026-09-20T20:03:48.2745369Z",
+      "passed": true,
+      "measurements": {
+        "activation_ms": 719.023,
+        "plan_after_crash_and_exit": "381b4222-f694-41f0-9685-ff5bb260df2e",
+        "recovery_ms": 521.072,
+        "recovered_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+      },
+      "error": null,
+      "finished_at": "2026-09-20T20:03:59.4890437Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    }
+  ]
+}

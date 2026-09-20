@@ -1,0 +1,31 @@
+Window: "PowerPlanSync", App: power-plan-sync.exe.
+	0 région PowerPlanSync Secondary Actions: Raise
+		1 barre de titre (settable, string) Value: PowerPlanSync
+			2 barre de menus Système ID: MenuBar
+				3 élément de menu Système
+			4 Bouton Réduire
+			5 Bouton Agrandir
+			6 Bouton Fermer
+		42 Texte PowerPlanSync
+		43 Texte Démonstration : les processus et les changements de plan sont simulés. Aucun réglage Windows n'est modifié.
+		44 Texte Plan actif
+		45 Texte Équilibré (simulation)
+		46 Texte Le premier logiciel actif de la liste a priorité.
+		47 Texte État : En attente
+		48 Bouton Ajouter un logiciel
+		49 Bouton Pause
+		50 case à cocher Activer l'automatisation
+		51 Texte Le premier logiciel actif de la liste a priorité.
+		52 liste Règles par ordre de priorité
+			53 option demo_target, plan Haute performance (simulation), En attente
+				54 Texte demo_target
+				55 Texte Plan : Haute performance (simulation)
+				56 Texte État : En attente
+				57 Texte Chemin : C:\USERS\UTILISATEUR\DOCUMENTS\DEV\POWERPLANSYNC\TARGET\RELEASE\EXAMPLES\DEMO_TARGET.EXE
+				58 Bouton Activer demo_target
+				59 Bouton Modifier demo_target
+				60 Bouton Supprimer demo_target
+				61 Bouton (disabled) Monter demo_target
+				62 Bouton (disabled) Descendre demo_target
+
+The focused UI element is 48 Bouton Ajouter un logiciel.

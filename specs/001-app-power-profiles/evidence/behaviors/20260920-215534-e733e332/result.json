@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "finished_at": "2026-09-20T19:56:21.8083798Z",
+  "application_path": "C:\\Users\\Utilisateur\\Documents\\Dev\\PowerPlanSync\\.audit\\tested-v1\\power-plan-sync.exe",
+  "fixture_path": "C:\\Users\\Utilisateur\\Documents\\Dev\\PowerPlanSync\\.audit\\tested-v1\\demo_target.exe",
+  "initial_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c",
+  "target_plan": "381b4222-f694-41f0-9685-ff5bb260df2e",
+  "external_plan": "a1841308-3541-4fab-bc81-f71556f20b4a",
+  "transition_timeout_ms": 10000,
+  "expectations": {
+    "two_instances": "target after first exit, initial after last exit",
+    "homonym_other_path": "initial throughout",
+    "launcher_child": "initial after child exit while launcher still runs",
+    "forced_fixture_stop": "initial after forced target exit",
+    "manual_external_override": "external after last target exit",
+    "crash_restart_recovery": "initial recovery plan captured before the crash"
+  },
+  "passed": false,
+  "failure": "Nous ne pouvons pas traiter la transformation d’argument sur le paramètre « Since ». Impossible de convertir null en type « System.DateTime ».",
+  "cases": [
+    {
+      "name": "two-instances",
+      "started_at": "2026-09-20T19:55:34.6892426Z",
+      "passed": true,
+      "measurements": {
+        "activation_ms": 726.699,
+        "plan_after_first_exit": "381b4222-f694-41f0-9685-ff5bb260df2e",
+        "return_ms": 3879.106
+      },
+      "error": null,
+      "finished_at": "2026-09-20T19:56:00.1598090Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    },
+    {
+      "name": "homonym-other-path",
+      "started_at": "2026-09-20T19:56:00.1730241Z",
+      "passed": true,
+      "measurements": {
+        "observed_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+      },
+      "error": null,
+      "finished_at": "2026-09-20T19:56:10.8977305Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    },
+    {
+      "name": "launcher-child",
+      "started_at": "2026-09-20T19:56:10.9049652Z",
+      "passed": false,
+      "measurements": {
+        "activation_ms": 723.111
+      },
+      "error": "Nous ne pouvons pas traiter la transformation d’argument sur le paramètre « Since ». Impossible de convertir null en type « System.DateTime ».",
+      "finished_at": "2026-09-20T19:56:21.5411543Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    }
+  ]
+}

@@ -43,13 +43,13 @@ Les chemins sont relatifs à la racine du projet. `src/`, `ui/`, `tests/`, `exam
 
 **Purpose**: établir les invariants et les adaptateurs communs.
 
-- [ ] T007 Définir les identités, états, observations et événements de `data-model.md` dans `src/domain.rs`, y compris `automation_enabled` distinct de `paused`. Couvre FR-002, FR-004, FR-005, FR-006, FR-024, FR-025.
-- [ ] T008 [P] Écrire les scénarios de fichier interrompu, invalide, version future et erreur de journal dans `tests/storage_failures.rs`. Couvre FR-011, FR-017, FR-026.
-- [ ] T009 Implémenter stockage versionné, remplacement durable, sauvegarde et journal récupérable dans `src/storage.rs`. Couvre FR-011, FR-017.
-- [ ] T010 [P] Implémenter le catalogue et les appels Win32 bornés dans `src/windows/mod.rs` et `src/windows/power.rs`, avec gestion des allocations et codes d'erreur. Couvre FR-001, FR-010, FR-013, FR-022.
-- [ ] T011 [P] Implémenter snapshots cohérents, filtrage de session, chemins Windows normalisés, instances et erreurs d'accès dans `src/windows/processes.rs`. Couvre FR-004, FR-005, FR-023.
+- [x] T007 Définir les identités, états, observations et événements de `data-model.md` dans `src/domain.rs`, y compris `automation_enabled` distinct de `paused`. Couvre FR-002, FR-004, FR-005, FR-006, FR-024, FR-025.
+- [x] T008 [P] Écrire les scénarios de fichier interrompu, invalide, version future et erreur de journal dans `tests/storage_failures.rs`. Couvre FR-011, FR-017, FR-026.
+- [x] T009 Implémenter stockage versionné, remplacement durable, sauvegarde et journal récupérable dans `src/storage.rs`. Couvre FR-011, FR-017.
+- [x] T010 [P] Implémenter le catalogue et les appels Win32 bornés dans `src/windows/mod.rs` et `src/windows/power.rs`, avec gestion des allocations et codes d'erreur. Couvre FR-001, FR-010, FR-013, FR-022.
+- [x] T011 [P] Implémenter snapshots cohérents, filtrage de session, chemins Windows normalisés, instances et erreurs d'accès dans `src/windows/processes.rs`. Couvre FR-004, FR-005, FR-023.
 - [ ] T012 [P] Implémenter le contrôle unique global et l'ouverture de fenêtre de la même session dans `src/windows/session.rs`, avec refus sûr si le verrou est inaccessible. Couvre FR-016.
-- [ ] T013 Intégrer le démarrage, le mode `--demo`, le dossier isolé, l'exécutable témoin et les diagnostics limités à 5 Mio dans `src/main.rs`, `src/demo.rs`, `src/diagnostics.rs` et `examples/demo_target.rs`. Couvre FR-020, FR-021, FR-026.
+- [x] T013 Intégrer le démarrage, le mode `--demo`, le dossier isolé, l'exécutable témoin et les diagnostics limités à 5 Mio dans `src/main.rs`, `src/runtime_power.rs`, `src/diagnostics.rs` et `examples/demo_target.rs`. Couvre FR-020, FR-021, FR-026.
 
 **Checkpoint**: le mode demo ne modifie pas Windows. Les défauts d'adaptateur sont injectables.
 
@@ -59,11 +59,11 @@ Les chemins sont relatifs à la racine du projet. `src/`, `ui/`, `tests/`, `exam
 
 **Independent Test**: deux instances de `demo_target`, un homonyme ailleurs, et un retour différent du plan initial.
 
-- [ ] T014 [US1] Écrire les scénarios de début, dernière fermeture, réapparition, PID réutilisé et cible déjà active dans `tests/engine_scenarios.rs`. Couvre FR-004, FR-005, FR-007, FR-008, SC-003.
-- [ ] T015 [US1] Implémenter le décideur pur et la grâce monotone de trois secondes dans `src/engine.rs`. Couvre FR-005, FR-007, FR-008, FR-024.
-- [ ] T016 [US1] Implémenter dans `src/coordinator.rs` la boucle d'une seconde, l'acquisition journalisée, une seule transaction en vol, la relecture avant et après écriture et l'arrêt du timer quand inutile. Couvre FR-008, FR-010, FR-011, FR-025, SC-002, SC-004.
-- [ ] T017 [P] [US1] Créer l'éditeur minimal de fichier et plan dans `ui/rule-editor.slint`, avec validation et annulation. Couvre FR-002, FR-003, FR-025.
-- [ ] T018 [US1] Relier retour confirmé, activation explicite, état réel, fenêtre et notification dans `src/ui.rs`, `ui/main.slint` et `ui/tray.slint`. Couvre FR-002, FR-008, FR-018, FR-024, FR-025.
+- [x] T014 [US1] Écrire les scénarios de début, dernière fermeture, réapparition, PID réutilisé et cible déjà active dans `tests/engine_scenarios.rs`. Couvre FR-004, FR-005, FR-007, FR-008, SC-003.
+- [x] T015 [US1] Implémenter le décideur pur et la grâce monotone de trois secondes dans `src/engine.rs`. Couvre FR-005, FR-007, FR-008, FR-024.
+- [x] T016 [US1] Implémenter dans `src/runtime.rs` et `src/coordinator.rs` la boucle d'une seconde, l'acquisition journalisée, une seule transaction en vol, la relecture avant et après écriture et l'arrêt du timer quand inutile. Couvre FR-008, FR-010, FR-011, FR-025, SC-002, SC-004.
+- [x] T017 [P] [US1] Créer l'éditeur minimal de fichier et plan dans `ui/rule-editor.slint`, avec validation et annulation. Couvre FR-002, FR-003, FR-025.
+- [x] T018 [US1] Relier retour confirmé, activation explicite, état réel, fenêtre et notification dans `src/ui.rs`, `ui/main.slint` et `ui/tray.slint`. Couvre FR-002, FR-008, FR-018, FR-024, FR-025.
 - [ ] T019 [US1] Vérifier le cycle sur Windows avec le témoin, le nom homonyme et plusieurs instances dans `tests/windows_integration.rs`, mesurer les délais depuis création et sortie réelles jusqu'au GUID confirmé, puis conserver les résultats dans `specs/001-app-power-profiles/evidence/us1.md`. Couvre FR-004, FR-005, FR-008, FR-026, SC-002, SC-003.
 
 **Checkpoint**: démonstration du besoin principal. Cette étape seule n'est pas une version distribuable.
@@ -74,13 +74,13 @@ Les chemins sont relatifs à la racine du projet. `src/`, `ui/`, `tests/`, `exam
 
 **Independent Test**: modifier le plan hors application en jeu, fermer le jeu puis relancer le suivi.
 
-- [ ] T020 [US2] Écrire les tests de révocation externe, Reprendre, pause persistante et coupures de chaque phase du journal dans `tests/recovery_scenarios.rs`. Couvre FR-009, FR-010, FR-011, FR-012, FR-026, SC-003.
-- [ ] T021 [US2] Implémenter récupération et notifications de plan dans `src/coordinator.rs` et `src/windows/power.rs`, y compris le journal préparé sans confirmation. Couvre FR-009, FR-010, FR-011.
-- [ ] T022 [US2] Implémenter Pause, Reprendre, fermeture de fenêtre et sortie avec retour protégé dans `src/coordinator.rs` et `src/ui.rs`. Couvre FR-009, FR-012.
-- [ ] T023 [US2] Implémenter états bloqués, disparition de plan, observations incertaines dix secondes et reprise explicite dans `src/engine.rs` et `src/coordinator.rs`. Couvre FR-013, FR-023.
-- [ ] T024 [US2] Intégrer source secteur, batterie et reprise de veille dans `src/windows/power.rs` et `src/coordinator.rs`. Couvre FR-014, FR-015.
-- [ ] T025 [US2] Intégrer déconnexion, changement de session et arrêt de Windows dans `src/windows/session.rs` et `src/coordinator.rs`, en distinguant verrouillage d'écran et perte de session active. Couvre FR-015, FR-016.
-- [ ] T026 [US2] Présenter erreurs, choix de sortie malgré échec et explication des limites de récupération dans `ui/main.slint`, `ui/tray.slint` et `ui/strings-fr.slint`. Couvre FR-009, FR-012, FR-013, FR-018.
+- [x] T020 [US2] Écrire les tests de révocation externe, Reprendre, pause persistante et coupures de chaque phase du journal dans `tests/recovery_scenarios.rs`. Couvre FR-009, FR-010, FR-011, FR-012, FR-026, SC-003.
+- [x] T021 [US2] Implémenter récupération et notifications de plan dans `src/coordinator.rs` et `src/windows/power.rs`, y compris le journal préparé sans confirmation. Couvre FR-009, FR-010, FR-011.
+- [x] T022 [US2] Implémenter Pause, Reprendre, fermeture de fenêtre et sortie avec retour protégé dans `src/coordinator.rs` et `src/ui.rs`. Couvre FR-009, FR-012.
+- [x] T023 [US2] Implémenter états bloqués, disparition de plan, observations incertaines dix secondes et reprise explicite dans `src/engine.rs` et `src/coordinator.rs`. Couvre FR-013, FR-023.
+- [x] T024 [US2] Intégrer source secteur, batterie et reprise de veille dans `src/windows/power.rs` et `src/coordinator.rs`. Couvre FR-014, FR-015.
+- [x] T025 [US2] Intégrer déconnexion, changement de session et arrêt de Windows dans `src/windows/session.rs` et `src/coordinator.rs`, en distinguant verrouillage d'écran et perte de session active. Couvre FR-015, FR-016.
+- [x] T026 [US2] Présenter erreurs, choix de sortie malgré échec et explication des limites de récupération dans `ui/main.slint`, `ui/tray.slint` et `ui/strings-fr.slint`. Couvre FR-009, FR-012, FR-013, FR-018.
 - [ ] T027 [US2] Exécuter la matrice de récupération, batterie, veille, sessions et erreurs du guide, puis consigner chaque résultat dans `specs/001-app-power-profiles/evidence/us2.md`. Couvre FR-009, FR-010, FR-011, FR-012, FR-013, FR-014, FR-015, FR-016, FR-017, FR-023, FR-026, SC-003.
 
 **Checkpoint**: les erreurs restent visibles et les écritures respectent la révocation observée.
@@ -91,12 +91,12 @@ Les chemins sont relatifs à la racine du projet. `src/`, `ui/`, `tests/`, `exam
 
 **Independent Test**: parcourir toute la configuration et les actions globales au clavier puis au Narrateur.
 
-- [ ] T028 [US4] Construire l'état vide, le premier parcours et les libellés français dans `ui/main.slint`, `ui/rule-editor.slint` et `ui/strings-fr.slint`. Couvre FR-002, FR-018, FR-025, SC-001.
-- [ ] T029 [US4] Ajouter le sélecteur d'application ouverte avec chemin vérifiable dans `src/ui.rs` et `ui/rule-editor.slint`. Couvre FR-003, FR-004, FR-023.
-- [ ] T030 [US4] Implémenter noms accessibles, rôles, états, focus, raccourcis et annonces de statut dans `ui/main.slint`, `ui/rule-editor.slint` et `ui/tray.slint`. Couvre FR-019, SC-005.
+- [x] T028 [US4] Construire l'état vide, le premier parcours et les libellés français dans `ui/main.slint`, `ui/rule-editor.slint` et `ui/strings-fr.slint`. Couvre FR-002, FR-018, FR-025, SC-001.
+- [x] T029 [US4] Ajouter le sélecteur d'application ouverte avec chemin vérifiable dans `src/ui.rs` et `ui/rule-editor.slint`. Couvre FR-003, FR-004, FR-023.
+- [x] T030 [US4] Implémenter noms accessibles, rôles, états, focus, raccourcis et annonces de statut dans `ui/main.slint`, `ui/rule-editor.slint` et `ui/tray.slint`. Couvre FR-019, SC-005.
 - [ ] T031 [US4] Adapter thèmes Windows, contraste, mise à l'échelle, texte agrandi et défilement dans `ui/main.slint` et `ui/rule-editor.slint`. Couvre FR-019, SC-005.
 - [ ] T032 [US4] Finaliser le cycle créer, fermer et rouvrir la fenêtre depuis la notification dans `src/ui.rs` et `ui/tray.slint`, avec explication du premier masquage. Couvre FR-012, FR-018, SC-007.
-- [ ] T033 [US4] Ajouter le démarrage facultatif à la connexion et son retrait exact dans `src/windows/startup.rs`, `src/windows/mod.rs`, `src/ui.rs` et `ui/main.slint`. Couvre FR-020.
+- [x] T033 [US4] Ajouter le démarrage facultatif à la connexion et son retrait exact dans `src/windows/startup.rs`, `src/windows/mod.rs`, `src/ui.rs` et `ui/main.slint`. Couvre FR-020.
 - [ ] T034 [US4] Vérifier clavier, Narrateur, contrastes, DPI, texte agrandi et activation puis désactivation du démarrage, et enregistrer captures et arbre accessible dans `specs/001-app-power-profiles/evidence/accessibility/`. Couvre FR-019, FR-020, FR-026, SC-005.
 
 **Checkpoint**: le parcours principal est accessible sur la machine cible, sans se limiter à une capture visuelle.
@@ -107,9 +107,9 @@ Les chemins sont relatifs à la racine du projet. `src/`, `ui/`, `tests/`, `exam
 
 **Independent Test**: deux logiciels avec des plans différents, ordre inversé puis fin du premier.
 
-- [ ] T035 [US3] Ajouter les scénarios de priorité, réordonnancement, désactivation et suppression active dans `tests/engine_scenarios.rs`. Couvre FR-003, FR-006, FR-007, FR-024.
-- [ ] T036 [US3] Compléter l'arbitrage ordonné et le recalcul immédiat des actions explicites dans `src/engine.rs`. Couvre FR-003, FR-006, FR-007.
-- [ ] T037 [US3] Ajouter activation, modification, suppression, Monter et Descendre dans `ui/main.slint` et `src/ui.rs`, sans exiger de glisser-déposer. Couvre FR-003, FR-006, FR-019.
+- [x] T035 [US3] Ajouter les scénarios de priorité, réordonnancement, désactivation et suppression active dans `tests/engine_scenarios.rs`. Couvre FR-003, FR-006, FR-007, FR-024.
+- [x] T036 [US3] Compléter l'arbitrage ordonné et le recalcul immédiat des actions explicites dans `src/engine.rs`. Couvre FR-003, FR-006, FR-007.
+- [x] T037 [US3] Ajouter activation, modification, suppression, Monter et Descendre dans `ui/main.slint` et `src/ui.rs`, sans exiger de glisser-déposer. Couvre FR-003, FR-006, FR-019.
 - [ ] T038 [US3] Vérifier les transitions entre gagnants sans plan intermédiaire et les logiciels déplacés, puis conserver les preuves dans `specs/001-app-power-profiles/evidence/us3.md`. Couvre FR-003, FR-004, FR-006, FR-007, SC-003.
 
 **Checkpoint**: toutes les règles sont testables séparément et ensemble.

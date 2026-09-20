@@ -4,9 +4,36 @@ PowerPlanSync est un projet d'application Windows en Rust. Il associe un plan d'
 à un logiciel et revient à un plan choisi lorsque ce logiciel se ferme.
 Le premier scénario est Battlefield 6 avec Haute performance pendant le jeu et Utilisation normale après.
 
-Le premier lot de faisabilité est implémenté en Rust. Il comprend une sonde Windows,
-un petit exécutable témoin et un prototype d'interface. L'application de suivi complète
-n'est pas encore implémentée. Aucun essai n'a lancé Battlefield.
+L'application, son moteur Rust et son interface française sont implémentés. La validation
+Windows est en cours avec un petit exécutable témoin. Aucun essai ne lance Battlefield.
+Les cases ouvertes du [plan de réalisation](specs/001-app-power-profiles/tasks.md)
+identifient les essais restant à effectuer avant une distribution publique.
+
+Le travail est en pause à la demande de l'utilisateur depuis le 20 septembre 2026.
+La [note de reprise](specs/001-app-power-profiles/evidence/checkpoint-2026-09-20.md)
+indique les résultats vérifiés et la première action à reprendre. Le dépôt GitHub est privé.
+Le [guide utilisateur](docs/guide-utilisateur.md) décrit le fonctionnement actuel.
+
+## Utiliser l'application
+
+Lancer `target/release/power-plan-sync.exe`, ajouter un logiciel avec **Parcourir**,
+choisir son plan, confirmer le plan de retour, puis cocher **Activer l'automatisation**.
+L'application utilise uniquement les plans déjà disponibles sur le PC.
+
+Le premier logiciel actif de la liste a priorité. Fermer la fenêtre conserve le suivi
+dans la zone de notification. **Pause** et **Quitter** tentent le retour choisi.
+Un changement manuel du plan dans Windows est conservé ; **Reprendre** relance le suivi.
+Le retour d'un cycle déjà commencé reste celui choisi au début de ce cycle.
+
+Pour découvrir l'interface sans modifier Windows :
+
+```powershell
+.\target\release\power-plan-sync.exe --demo
+```
+
+Les réglages sont locaux dans `%LOCALAPPDATA%\PowerPlanSync`. La démonstration dispose
+de données séparées. `--data-dir CHEMIN` choisit un autre dossier ; seul `--demo` simule
+les changements. Le démarrage avec Windows est facultatif et disponible avec le dossier normal.
 
 Les [résultats du prototype](specs/001-app-power-profiles/evidence/prototype-results.md)
 contiennent les mesures, les captures et les vérifications encore ouvertes.
@@ -35,17 +62,23 @@ utiliser **Quitter** pour arrêter la sonde UI.
 
 ## Compiler
 
-Avec Rust et les outils MSVC installés normalement, utiliser `cargo build --locked --release --examples`.
+Avec Rust et les outils MSVC installés normalement, utiliser `cargo build --locked --release --bins --examples`.
 L'installation locale de cette séance est dans `.tools`, hors Git et sans changement global du PATH.
 
 ```powershell
 $env:CARGO_HOME = Join-Path $PWD '.tools/cargo'
 $env:RUSTUP_HOME = Join-Path $PWD '.tools/rustup'
 $env:PATH = (Join-Path $env:CARGO_HOME 'bin') + ';' + $env:PATH
-cargo build --locked --release --examples
+cargo build --locked --release --bins --examples
 ```
 
-`cargo run` affiche uniquement l'état du projet. Les sondes sont des exemples séparés.
+`cargo run -- --demo` ouvre la démonstration. Les sondes restent des exemples séparés.
+
+Les contrôles du code sont `cargo test --locked --all-targets`, `cargo fmt --check` et
+`cargo clippy --locked --all-targets -- -D warnings`. Le harnais
+`scripts/verify-windows.ps1 -AllowPowerSwitch` vérifie cent cycles sur l'application réelle
+et restaure le plan initial. Il exige PowerShell 7.5 ou plus récent et aucune instance
+de PowerPlanSync déjà ouverte.
 
 ## Lire la conception
 
@@ -61,7 +94,7 @@ La fonctionnalité active est `specs/001-app-power-profiles`, enregistrée dans 
 
 ## Continuer avec Codex
 
-Ouvrir ce projet et utiliser `$speckit-implement` pour poursuivre les tâches de faisabilité.
+Ouvrir ce projet et utiliser `$speckit-implement` pour poursuivre les tâches encore ouvertes.
 Si la session ne recharge pas les nouveaux skills, rouvrir le projet. Les instructions installées
 restent directement lisibles dans `.agents/skills/speckit-implement/SKILL.md`.
 

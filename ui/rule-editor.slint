@@ -1,5 +1,5 @@
 import { Button, ComboBox, LineEdit, ScrollView, VerticalBox, HorizontalBox } from "std-widgets.slint";
-import { AppPalette } from "strings-fr.slint";
+import { AppPalette, AppText } from "strings-fr.slint";
 
 export component RuleEditor inherits Rectangle {
     in property <bool> editing: false;
@@ -19,6 +19,7 @@ export component RuleEditor inherits Rectangle {
     callback running-app-selected(int);
     callback save-requested(string, string, int);
     callback cancel-requested();
+    public function focus-first() { name-field.focus(); }
 
     visible: root.visible-editor;
     background: AppPalette.background;
@@ -39,13 +40,13 @@ export component RuleEditor inherits Rectangle {
             padding: 24px;
             spacing: 12px;
 
-            Text {
+            AppText {
                 text: root.editing ? "Modifier le logiciel" : "Ajouter un logiciel";
                 font-size: 24px * root.text-scale;
                 font-weight: 700;
                 wrap: word-wrap;
             }
-            Text {
+            AppText {
                 text: "Choisissez un fichier exécutable ou une application ouverte, puis le plan à utiliser.";
                 wrap: word-wrap;
             }
@@ -59,33 +60,33 @@ export component RuleEditor inherits Rectangle {
                 model: root.running-apps;
                 selected => { root.running-app-selected(self.current-index); }
             }
-            Text { text: "Nom affiché"; }
-            LineEdit {
+            AppText { text: "Nom affiché"; }
+            name-field := LineEdit {
                 accessible-label: "Nom du logiciel";
                 placeholder-text: "Exemple : Mon jeu";
                 text <=> root.draft-label;
                 edited => { root.validation-message = ""; }
             }
-            Text { text: "Chemin complet vérifié"; }
+            AppText { text: "Chemin complet vérifié"; }
             LineEdit {
                 accessible-label: "Chemin complet du logiciel";
                 placeholder-text: "Choisissez un fichier ou une application ouverte";
                 text <=> root.draft-path;
                 edited => { root.validation-message = ""; }
             }
-            Text {
+            AppText {
                 text: root.draft-path == "" ? "Aucun fichier sélectionné." : "Détails : " + root.draft-path;
                 wrap: word-wrap;
                 accessible-role: AccessibleRole.text;
             }
-            Text { text: "Plan pendant l'exécution"; }
+            AppText { text: "Plan pendant l'exécution"; }
             ComboBox {
                 accessible-label: "Plan pendant l'exécution";
                 model: root.plan-names;
                 current-index <=> root.draft-plan-index;
                 selected => { root.validation-message = ""; }
             }
-            if root.validation-message != "": Text {
+            if root.validation-message != "": AppText {
                 text: root.validation-message;
                 color: AppPalette.foreground;
                 wrap: word-wrap;

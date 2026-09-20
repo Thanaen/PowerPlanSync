@@ -1,0 +1,10 @@
+{
+  "pid": 24980,
+  "started_utc": "2026-09-20T19:57:30.3394809Z",
+  "executable": "C:\\Users\\Utilisateur\\Documents\\Dev\\PowerPlanSync\\target\\release\\power-plan-sync.exe",
+  "sha256": "43644EC204BEE65D4207A92071B3EF46765E315147291DE2AF0A610091547E8E",
+  "revision": "f24a5b07b397ff5166d7e459be09c5e86365b34e",
+  "data_directory": "C:\\Users\\Utilisateur\\Documents\\Dev\\PowerPlanSync\\.audit\\verify-data\\v1-20260920-215730",
+  "mode": "demo",
+  "active_plan_before": "GUID du mode de gestion de l’alimentation : 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (Haute performance)"
+}
