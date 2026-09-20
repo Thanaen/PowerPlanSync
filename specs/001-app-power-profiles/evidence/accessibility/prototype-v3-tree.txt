@@ -1,0 +1,21 @@
+Window: "PowerPlanSync - sonde d'interface", App: ui_probe.exe.
+	0 région PowerPlanSync - sonde d'interface Secondary Actions: Raise
+		1 barre de titre (settable, string) Value: PowerPlanSync - sonde d'interface
+			2 barre de menus Système ID: MenuBar
+				3 élément de menu Système
+			4 Bouton Réduire
+			5 Bouton Agrandir
+			6 Bouton Fermer
+		7 Texte PowerPlanSync
+		8 Texte Prototype de l'interface, sans écriture dans les réglages Windows.
+		9 Texte Plan actif : lecture seule
+		10 Texte Logiciel
+		11 Modifier (settable, string) Logiciel Description: Exemple : demo_target.exe
+		12 Texte Plan pendant l'exécution
+		13 zone de liste modifiable (settable, string) Plan pendant l'exécution Value: Utilisation normale (démo)
+		14 case à cocher Activer le suivi (démonstration)
+		15 Texte État : Sonde prête
+		16 Bouton Masquer dans la zone de notification
+		17 Bouton Quitter
+
+The focused UI element is 11 Modifier (settable, string) Logiciel Description: Exemple : demo_target.exe.

@@ -61,7 +61,8 @@ Comparer les chemins normalisés avec les règles Windows insensibles à la cass
 La résolution du chemin final traite liens et jonctions sans accepter une correspondance au nom seul.
 
 **Raison.** L'approche ne demande pas un contrôleur de traces privilégié et reste vérifiable.
-Son coût réel et l'accès au processus Battlefield doivent être mesurés.
+Son coût réel doit être mesuré. L'exécutable témoin valide la détection pendant cette réalisation ;
+l'accès à Battlefield reste un éventuel essai distinct, conformément à D09.
 Les instances sont identifiées par PID, heure de création et session, jamais par PID seul.
 
 **Alternatives.** WMI ajoute COM et un fournisseur sans fournir directement un chemin fiable
@@ -168,15 +169,15 @@ Voir [installation officielle](https://github.github.com/spec-kit/installation.h
 [intégration Codex](https://github.github.com/spec-kit/reference/integrations.html)
 et [release utilisée](https://github.com/github/spec-kit/releases/tag/v1.0.8).
 
-## Vérifications de faisabilité encore nécessaires
+## État des vérifications de faisabilité
 
 | Vérification | Critère de décision | État |
 | --- | --- | --- |
-| API et droits standards | Plans identiques à powercfg, bascule et lecture concordantes, refus maîtrisé | Non exécuté |
-| Détection de l'exécutable témoin | Chemin exact, lanceur séparé, instances et homonyme reconnus | À exécuter, remplacement de Battlefield demandé par l'utilisateur |
-| Interface Slint | Parcours clavier et Narrateur complet, contraste et DPI conformes | Non exécuté |
-| Coût du moteur et de la fenêtre | Budgets SC-004 et SC-007, mesures brutes conservées | Non exécuté |
-| Session et verrou global | Une seule instance écrit, abandon récupérable sans élévation | Non exécuté |
+| API et droits standards | Plans identiques à powercfg, bascule et lecture concordantes, refus maîtrisé | Trois cycles sous compte non élevé, GUID confirmés ; voir D10 |
+| Détection de l'exécutable témoin | Chemin exact, lanceur séparé, instances et homonyme reconnus | Réussi, sans Battlefield ; voir D10 |
+| Interface Slint | Parcours clavier et Narrateur complet, contraste et DPI conformes | Partiel, Narrateur et contrastes ouverts |
+| Coût du moteur et de la fenêtre | Budgets SC-004 et SC-007, mesures brutes conservées | Interface seule mesurée une minute par état ; moteur et campagnes longues à faire |
+| Session et verrou global | Une seule instance écrit, abandon récupérable sans élévation | Refus interprocessus réussi ; sessions et récupération à faire |
 | Récupération interrompue | Chaque coupure entre journal et écriture possède une issue sûre documentée | Non exécuté |
 
 Ces éléments deviennent les premières tâches. Ils ne sont pas des clarifications produit cachées.
@@ -188,5 +189,24 @@ L'utilisateur demande au démarrage de l'implémentation de ne pas lancer Battle
 Le témoin Rust teste les vrais processus Windows et les vrais plans, sans charge de jeu.
 Un processus lanceur distinct reste ouvert après la fermeture de l'enfant configuré.
 La règle distingue aussi deux copies homonymes par leur chemin. Les erreurs d'accès liées aux
-processus protégés sont testées par injection, sans annoncer une compatibilité anti-triche.
+processus protégés seront testées par injection, sans annoncer une compatibilité anti-triche.
 Ce changement remplace les gates Battlefield dans T005, T041 et SC-006.
+
+## D10. Résultats du premier lot de faisabilité
+
+Les preuves du 20 septembre 2026 sont dans [prototype-results.md](evidence/prototype-results.md).
+Les appels de plans et la détection du témoin fonctionnent sous compte non élevé. Trois cycles
+avec sondage d'une seconde et grâce de trois secondes respectent les budgets individuels.
+Le p95 sur cent cycles reste à mesurer. La fenêtre seule consomme 5,406 Mio de mémoire privée
+au maximum sur une minute ; après masquage, 3,691 Mio. Ce n'est pas la consommation du moteur futur.
+
+Le premier chronométrage proposé observait trop vite et comptait la grâce depuis la sortie réelle.
+Il a été rejeté à la relecture avant exécution. La version retenue reproduit le sondage prévu,
+compte la grâce depuis l'absence observée et conserve les heures Windows comme origine des métriques.
+
+Les contrôles Slint sont exposés et utilisables lors des essais de saisie, sélection et activation.
+Deux défauts de disposition ont été corrigés puis recontrôlés. Le focus signalé par le pilote
+reste ambigu. Le Narrateur, les contrastes et la réouverture par l'icône ne sont pas validés.
+Slint reste candidat ; aucun échec certain justifiant un changement de framework n'est établi.
+T004 et T006 restent ouvertes. Le passage à la phase 2 exige de résoudre ces vérifications,
+sans convertir des résultats inconnus en critères réussis.

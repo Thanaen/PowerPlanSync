@@ -1,0 +1,15 @@
+{
+  "process_id": 4528,
+  "process_name": "ui_probe",
+  "process_started_utc": "2026-09-20T18:11:03.3386138Z",
+  "measured_utc": "2026-09-20T18:12:16.5207687Z",
+  "duration_seconds": 60.384,
+  "logical_processors": 16,
+  "samples": 61,
+  "cpu_percent_machine": 0.0469,
+  "private_mib_max": 5.406,
+  "working_set_mib_max": 26.5,
+  "handles_first": 256,
+  "handles_last": 251,
+  "threads_last": 6
+}

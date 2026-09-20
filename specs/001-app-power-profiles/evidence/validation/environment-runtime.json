@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-09-20T20:28:09.1397926+02:00",
+  "elevated": false,
+  "windows_version": "25H2",
+  "windows_build": "26200.9457",
+  "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+  "logical_processors": 16,
+  "total_memory_bytes": 33396543488
+}

@@ -1,0 +1,10 @@
+Plans installés: 4
+- 381B4222-F694-41F0-9685-FF5BB260DF2E: Utilisation normale
+- 8C5E7FDA-E8BF-4A96-9A85-A6E23A8C635C: Haute performance (actif)
+- A1841308-3541-4FAB-BC81-F71556F20B4A: Économie d'énergie
+- E2135528-1855-445D-9401-7DBA6570606B: Performances optimales
+Processus: 1 chemins vérifiés, 0 observations indéterminées
+Sonde: pid=21820, chemin=C:\Users\Utilisateur\Documents\Dev\PowerPlanSync\target\release\examples\windows_probe.exe
+Verrou global: confirmé
+Erreur: le verrou global est déjà détenu
+Deuxième contrôleur refusé; plan inchangé

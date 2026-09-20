@@ -1,0 +1,27 @@
+Plans installés: 4
+- 381B4222-F694-41F0-9685-FF5BB260DF2E: Utilisation normale (actif)
+- 8C5E7FDA-E8BF-4A96-9A85-A6E23A8C635C: Haute performance
+- A1841308-3541-4FAB-BC81-F71556F20B4A: Économie d'énergie
+- E2135528-1855-445D-9401-7DBA6570606B: Performances optimales
+Processus: 1 chemins vérifiés, 0 observations indéterminées
+Sonde: pid=15192, chemin=C:\Users\Utilisateur\Documents\Dev\PowerPlanSync\target\release\examples\windows_probe.exe
+Verrou global: confirmé
+Témoin initial: configurées=2, homonymes=1, lanceur=true
+Témoin intermédiaire: configurées=1, homonymes=0, lanceur=true
+Témoin final: configurées=0, homonymes=0, lanceur=true
+Cycle 1 absence: sortie-réelle=134344017894280685, absence-observée=1789928190232 ms Unix
+Cycle 1 grâce: fin=1789928193233 ms Unix
+Cycle 1 création: réelle=134344017794184068, décalage-lancement=170 ms
+Cycle 1 activation: présence-observée=1789928180232 ms Unix, cible-confirmée=1789928180255 ms Unix, délai=837 ms, plan=8C5E7FDA-E8BF-4A96-9A85-A6E23A8C635C
+Cycle 1 retour: confirmé=1789928193509 ms Unix, délai-depuis-sortie=4081 ms, plan=381B4222-F694-41F0-9685-FF5BB260DF2E
+Cycle 2 absence: sortie-réelle=134344018040457304, absence-observée=1789928204512 ms Unix
+Cycle 2 grâce: fin=1789928207513 ms Unix
+Cycle 2 création: réelle=134344017940408295, décalage-lancement=530 ms
+Cycle 2 activation: présence-observée=1789928194513 ms Unix, cible-confirmée=1789928194536 ms Unix, délai=495 ms, plan=8C5E7FDA-E8BF-4A96-9A85-A6E23A8C635C
+Cycle 2 retour: confirmé=1789928207785 ms Unix, délai-depuis-sortie=3740 ms, plan=381B4222-F694-41F0-9685-FF5BB260DF2E
+Cycle 3 absence: sortie-réelle=134344018186816947, absence-observée=1789928218789 ms Unix
+Cycle 3 grâce: fin=1789928221789 ms Unix
+Cycle 3 création: réelle=134344018086766374, décalage-lancement=890 ms
+Cycle 3 activation: présence-observée=1789928208790 ms Unix, cible-confirmée=1789928208812 ms Unix, délai=136 ms, plan=8C5E7FDA-E8BF-4A96-9A85-A6E23A8C635C
+Cycle 3 retour: confirmé=1789928222067 ms Unix, délai-depuis-sortie=3385 ms, plan=381B4222-F694-41F0-9685-FF5BB260DF2E
+Faisabilité terminée sur 3 cycle(s). Le p95 complet exige 100 cycles futurs.

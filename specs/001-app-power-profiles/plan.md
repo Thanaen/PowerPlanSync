@@ -1,6 +1,6 @@
 # Implementation Plan: Associer un plan d'alimentation à un logiciel
 
-**Branch**: `main`, dépôt local sans commit | **Date**: 2026-09-20 | **Spec**: [spec.md](spec.md)
+**Branch**: `main`, premier lot de faisabilité intégré | **Date**: 2026-09-20 | **Spec**: [spec.md](spec.md)
 
 **Input**: `specs/001-app-power-profiles/spec.md`
 
@@ -9,13 +9,14 @@
 PowerPlanSync applique un plan Windows existant lorsqu'un logiciel configuré fonctionne,
 puis revient au plan explicitement choisi. Une interface Rust accessible expose les règles et l'état.
 Le premier développement démontre la faisabilité Windows, l'accessibilité et le coût de fonctionnement.
-Aucun code produit n'est livré dans cette étape de conception.
+La conception initiale est suivie d'un premier lot de sondes et d'adaptateurs Rust.
+Voir les [résultats réels](evidence/prototype-results.md). Le moteur complet reste à construire.
 
 ## Technical Context
 
 **Language/Version**: Rust stable, édition 2024, cible `x86_64-pc-windows-msvc`.
-T001 épingle la version exacte dans `rust-toolchain.toml` après vérification des versions stables
-et du MSRV des dépendances. La chaîne Rust et les outils MSVC ne sont pas encore validés ici.
+Rust 1.98.1 est épinglé dans `rust-toolchain.toml`. Les exemples compilent avec MSVC 14.44.35207
+et le SDK Windows 10.0.26100.0. Les versions et preuves sont dans [toolchain.md](evidence/toolchain.md).
 
 **Primary Dependencies**: `windows` pour Win32, `slint` et `slint-build` pour l'interface candidate,
 `serde` et `serde_json` pour les fichiers versionnés. Versions et fonctionnalités minimales
@@ -60,7 +61,8 @@ dans une ressource pour permettre une traduction ultérieure.
 | IV. Interface accessible | Conforme | Conforme sur conception | Contrat UI et validation clavier, Narrateur, DPI |
 | V. Droits et preuves | Conforme | Conforme sur conception | Compte standard, données isolées, aucune compatibilité jeu annoncée |
 
-Les contrôles de conception passent. Les vérifications d'exécution restent à faire.
+Les contrôles de conception passent. Le premier lot vérifie les appels Windows, le témoin,
+trois cycles et une partie du parcours graphique. L'accessibilité complète reste ouverte.
 Aucune exception constitutionnelle n'est demandée.
 
 ## Project Structure
@@ -84,7 +86,7 @@ specs/001-app-power-profiles/
 
 ### Source Code (repository root)
 
-Structure prévue, non créée pendant cette conception.
+Structure cible. Les adaptateurs Windows et exemples existent ; les autres modules restent planifiés.
 
 ```text
 Cargo.toml

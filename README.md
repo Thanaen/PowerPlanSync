@@ -4,8 +4,48 @@ PowerPlanSync est un projet d'application Windows en Rust. Il associe un plan d'
 à un logiciel et revient à un plan choisi lorsque ce logiciel se ferme.
 Le premier scénario est Battlefield 6 avec Haute performance pendant le jeu et Utilisation normale après.
 
-Le projet est en phase de conception. Aucun binaire produit n'est encore développé.
-Les mesures de consommation, l'accessibilité et la compatibilité Battlefield restent à vérifier.
+Le premier lot de faisabilité est implémenté en Rust. Il comprend une sonde Windows,
+un petit exécutable témoin et un prototype d'interface. L'application de suivi complète
+n'est pas encore implémentée. Aucun essai n'a lancé Battlefield.
+
+Les [résultats du prototype](specs/001-app-power-profiles/evidence/prototype-results.md)
+contiennent les mesures, les captures et les vérifications encore ouvertes.
+
+## Essayer les prototypes
+
+Sur cette machine, les exécutables compilés sont dans `target/release/examples/`.
+
+```powershell
+.\target\release\examples\ui_probe.exe
+.\scripts\verify-prototypes.ps1
+```
+
+La fenêtre utilise des données de démonstration et ne change aucun réglage Windows.
+La seconde commande vérifie les plans et les processus sans basculer de plan.
+Pour une séance dédiée de bascules réelles avec restauration du plan initial :
+
+```powershell
+.\scripts\verify-prototypes.ps1 -AllowPowerSwitch -Cycles 3
+```
+
+La sonde choisit comme cible un autre plan existant, puis revient au plan actif au début du test.
+Le témoin dort dix secondes. Les essais différencient son chemin, ses instances,
+un fichier homonyme et un lanceur restant ouvert. Fermer la fenêtre laisse l'icône active ;
+utiliser **Quitter** pour arrêter la sonde UI.
+
+## Compiler
+
+Avec Rust et les outils MSVC installés normalement, utiliser `cargo build --locked --release --examples`.
+L'installation locale de cette séance est dans `.tools`, hors Git et sans changement global du PATH.
+
+```powershell
+$env:CARGO_HOME = Join-Path $PWD '.tools/cargo'
+$env:RUSTUP_HOME = Join-Path $PWD '.tools/rustup'
+$env:PATH = (Join-Path $env:CARGO_HOME 'bin') + ';' + $env:PATH
+cargo build --locked --release --examples
+```
+
+`cargo run` affiche uniquement l'état du projet. Les sondes sont des exemples séparés.
 
 ## Lire la conception
 
@@ -21,7 +61,7 @@ La fonctionnalité active est `specs/001-app-power-profiles`, enregistrée dans 
 
 ## Continuer avec Codex
 
-Ouvrir ce projet et utiliser `$speckit-implement` pour commencer les tâches de faisabilité.
+Ouvrir ce projet et utiliser `$speckit-implement` pour poursuivre les tâches de faisabilité.
 Si la session ne recharge pas les nouveaux skills, rouvrir le projet. Les instructions installées
 restent directement lisibles dans `.agents/skills/speckit-implement/SKILL.md`.
 

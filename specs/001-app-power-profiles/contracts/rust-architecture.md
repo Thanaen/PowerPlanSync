@@ -60,8 +60,18 @@ au coordinateur. La seconde relecture Windows traite en outre une fenêtre de co
 Les scores de la racine sur exactitude, profondeur d'interface, tests et réutilisation sont
 A 5/5/4/5, B 3/4/5/4 et C 3/4/4/4. Les candidats sont conservés dans la trace locale `.audit/architect/`.
 
+Après lecture de cette synthèse, le juge gpt-5.5 confirme le choix A sans blocage pour les sondes.
+Les tests du futur coordinateur devront couvrir le changement de plan entre préparation et écriture,
+la lecture échouée après écriture et le refus d'une finalisation portant un ancien identifiant.
+
 ## Réconciliation pendant le développement
 
 La première unité implémente seulement les identités et les adaptateurs nécessaires aux sondes.
 Le moteur définitif vient après les preuves. Toute déviation acceptée est consignée ici avant
 le passage à l'unité suivante. Les candidats ne font pas autorité en dehors de ce contrat spec-kit.
+
+Le prototype conserve le handle du processus pendant la lecture du chemin, de la création et
+de la session. La crainte initiale d'une réutilisation du PID entre ces lectures a été écartée
+après vérification de la [durée de vie des identifiants Windows](https://devblogs.microsoft.com/oldnewthing/20150918-00/?p=91561).
+Un handle ouvert conserve l'identité du processus. Le filtrage de session et le suivi des
+observations incertaines sur plusieurs snapshots restent des travaux du produit.

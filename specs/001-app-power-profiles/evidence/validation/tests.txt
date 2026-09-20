@@ -1,0 +1,22 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.43s
+     Running unittests src\lib.rs (target\debug\deps\power_plan_sync-201e4154cf007d4d.exe)
+
+running 4 tests
+test windows::processes::tests::basename_filter_uses_windows_case_rules ... ok
+test windows::processes::tests::nul_terminated_name_ignores_tail ... ok
+test windows::processes::tests::path_comparison_uses_windows_case_rules ... ok
+test windows::processes::tests::filetime_combines_both_halves ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\main.rs (target\debug\deps\power_plan_sync-9cd690cdb8013a31.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests power_plan_sync
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
