@@ -5,7 +5,7 @@ export component PowerPlanTray inherits SystemTrayIcon {
     in property <bool> has-error: false;
     icon: tray-icon;
     title: "PowerPlanSync";
-    tooltip: "PowerPlanSync — " + root.current-status;
+    tooltip: "PowerPlanSync, " + root.current-status;
     callback open-requested();
     callback pause-requested();
     callback resume-requested();

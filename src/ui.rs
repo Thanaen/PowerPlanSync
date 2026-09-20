@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
 
 use slint::{CloseRequestResponse, Color, ComponentHandle, Image, ModelRc, SharedString, VecModel};
@@ -115,6 +115,7 @@ pub struct UiRuntime {
     window: Rc<RefCell<Option<MainWindow>>>,
     state: Rc<RefCell<UiDisplayModel>>,
     palette: Rc<RefCell<Option<UiPalette>>>,
+    text_scale: Rc<Cell<f32>>,
     actions: ActionSink,
 }
 
@@ -131,13 +132,21 @@ impl UiRuntime {
         let window = Rc::new(RefCell::new(None));
         let state = Rc::new(RefCell::new(initial));
         let palette = Rc::new(RefCell::new(None));
+        let text_scale = Rc::new(Cell::new(1.0));
 
         let open_slot = Rc::clone(&window);
         let open_state = Rc::clone(&state);
         let open_actions = actions.clone();
         let open_palette = Rc::clone(&palette);
+        let open_text_scale = Rc::clone(&text_scale);
         tray.on_open_requested(move || {
-            if let Err(error) = open_window(&open_slot, &open_state, &open_palette, &open_actions) {
+            if let Err(error) = open_window(
+                &open_slot,
+                &open_state,
+                &open_palette,
+                &open_text_scale,
+                &open_actions,
+            ) {
                 eprintln!("Ouverture de la fenêtre impossible: {error}");
             }
         });
@@ -153,13 +162,20 @@ impl UiRuntime {
             window,
             state,
             palette,
+            text_scale,
             actions,
         })
     }
 
     pub fn show(&self) -> Result<(), slint::PlatformError> {
         self.tray.show()?;
-        open_window(&self.window, &self.state, &self.palette, &self.actions)
+        open_window(
+            &self.window,
+            &self.state,
+            &self.palette,
+            &self.text_scale,
+            &self.actions,
+        )
     }
 
     pub fn show_tray_only(&self) -> Result<(), slint::PlatformError> {
@@ -167,7 +183,13 @@ impl UiRuntime {
     }
 
     pub fn open(&self) -> Result<(), slint::PlatformError> {
-        open_window(&self.window, &self.state, &self.palette, &self.actions)
+        open_window(
+            &self.window,
+            &self.state,
+            &self.palette,
+            &self.text_scale,
+            &self.actions,
+        )
     }
 
     pub fn hide(&self) {
@@ -197,7 +219,7 @@ impl UiRuntime {
         if let Some(window) = self.window.borrow().as_ref() {
             let labels = apps
                 .into_iter()
-                .map(|app| format!("{} — {}", app.label, app.path).into())
+                .map(|app| format!("{}, {}", app.label, app.path).into())
                 .collect::<Vec<SharedString>>();
             window.set_running_apps(ModelRc::new(VecModel::from(labels)));
         }
@@ -211,8 +233,10 @@ impl UiRuntime {
     }
 
     pub fn set_text_scale(&self, scale: f32) {
+        let scale = normalize_text_scale(scale);
+        self.text_scale.set(scale);
         if let Some(window) = self.window.borrow().as_ref() {
-            window.set_text_scale(scale.clamp(1.0, 2.0));
+            window.set_text_scale(scale);
         }
     }
 
@@ -238,6 +262,7 @@ fn open_window(
     slot: &Rc<RefCell<Option<MainWindow>>>,
     state: &Rc<RefCell<UiDisplayModel>>,
     palette: &Rc<RefCell<Option<UiPalette>>>,
+    text_scale: &Rc<Cell<f32>>,
     actions: &ActionSink,
 ) -> Result<(), slint::PlatformError> {
     if let Some(window) = slot.borrow().as_ref() {
@@ -245,6 +270,7 @@ fn open_window(
     }
     let window = MainWindow::new()?;
     apply_model(&window, &state.borrow());
+    window.set_text_scale(text_scale.get());
     if let Some(palette) = *palette.borrow() {
         apply_palette(&window, palette);
     }
@@ -271,6 +297,14 @@ fn open_window(
     window.show()?;
     *slot.borrow_mut() = Some(window);
     Ok(())
+}
+
+fn normalize_text_scale(scale: f32) -> f32 {
+    if scale.is_finite() && scale > 0.0 {
+        scale
+    } else {
+        1.0
+    }
 }
 
 fn apply_palette(window: &MainWindow, palette: UiPalette) {
@@ -397,4 +431,23 @@ fn decode_action(
         "open-windows-settings" => UiAction::OpenWindowsSettings,
         _ => return None,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{UiAction, decode_action, normalize_text_scale};
+
+    #[test]
+    fn rule_action_keeps_stable_rule_id() {
+        assert_eq!(
+            decode_action("move-rule-down", 42, "", "", -1, false),
+            Some(UiAction::MoveRuleDown { rule_id: 42 })
+        );
+    }
+
+    #[test]
+    fn text_scale_accepts_windows_225_percent() {
+        assert_eq!(normalize_text_scale(2.25), 2.25);
+        assert_eq!(normalize_text_scale(f32::NAN), 1.0);
+    }
 }
