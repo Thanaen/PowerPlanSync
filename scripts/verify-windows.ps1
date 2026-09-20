@@ -1,3 +1,5 @@
+#requires -Version 7.5
+
 [CmdletBinding()]
 param(
     [string]$ApplicationPath = (Join-Path $PSScriptRoot '../target/release/power-plan-sync.exe'),
@@ -21,6 +23,7 @@ $dataDirectory = Join-Path $evidence 'data'
 $reportPath = Join-Path $evidence 'result.json'
 $activationLimitMs = 2000
 $returnLimitMs = 5000
+$observationTimeoutMs = 10000
 
 function Read-ActivePlan {
     $output = & powercfg.exe /getactivescheme
@@ -123,22 +126,32 @@ $initialRecord = [ordered]@{
     target_plan = $targetPlan
 }
 $initialRecord | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'initial-plan.json') -Encoding utf8NoBOM
+$targetPlanId = Convert-GuidToPlanId $targetPlan
+$initialPlanId = Convert-GuidToPlanId $initialPlan
 $configuration = [ordered]@{
     schema_version = 1
     rules = @([ordered]@{
         id = 1
         label = 'demo_target verification'
         executable = Convert-PathToUnits $fixture
-        plan = Convert-GuidToPlanId $targetPlan
+        plan = $targetPlanId
         enabled = $true
     })
-    return_plan = Convert-GuidToPlanId $initialPlan
+    return_plan = $initialPlanId
     automation_enabled = $true
     paused = $false
     allow_on_battery = $true
     start_at_login = $false
 }
-$configuration | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $dataDirectory 'config.json') -Encoding utf8NoBOM
+$configurationJson = $configuration | ConvertTo-Json -Depth 6
+$targetNumber = [regex]::Escape($targetPlanId.ToString([Globalization.CultureInfo]::InvariantCulture))
+$initialNumber = [regex]::Escape($initialPlanId.ToString([Globalization.CultureInfo]::InvariantCulture))
+$targetPattern = '"plan"\s*:\s*' + $targetNumber
+$initialPattern = '"return_plan"\s*:\s*' + $initialNumber
+if ($configurationJson -notmatch $targetPattern -or $configurationJson -notmatch $initialPattern) {
+    throw 'PowerShell n''a pas sérialisé les identifiants de plan comme nombres JSON décimaux exacts.'
+}
+$configurationJson | Set-Content -LiteralPath (Join-Path $dataDirectory 'config.json') -Encoding utf8NoBOM
 
 $applicationProcess = $null
 $fixtureProcess = $null
@@ -148,7 +161,7 @@ $confirmedPlan = $null
 $startedAt = (Get-Date).ToUniversalTime()
 try {
     $quotedDataDirectory = '"' + $dataDirectory + '"'
-    $applicationProcess = Start-Process -FilePath $application -ArgumentList @('--data-dir', $quotedDataDirectory, '--start-minimized') -PassThru
+    $applicationProcess = Start-Process -FilePath $application -ArgumentList @('--data-dir', $quotedDataDirectory, '--start-minimized') -WindowStyle Hidden -PassThru
     Start-Sleep -Milliseconds 500
     if ($applicationProcess.HasExited) { throw "PowerPlanSync s'est arrêté avec le code $($applicationProcess.ExitCode)." }
 
@@ -156,9 +169,9 @@ try {
         if ((Read-ActivePlan) -ne $initialPlan) {
             throw "Le cycle $cycle ne commence pas sur le plan initial $initialPlan."
         }
-        $fixtureProcess = Start-Process -FilePath $fixture -ArgumentList @('--sleep-ms', "$(1000 * $MinimumProcessSeconds)") -PassThru
+        $fixtureProcess = Start-Process -FilePath $fixture -ArgumentList @('--sleep-ms', "$(1000 * $MinimumProcessSeconds)") -WindowStyle Hidden -PassThru
         $processStartTime = $fixtureProcess.StartTime
-        $activationMs = Wait-ForPlan $targetPlan $processStartTime $activationLimitMs
+        $activationMs = Wait-ForPlan $targetPlan $processStartTime $observationTimeoutMs
         $sample = Get-ProcessSample $applicationProcess
         $fixtureProcess.WaitForExit()
         $fixtureProcess.Refresh()
@@ -166,7 +179,7 @@ try {
         $fixtureExitCode = $fixtureProcess.ExitCode
         $fixtureProcess = $null
         if ($fixtureExitCode -ne 0) { throw "demo_target a quitté avec le code $fixtureExitCode au cycle $cycle." }
-        $returnMs = Wait-ForPlan $initialPlan $exitTime $returnLimitMs
+        $returnMs = Wait-ForPlan $initialPlan $exitTime $observationTimeoutMs
         $results.Add([ordered]@{
             cycle = $cycle
             fixture_start_time = $processStartTime.ToUniversalTime().ToString('o')
@@ -219,6 +232,7 @@ try {
         completed_cycles = $results.Count
         minimum_process_seconds = $MinimumProcessSeconds
         poll_milliseconds = $PollMilliseconds
+        observation_timeout_ms = $observationTimeoutMs
         thresholds = [ordered]@{ activation_p95_ms = $activationLimitMs; return_p95_ms = $returnLimitMs }
         measurements = [ordered]@{ activation_p95_ms = $activationP95; return_p95_ms = $returnP95 }
         restored_plan = $confirmedPlan
