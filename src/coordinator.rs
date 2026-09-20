@@ -86,7 +86,11 @@ impl<P: PowerPort, S: Store> Controller<P, S> {
         Ok(self.view())
     }
     fn handle_inner(&mut self, command: Command) -> Result<(), Error> {
-        let explicit = !matches!(command, Command::Observe(_));
+        let explicit = match &command {
+            Command::Observe(_) => false,
+            Command::SaveConfiguration(next) => next.rules != self.configuration.rules,
+            _ => true,
+        };
         match command {
             Command::Refresh => {
                 self.plans = self.power.plans()?;
@@ -239,6 +243,7 @@ impl<P: PowerPort, S: Store> Controller<P, S> {
                     .ok_or_else(|| Error::InvalidConfiguration("Plan de retour manquant".into()))?,
                 last_confirmed: before,
                 winner: rule,
+                acquired: false,
             }
         };
         let mut cycle = cycle;
@@ -259,8 +264,21 @@ impl<P: PowerPort, S: Store> Controller<P, S> {
             self.state.status = status;
             return Ok(());
         }
-        if let Some(cycle) = self.state.cycle.clone() {
+        if let Some(mut cycle) = self.state.cycle.clone() {
             let before = self.read()?;
+            if let Some(record) = &self.record
+                && record.phase == Phase::Prepared
+            {
+                if !cycle.acquired && before == record.before && before != record.intended {
+                    self.clear()?;
+                    self.state.status = status;
+                    return Ok(());
+                }
+                if before == record.intended {
+                    cycle.last_confirmed = before;
+                    cycle.acquired = true;
+                }
+            }
             if before != cycle.last_confirmed {
                 self.revoke()?;
                 self.clear()?;
@@ -314,6 +332,7 @@ impl<P: PowerPort, S: Store> Controller<P, S> {
             return self.revoke();
         }
         r.cycle.last_confirmed = intended;
+        r.cycle.acquired = true;
         r.phase = Phase::Applied;
         self.store.finalize(&r)?;
         self.state.cycle = Some(r.cycle.clone());
@@ -334,10 +353,20 @@ impl<P: PowerPort, S: Store> Controller<P, S> {
         }
         let actual = self.read()?;
         match r.phase {
+            Phase::Prepared
+                if actual == r.before && r.before != r.intended && !r.cycle.acquired =>
+            {
+                self.clear()?;
+                self.state.status = Status::Idle;
+                return Ok(());
+            }
             Phase::Prepared if actual == r.before || actual == r.intended => {
                 self.state.cycle.as_mut().unwrap().last_confirmed = actual;
+                self.state.cycle.as_mut().unwrap().acquired = true;
             }
-            Phase::Applied if actual == r.cycle.last_confirmed => {}
+            Phase::Applied if actual == r.cycle.last_confirmed => {
+                self.state.cycle.as_mut().unwrap().acquired = true;
+            }
             Phase::RestorePending if actual == r.intended => {
                 self.clear()?;
                 self.state.status = Status::Idle;

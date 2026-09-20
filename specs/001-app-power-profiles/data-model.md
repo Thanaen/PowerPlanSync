@@ -95,6 +95,13 @@ autorisé. La récupération peut clôturer vers le retour réservé si aucun lo
 Une lecture échouée ne permet aucune écriture. Un journal illisible est conservé et bloque le suivi.
 Un journal d'un autre compte n'est pas consommé.
 
+Le cycle porte aussi `acquired`, qui distingue une acquisition initiale non confirmée d'un
+changement de gagnant dans un cycle déjà acquis. Un journal `Prepared` initial, avec `before`
+différent de `intended` et Windows encore sur `before`, est clôturé sans retour si la règle
+n'est plus éligible. Un changement de gagnant interrompu conserve le retour du cycle acquis.
+Le cas `before == intended` autorise toujours le retour, même sans appel d'écriture.
+Une modification du seul retour configuré ne raccourcit pas une grâce de fermeture en cours.
+
 La protection n'est pas un verrou Windows sur le plan. Une modification externe non observée
 ou de même GUID ne peut pas être attribuée avec certitude. Cette limite reste visible dans la documentation.
 

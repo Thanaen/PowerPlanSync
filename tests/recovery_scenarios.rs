@@ -289,6 +289,7 @@ fn recovery_matrix_respects_every_record_phase() {
                     return_plan: PlanId(3),
                     last_confirmed: PlanId(2),
                     winner: RuleId(1),
+                    acquired: true,
                 },
                 transaction: 11,
                 before: if phase == Phase::RestorePending {
@@ -362,4 +363,54 @@ fn resume_after_manual_override_starts_new_cycle() {
     c.handle(Command::Resume).unwrap();
     assert_ne!(c.view().cycle.unwrap().id, old);
     assert_eq!(p.0.borrow().writes, vec![PlanId(2), PlanId(2)]);
+}
+
+#[test]
+fn initial_prepared_before_without_process_never_writes_a_return() {
+    let (power, store) = fixture();
+    power.0.borrow_mut().fail_set = true;
+    let mut controller = Controller::open(power.clone(), store.clone(), owner()).unwrap();
+    assert!(controller.handle(sample(0, true)).is_err());
+    assert_eq!(
+        store.0.borrow().record.as_ref().unwrap().phase,
+        Phase::Prepared
+    );
+    power.0.borrow_mut().fail_set = false;
+    power.0.borrow_mut().writes.clear();
+    drop(controller);
+    let mut recovered = Controller::open(power.clone(), store.clone(), owner()).unwrap();
+    recovered.handle(sample(5000, false)).unwrap();
+    assert!(power.0.borrow().writes.is_empty());
+    assert_eq!(power.0.borrow().active, PlanId(1));
+    assert!(store.0.borrow().record.is_none());
+}
+
+#[test]
+fn changing_only_return_does_not_shorten_natural_exit_grace() {
+    let (power, store) = fixture();
+    let mut controller = Controller::open(power.clone(), store, owner()).unwrap();
+    controller.handle(sample(0, true)).unwrap();
+    controller.handle(sample(1000, false)).unwrap();
+    let mut config = controller.view().configuration;
+    config.return_plan = Some(PlanId(4));
+    controller
+        .handle(Command::SaveConfiguration(config))
+        .unwrap();
+    assert_eq!(power.0.borrow().writes, vec![PlanId(2)]);
+    controller.handle(sample(4000, false)).unwrap();
+    assert_eq!(power.0.borrow().writes, vec![PlanId(2), PlanId(3)]);
+}
+
+#[test]
+fn quit_after_failed_initial_write_leaves_the_original_plan() {
+    let (power, store) = fixture();
+    power.0.borrow_mut().fail_set = true;
+    let mut controller = Controller::open(power.clone(), store.clone(), owner()).unwrap();
+    assert!(controller.handle(sample(0, true)).is_err());
+    power.0.borrow_mut().fail_set = false;
+    power.0.borrow_mut().writes.clear();
+    controller.handle(Command::Quit).unwrap();
+    assert!(power.0.borrow().writes.is_empty());
+    assert_eq!(power.0.borrow().active, PlanId(1));
+    assert!(store.0.borrow().record.is_none());
 }

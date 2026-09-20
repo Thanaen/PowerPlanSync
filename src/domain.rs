@@ -123,6 +123,8 @@ pub struct Cycle {
     pub return_plan: PlanId,
     pub last_confirmed: PlanId,
     pub winner: RuleId,
+    #[serde(default)]
+    pub acquired: bool,
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Phase {

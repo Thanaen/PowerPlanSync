@@ -48,6 +48,7 @@ fn grace_is_three_seconds_and_reappearance_cancels_it() {
             return_plan: PlanId(3),
             last_confirmed: PlanId(2),
             winner: RuleId(1),
+            acquired: true,
         }),
         ..Default::default()
     };
@@ -105,6 +106,7 @@ fn ordered_rules_recompute_immediately_for_explicit_edits() {
             return_plan: PlanId(3),
             last_confirmed: PlanId(2),
             winner: RuleId(1),
+            acquired: true,
         }),
         ..Default::default()
     };
@@ -127,6 +129,7 @@ fn uncertainty_keeps_known_instance_then_blocks_at_ten_seconds() {
             return_plan: PlanId(3),
             last_confirmed: PlanId(2),
             winner: RuleId(1),
+            acquired: true,
         }),
         ..Default::default()
     };
@@ -153,6 +156,7 @@ fn reused_pid_with_new_creation_does_not_keep_old_software_alive() {
             return_plan: PlanId(3),
             last_confirmed: PlanId(2),
             winner: RuleId(1),
+            acquired: true,
         }),
         ..Default::default()
     };
@@ -178,6 +182,7 @@ fn another_instance_keeps_cycle_active() {
             return_plan: PlanId(3),
             last_confirmed: PlanId(2),
             winner: RuleId(1),
+            acquired: true,
         }),
         ..Default::default()
     };
