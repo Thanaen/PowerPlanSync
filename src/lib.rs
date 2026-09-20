@@ -1,7 +1,8 @@
-#![cfg_attr(not(target_os = "windows"), allow(dead_code))]
-
 pub mod app_args;
+pub mod coordinator;
 pub mod diagnostics;
-
+pub mod domain;
+pub mod engine;
+pub mod storage;
 #[cfg(target_os = "windows")]
 pub mod windows;
