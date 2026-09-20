@@ -1,0 +1,25 @@
+[package]
+name = "power-plan-sync"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98.1"
+build = "build.rs"
+publish = false
+
+[dependencies]
+slint = { version = "=1.18.0", default-features = false, features = ["std", "backend-winit", "renderer-software", "accessibility", "compat-1-18", "system-tray"] }
+windows = { version = "=0.62.2", features = [
+    "Win32_Foundation",
+    "Win32_Globalization",
+    "Win32_Security",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_Memory",
+    "Win32_System_Power",
+    "Win32_System_Registry",
+    "Win32_System_RemoteDesktop",
+    "Win32_System_Threading",
+] }
+
+[build-dependencies]
+slint-build = { version = "=1.18.0" }
