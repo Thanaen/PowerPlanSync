@@ -101,6 +101,7 @@ struct Worker {
     owner: session::OwnerIdentity,
     controller: Option<AppController>,
     read_only_view: Option<ViewState>,
+    open_listener: Option<OpenListener>,
     lease: Option<ControlLease>,
     data_lock: Option<File>,
     diagnostics: Option<crate::diagnostics::Diagnostics>,
@@ -141,6 +142,9 @@ impl Worker {
             );
         } else {
             self.lease = Some(ControlLease::acquire_controller().map_err(|_| "Une autre session ou instance contrôle déjà les plans. Aucun plan n'a été modifié.")?);
+            if let Some(sender) = self.sender.clone() {
+                self.open_listener = Some(OpenListener::start(self.owner.clone(), sender)?);
+            }
         }
         let directory = if self.options.demo {
             self.options.data_directory.join("simulation")
@@ -254,6 +258,21 @@ impl Worker {
             }
         }
         result
+    }
+    fn power_notification(&mut self, notification: windows::power::PowerNotification) {
+        match notification {
+            windows::power::PowerNotification::Suspend => (),
+            windows::power::PowerNotification::ResumeAutomatic => {
+                self.command(Command::Refresh);
+                self.observe(true);
+            }
+            _ => {
+                self.command(Command::Refresh);
+                if self.view().poll_processes {
+                    self.observe(true);
+                }
+            }
+        }
     }
     fn observe(&mut self, include_processes: bool) {
         if let Some(controller) = &self.controller {
@@ -378,6 +397,7 @@ impl Worker {
                 return Ok(());
             }
             UiAction::Retry if self.controller.is_none() => {
+                self.open_listener = None;
                 self.lease = None;
                 self.data_lock = None;
                 return self.acquire();
@@ -534,6 +554,13 @@ impl Worker {
                 if self.options.demo {
                     return Err("Le démarrage Windows est désactivé en démonstration.".into());
                 }
+                let default_directory = std::env::var_os("LOCALAPPDATA")
+                    .map(|base| PathBuf::from(base).join("PowerPlanSync"));
+                if !default_directory.as_ref().is_some_and(|path| {
+                    windows::processes::paths_equal(path, &self.options.data_directory)
+                }) {
+                    return Err("Le démarrage Windows est indisponible avec un dossier de données personnalisé. Relancez PowerPlanSync sans --data-dir pour utiliser cette option.".into());
+                }
                 let previous = windows::startup::current_executable_state()
                     .map_err(|_| "Le démarrage Windows ne peut pas être vérifié.")?;
                 windows::startup::set_current_executable_enabled(value)
@@ -564,6 +591,61 @@ impl Worker {
     }
 }
 
+struct OpenListener {
+    stopped: Arc<AtomicBool>,
+    thread: Option<std::thread::JoinHandle<()>>,
+}
+
+impl OpenListener {
+    fn start(owner: session::OwnerIdentity, sender: Sender<AppEvent>) -> Result<Self, String> {
+        let stopped = Arc::new(AtomicBool::new(false));
+        let thread_stopped = stopped.clone();
+        let (ready, result) = mpsc::sync_channel(1);
+        let thread = std::thread::spawn(move || match OpenWindowSignal::create(&owner) {
+            Ok(signal) => {
+                let _ = ready.send(Ok(()));
+                while !thread_stopped.load(Ordering::Relaxed) {
+                    if signal.wait_for(Duration::from_millis(250)).unwrap_or(false) {
+                        let _ = sender.send(AppEvent::Open);
+                    }
+                }
+            }
+            Err(_) => {
+                let _ = ready.send(Err(
+                    "La réouverture de cette instance ne peut pas être préparée.".to_string(),
+                ));
+            }
+        });
+        let listener = Self {
+            stopped,
+            thread: Some(thread),
+        };
+        result
+            .recv()
+            .map_err(|_| "La réouverture de cette instance est indisponible.")??;
+        Ok(listener)
+    }
+}
+
+impl Drop for OpenListener {
+    fn drop(&mut self) {
+        self.stopped.store(true, Ordering::Relaxed);
+        if let Some(thread) = self.thread.take() {
+            let _ = thread.join();
+        }
+    }
+}
+
+fn request_existing_open(owner: &session::OwnerIdentity) -> bool {
+    for _ in 0..20 {
+        if session::signal_existing_window(owner).is_ok() {
+            return true;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    false
+}
+
 fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) {
     let owner = match session::current_owner() {
         Ok(owner) => owner,
@@ -574,10 +656,6 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
             return;
         }
     };
-    if !options.demo && session::signal_existing_window(&owner).is_ok() {
-        on_ui(|ui| ui.quit());
-        return;
-    }
     let notification_tx = tx.clone();
     let notifications = NativeNotifications::start(move |notification| {
         if notification == NativeNotification::Shutdown(session::ShutdownNotification::Ending) {
@@ -590,28 +668,13 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
         }
     });
     let worker_sender = tx.clone();
-    let stopped = Arc::new(AtomicBool::new(false));
-    let open_thread = if !options.demo {
-        let stopped = stopped.clone();
-        let owner = owner.clone();
-        Some(std::thread::spawn(move || {
-            if let Ok(signal) = OpenWindowSignal::create(&owner) {
-                while !stopped.load(Ordering::Relaxed) {
-                    if signal.wait_for(Duration::from_millis(250)).unwrap_or(false) {
-                        let _ = tx.send(AppEvent::Open);
-                    }
-                }
-            }
-        }))
-    } else {
-        None
-    };
     let mut worker = Worker {
         options,
         owner,
         controller: None,
         read_only_view: None,
         lease: None,
+        open_listener: None,
         data_lock: None,
         diagnostics: None,
         error: None,
@@ -629,6 +692,10 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
         && let Err(error) = worker.acquire()
     {
         worker.error = Some(error);
+        if !worker.options.demo && worker.lease.is_none() && request_existing_open(&worker.owner) {
+            on_ui(|ui| ui.quit());
+            return;
+        }
     }
     if notifications.is_err() {
         worker.error = Some(
@@ -726,17 +793,14 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
             Some(AppEvent::Native(NativeNotification::Shutdown(
                 session::ShutdownNotification::Query,
             ))) => {}
-            Some(AppEvent::Native(NativeNotification::Power(
-                windows::power::PowerNotification::Suspend,
-            ))) => {
-                let mut snapshot = worker.snapshot(&worker.view().configuration, false);
-                snapshot.session_active = false;
-                worker.command(Command::Observe(snapshot));
+            Some(AppEvent::Native(NativeNotification::Power(notification))) => {
+                worker.power_notification(notification);
             }
             Some(AppEvent::Native(NativeNotification::Session(_))) => {
                 if !worker.options.demo && !session::is_active_interactive_session(&worker.owner) {
                     worker.command(Command::Quit);
                     worker.controller = None;
+                    worker.open_listener = None;
                     worker.lease = None;
                     worker.error = Some(
                         "Session inactive. Le contrôle a été libéré après la tentative de retour."
@@ -751,12 +815,6 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
                     worker.observe(true);
                 }
             }
-            Some(AppEvent::Native(NativeNotification::Power(
-                windows::power::PowerNotification::ResumeAutomatic,
-            ))) => {
-                worker.command(Command::Refresh);
-                worker.observe(true);
-            }
             Some(AppEvent::Native(_)) => {
                 worker.command(Command::Refresh);
                 if worker.view().poll_processes {
@@ -770,10 +828,7 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
             None => (),
         }
     }
-    stopped.store(true, Ordering::Relaxed);
-    if let Some(thread) = open_thread {
-        let _ = thread.join();
-    }
+    worker.open_listener = None;
     drop(notifications);
 }
 fn apply_preferences(ui: &UiRuntime) {
@@ -834,6 +889,7 @@ mod tests {
             controller: None,
             read_only_view: None,
             lease: None,
+            open_listener: None,
             data_lock: None,
             diagnostics: None,
             error: None,
@@ -928,6 +984,72 @@ mod tests {
         assert_eq!(worker.view().configuration.rules[0].id, saved.rules[0].id);
         assert_eq!(worker.view().configuration.rules[0].plan, PlanId(1));
         cleanup(worker);
+    }
+    #[test]
+    fn suspend_keeps_cycle_and_resume_observes_current_processes() {
+        let mut worker = demo();
+        worker.acquire().unwrap();
+        worker
+            .action(UiAction::AddRule {
+                label: "Témoin".into(),
+                path: std::env::current_exe()
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned(),
+                plan_id: PlanId(2).to_string(),
+            })
+            .unwrap();
+        worker
+            .action(UiAction::SetReturnPlan {
+                plan_id: PlanId(1).to_string(),
+            })
+            .unwrap();
+        worker.action(UiAction::SetAutomation(true)).unwrap();
+        worker.action(UiAction::DemoStart).unwrap();
+        let journal_path = worker
+            .options
+            .data_directory
+            .join("simulation/recovery.json");
+        let journal = std::fs::read(&journal_path).unwrap();
+        let cycle = worker.view().cycle;
+        worker.power_notification(windows::power::PowerNotification::Suspend);
+        assert_eq!(worker.view().observed_plan, Some(PlanId(2)));
+        assert_eq!(worker.view().cycle, cycle);
+        assert_eq!(std::fs::read(journal_path).unwrap(), journal);
+        worker.demo_running = false;
+        worker.power_notification(windows::power::PowerNotification::ResumeAutomatic);
+        assert!(matches!(worker.view().status, Status::ExitGrace { .. }));
+        cleanup(worker);
+    }
+
+    #[test]
+    fn custom_data_directory_rejects_startup_before_touching_windows() {
+        let mut worker = demo();
+        worker.acquire().unwrap();
+        worker.options.demo = false;
+        let original = worker.view().configuration;
+        for enabled in [true, false] {
+            let error = worker
+                .action(UiAction::SetStartAtLogin(enabled))
+                .unwrap_err();
+            assert!(error.contains("dossier de données personnalisé"));
+            assert_eq!(worker.view().configuration, original);
+        }
+        cleanup(worker);
+    }
+
+    #[test]
+    fn second_launch_waits_for_the_lease_owners_open_signal() {
+        let mut owner = session::current_owner().unwrap();
+        owner.session_id = u32::MAX - std::process::id();
+        let listener_owner = owner.clone();
+        let listener = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(150));
+            let signal = OpenWindowSignal::create(&listener_owner).unwrap();
+            signal.wait_for(Duration::from_secs(2)).unwrap()
+        });
+        assert!(request_existing_open(&owner));
+        assert!(listener.join().unwrap());
     }
     #[test]
     fn demo_never_consumes_a_live_journal_and_locks_the_directory() {
