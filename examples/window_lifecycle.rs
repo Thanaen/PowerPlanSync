@@ -24,6 +24,7 @@ enum Stage {
     CycleHidden,
     CycleVisible,
     FinalHidden,
+    Finished,
 }
 
 fn main() -> ExitCode {
@@ -61,7 +62,7 @@ fn run() -> Result<(), String> {
     let timer = Rc::new(Timer::default());
 
     println!("phase=warmup_begin pid={pid} rules=20 cycles={CYCLES}");
-    let callback_timer = Rc::clone(&timer);
+    let callback_timer = Rc::downgrade(&timer);
     let callback_ui = Rc::clone(&ui);
     let callback_stage = Rc::clone(&stage);
     let callback_completed = Rc::clone(&completed);
@@ -95,7 +96,9 @@ fn run() -> Result<(), String> {
                 }
                 Err(error) => {
                     *callback_failure.borrow_mut() = Some(error.to_string());
-                    callback_timer.stop();
+                    if let Some(timer) = callback_timer.upgrade() {
+                        timer.stop();
+                    }
                     callback_ui.hide();
                     let _ = slint::quit_event_loop();
                 }
@@ -118,7 +121,10 @@ fn run() -> Result<(), String> {
                 let ticks = callback_stabilization_ticks.get() + 1;
                 callback_stabilization_ticks.set(ticks);
                 if ticks == STABILIZATION_TICKS {
-                    callback_timer.stop();
+                    if let Some(timer) = callback_timer.upgrade() {
+                        timer.stop();
+                    }
+                    callback_stage.set(Stage::Finished);
                     println!(
                         "phase=baseline_end pid={pid} cycles={} successful_opens={} hides={} window=none",
                         callback_completed.get(),
@@ -126,19 +132,20 @@ fn run() -> Result<(), String> {
                         callback_hides.get()
                     );
                     println!("phase=hidden_end pid={pid} duration_ms=5000 window=none");
-                    let final_ui = Rc::clone(&callback_ui);
                     Timer::single_shot(EXIT_DELAY, move || {
-                        final_ui.hide();
                         let _ = slint::quit_event_loop();
                     });
                 }
             }
+            Stage::Finished => {}
         }
     });
 
     slint::run_event_loop().map_err(|e| e.to_string())?;
     timer.stop();
+    drop(timer);
     ui.hide();
+    drop(ui);
     if let Some(error) = failure.borrow_mut().take() {
         return Err(error);
     }
