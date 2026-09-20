@@ -1,0 +1,41 @@
+Observation en lecture seule du 2026-09-20
+powercfg /list
+
+Modes de gestion de l’alimentation existants (* Actif)
+-----------------------------------
+GUID du mode de gestion de l’alimentation : 381b4222-f694-41f0-9685-ff5bb260df2e  (Utilisation normale)
+GUID du mode de gestion de l’alimentation : 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (Haute performance) *
+GUID du mode de gestion de l’alimentation : a1841308-3541-4fab-bc81-f71556f20b4a  (Économie d'énergie)
+GUID du mode de gestion de l’alimentation : e2135528-1855-445d-9401-7dba6570606b  (Performances optimales)
+
+powercfg /getactivescheme
+GUID du mode de gestion de l’alimentation : 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (Haute performance)
+
+powercfg /a
+Les états de veille suivants sont disponibles sur ce système :
+    Veille (S3)
+    Mettre en veille prolongée
+    Démarrage rapide
+
+Les états de veille suivants ne sont pas disponibles sur ce système :
+    En veille (S1)
+	Le microprogramme du système ne prend pas en charge cet état de mise en veille.
+
+    En veille (S2)
+	Le microprogramme du système ne prend pas en charge cet état de mise en veille.
+
+    Veille (mode faible consommation S0)
+	Le microprogramme du système ne prend pas en charge cet état de mise en veille.
+
+    Veille mode hybride
+	L’hyperviseur ne prend pas en charge cet état de veille.
+
+
+OSVersion=10.0.26200.0
+
+DisplayVersion CurrentBuild  UBR
+-------------- ------------  ---
+25H2           26200        9457
+
+
+cargo et rustc absents du PATH lors de la recherche initiale. Aucun test produit execute.

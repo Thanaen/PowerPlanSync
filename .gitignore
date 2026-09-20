@@ -1,0 +1,15 @@
+.tools/
+.audit/
+todo.md
+target/
+debug/
+release/
+*.rs.bk
+*.rlib
+*.profraw
+*.log
+.env*
+.idea/
+Thumbs.db
+*.pdb
+.DS_Store
