@@ -1,0 +1,17 @@
+import { Palette } from "std-widgets.slint";
+
+export global StringsFr {
+    out property <string> priority-help: "Le premier logiciel actif de la liste a priorité.";
+    out property <string> demo-banner: "Démonstration : les processus et les changements de plan sont simulés. Aucun réglage Windows n'est modifié.";
+    out property <string> recovery-help: "PowerPlanSync choisit parmi les plans Windows déjà installés. Un changement externe reste prioritaire. Après un arrêt forcé, le dernier plan peut rester actif ; relancez l'application pour tenter la récupération.";
+    out property <string> performance-help: "Le mode Recommandé de Windows peut être distinct des plans affichés. Les performances, la température et la consommation dépendent du PC. PowerPlanSync ne promet aucun gain de FPS.";
+    out property <string> hidden-help: "La fenêtre se ferme, mais PowerPlanSync reste disponible dans la zone de notification. Utilisez Quitter pour arrêter le suivi.";
+}
+
+export global AppPalette {
+    in property <color> background: Palette.background;
+    in property <color> alternate-background: Palette.alternate-background;
+    in property <color> foreground: Palette.foreground;
+    in property <color> accent: Palette.accent-background;
+    in property <bool> high-contrast: false;
+}

@@ -1,0 +1,247 @@
+import { Button, CheckBox, ComboBox, ScrollView, Switch, VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { RuleEditor } from "rule-editor.slint";
+import { StringsFr, AppPalette } from "strings-fr.slint";
+
+export struct RuleRow {
+    id: int,
+    label: string,
+    path: string,
+    plan: string,
+    enabled: bool,
+    state: string,
+}
+
+export struct PlanOption { id: string, name: string }
+
+component SectionCard inherits Rectangle {
+    background: AppPalette.alternate-background;
+    border-radius: 10px;
+    border-width: 1px;
+    border-color: AppPalette.foreground;
+}
+
+component RuleCard inherits Rectangle {
+    in property <RuleRow> rule;
+    in property <int> row-index;
+    in property <bool> can-move-up;
+    in property <bool> can-move-down;
+    callback set-enabled(int, bool);
+    callback edit(int);
+    callback remove(int);
+    callback move-up(int);
+    callback move-down(int);
+
+    min-height: 178px;
+    background: AppPalette.background;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: AppPalette.foreground;
+    accessible-role: AccessibleRole.list-item;
+    accessible-label: root.rule.label + ", plan " + root.rule.plan + ", " + root.rule.state;
+    VerticalBox {
+        padding: 14px;
+        spacing: 8px;
+        Text { text: root.rule.label; font-size: 18px; font-weight: 600; wrap: word-wrap; }
+        Text { text: "Plan : " + root.rule.plan; wrap: word-wrap; }
+        Text { text: "État : " + root.rule.state; wrap: word-wrap; }
+        Text { text: "Chemin : " + root.rule.path; wrap: word-wrap; accessible-role: AccessibleRole.text; }
+        HorizontalBox {
+            spacing: 8px;
+            Switch {
+                text: root.rule.enabled ? "Activée" : "Désactivée";
+                accessible-label: "Activer " + root.rule.label;
+                checked: root.rule.enabled;
+                toggled => { root.set-enabled(root.row-index, self.checked); }
+            }
+            Button { text: "Modifier"; accessible-label: "Modifier " + root.rule.label; clicked => { root.edit(root.row-index); } }
+            Button { text: "Supprimer"; accessible-label: "Supprimer " + root.rule.label; clicked => { root.remove(root.row-index); } }
+            Button { text: "Monter"; accessible-label: "Monter " + root.rule.label; enabled: root.can-move-up; clicked => { root.move-up(root.row-index); } }
+            Button { text: "Descendre"; accessible-label: "Descendre " + root.rule.label; enabled: root.can-move-down; clicked => { root.move-down(root.row-index); } }
+        }
+    }
+}
+
+export component MainWindow inherits Window {
+    title: "PowerPlanSync";
+    preferred-width: 780px;
+    preferred-height: 760px;
+    min-width: 420px;
+    min-height: 320px;
+
+    in property <string> observed-plan: "Lecture en cours";
+    in property <string> reason: "Aucune règle active";
+    in property <string> status: "Prêt";
+    in property <string> error-message;
+    in property <bool> blocked: false;
+    in property <bool> paused: false;
+    in property <bool> automation-enabled: false;
+    in property <bool> automation-can-enable: false;
+    in property <bool> allow-on-battery: false;
+    in property <bool> start-at-login: false;
+    in property <bool> demo-mode: false;
+    in property <bool> demo-process-running: false;
+    in property <bool> show-first-hide-explanation: false;
+    in property <string> return-plan-note;
+    in property <[RuleRow]> rules;
+    in property <[PlanOption]> plans;
+    in property <[string]> plan-names;
+    in property <[string]> running-apps;
+    in-out property <int> return-plan-index: -1;
+    in-out property <string> editor-selected-label;
+    in-out property <string> editor-selected-path;
+    in-out property <float> text-scale: 1.0;
+
+    callback action(string, int, string, string, int, bool);
+    callback hide-requested();
+
+    property <bool> editor-visible: false;
+    property <int> editing-index: -1;
+    default-font-size: 16px * root.text-scale;
+
+    app-scroll := ScrollView {
+        visible: !editor.visible-editor;
+        width: parent.width;
+        height: parent.height;
+        content-width: self.visible-width;
+        horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
+        VerticalBox {
+            width: app-scroll.visible-width;
+            padding: 24px;
+            spacing: 16px;
+
+            Text { text: "PowerPlanSync"; font-size: 28px; font-weight: 700; }
+            Rectangle {
+                visible: root.demo-mode;
+                background: AppPalette.alternate-background;
+                border-radius: 8px;
+                min-height: 74px;
+                Text { x: 14px; y: 12px; width: parent.width - 28px; text: StringsFr.demo-banner; wrap: word-wrap; accessible-role: AccessibleRole.text; }
+            }
+            SectionCard {
+                min-height: 150px;
+                VerticalBox {
+                    padding: 18px;
+                    spacing: 8px;
+                    Text { text: "Plan actif"; font-size: 18px; font-weight: 600; }
+                    Text { text: root.observed-plan; font-size: 25px; font-weight: 700; wrap: word-wrap; accessible-role: AccessibleRole.text; }
+                    Text { text: root.reason; wrap: word-wrap; }
+                    Text { text: "État : " + root.status; wrap: word-wrap; accessible-role: AccessibleRole.text; accessible-live-region: AccessibleLiveness.polite; }
+                }
+            }
+            Rectangle {
+                visible: root.error-message != "";
+                background: AppPalette.alternate-background;
+                border-width: 2px;
+                border-color: AppPalette.foreground;
+                border-radius: 8px;
+                min-height: 120px;
+                VerticalBox {
+                    padding: 14px;
+                    spacing: 8px;
+                    Text { text: "Action nécessaire"; font-weight: 700; }
+                    Text { text: root.error-message; wrap: word-wrap; accessible-role: AccessibleRole.text; accessible-live-region: AccessibleLiveness.assertive; }
+                    HorizontalBox {
+                        spacing: 8px;
+                        Button { text: "Réessayer"; visible: root.blocked; clicked => { root.action("retry", -1, "", "", -1, false); } }
+                        Button { text: "Ouvrir les réglages Windows"; clicked => { root.action("open-windows-settings", -1, "", "", -1, false); } }
+                        Button { text: "Quitter quand même…"; clicked => { root.action("quit-after-failed-restore", -1, "", "", -1, false); } }
+                    }
+                }
+            }
+            HorizontalBox {
+                spacing: 10px;
+                Button { text: "Ajouter un logiciel"; clicked => { root.editing-index = -1; editor.draft-label = ""; editor.draft-path = ""; editor.draft-plan-index = -1; editor.validation-message = ""; editor.visible-editor = true; } }
+                Button { text: root.paused ? "Reprendre" : "Pause"; clicked => { root.action(root.paused ? "resume" : "pause", -1, "", "", -1, false); } }
+            }
+            CheckBox {
+                text: "Activer l'automatisation";
+                accessible-label: "Activer l'automatisation";
+                checked: root.automation-enabled;
+                enabled: root.automation-enabled || root.automation-can-enable;
+                toggled => { root.action("set-automation", -1, "", "", -1, self.checked); }
+            }
+            Text { text: StringsFr.priority-help; font-weight: 600; wrap: word-wrap; }
+            Text { visible: root.rules.length == 0; text: "Aucun logiciel configuré. Ajoutez votre premier logiciel, choisissez son plan et confirmez le plan de retour."; wrap: word-wrap; }
+            VerticalBox {
+                accessible-role: AccessibleRole.list;
+                accessible-label: "Règles par ordre de priorité";
+                spacing: 12px;
+                for rule[index] in root.rules: RuleCard {
+                    rule: rule;
+                    row-index: index;
+                    can-move-up: index > 0;
+                    can-move-down: index + 1 < root.rules.length;
+                    set-enabled(index, enabled) => { root.action("set-rule-enabled", root.rules[index].id, "", "", -1, enabled); }
+                    edit(index) => { root.editing-index = index; root.editor-selected-label = root.rules[index].label; root.editor-selected-path = root.rules[index].path; editor.draft-plan-index = 0; editor.validation-message = ""; editor.visible-editor = true; }
+                    remove(index) => { root.action("delete-rule", root.rules[index].id, "", "", -1, false); }
+                    move-up(index) => { root.action("move-rule-up", root.rules[index].id, "", "", -1, false); }
+                    move-down(index) => { root.action("move-rule-down", root.rules[index].id, "", "", -1, false); }
+                }
+            }
+            SectionCard {
+                min-height: 255px;
+                VerticalBox {
+                    padding: 18px;
+                    spacing: 10px;
+                    Text { text: "Réglages"; font-size: 20px; font-weight: 700; }
+                    Text { text: "Après fermeture, revenir à"; }
+                    ComboBox {
+                        accessible-label: "Plan de retour confirmé";
+                        model: root.plan-names;
+                        current-index <=> root.return-plan-index;
+                        selected => { root.action("set-return-plan", -1, "", "", self.current-index, false); }
+                    }
+                    Text { visible: root.return-plan-note != ""; text: root.return-plan-note; wrap: word-wrap; }
+                    CheckBox { text: "Autoriser sur batterie"; checked: root.allow-on-battery; toggled => { root.action("set-battery", -1, "", "", -1, self.checked); } }
+                    CheckBox { text: "Démarrer avec Windows"; checked: root.start-at-login; toggled => { root.action("set-startup", -1, "", "", -1, self.checked); } }
+                }
+            }
+            Rectangle {
+                visible: root.demo-mode;
+                min-height: 96px;
+                background: AppPalette.alternate-background;
+                border-radius: 8px;
+                VerticalBox {
+                    padding: 14px;
+                    spacing: 8px;
+                    Text { text: "Commandes de démonstration"; font-weight: 700; }
+                    Button { text: root.demo-process-running ? "Arrêter le logiciel simulé" : "Lancer le logiciel simulé"; clicked => { root.action(root.demo-process-running ? "demo-stop" : "demo-start", -1, "", "", -1, false); } }
+                }
+            }
+            SectionCard {
+                min-height: 230px;
+                VerticalBox {
+                    padding: 18px;
+                    spacing: 10px;
+                    Text { text: "Aide et limites"; font-size: 20px; font-weight: 700; }
+                    Text { text: StringsFr.recovery-help; wrap: word-wrap; }
+                    Text { text: StringsFr.performance-help; wrap: word-wrap; }
+                    Text { visible: root.show-first-hide-explanation; text: StringsFr.hidden-help; wrap: word-wrap; }
+                }
+            }
+            HorizontalBox {
+                spacing: 10px;
+                Button { text: "Fermer la fenêtre"; clicked => { root.hide-requested(); } }
+                Button { text: "Quitter PowerPlanSync"; clicked => { root.action("quit", -1, "", "", -1, false); } }
+            }
+        }
+    }
+
+    editor := RuleEditor {
+        x: 18px;
+        y: 18px;
+        width: parent.width - 36px;
+        height: parent.height - 36px;
+        visible-editor: false;
+        editing: root.editing-index >= 0;
+        plan-names: root.plan-names;
+        running-apps: root.running-apps;
+        draft-label <=> root.editor-selected-label;
+        draft-path <=> root.editor-selected-path;
+        browse-requested => { root.action("browse", root.editing-index >= 0 ? root.rules[root.editing-index].id : -1, "", "", -1, false); }
+        running-app-requested => { root.action("choose-running", root.editing-index >= 0 ? root.rules[root.editing-index].id : -1, "", "", -1, false); }
+        running-app-selected(index) => { root.action("running-app-selected", root.editing-index >= 0 ? root.rules[root.editing-index].id : -1, "", "", index, false); }
+        save-requested(label, path, plan-index) => { root.action(root.editing-index >= 0 ? "update-rule" : "add-rule", root.editing-index >= 0 ? root.rules[root.editing-index].id : -1, label, path, plan-index, true); editor.visible-editor = false; }
+        cancel-requested => { editor.visible-editor = false; }
+    }
+}

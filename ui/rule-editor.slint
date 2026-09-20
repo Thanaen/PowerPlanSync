@@ -1,0 +1,111 @@
+import { Button, ComboBox, LineEdit, ScrollView, VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { AppPalette } from "strings-fr.slint";
+
+export component RuleEditor inherits Rectangle {
+    in property <bool> editing: false;
+    in property <string> initial-label;
+    in property <string> initial-path;
+    in property <int> initial-plan-index: -1;
+    in property <[string]> plan-names;
+    in property <[string]> running-apps;
+    in property <bool> visible-editor: false;
+    in-out property <string> draft-label;
+    in-out property <string> draft-path;
+    in-out property <int> draft-plan-index: -1;
+    in-out property <string> validation-message;
+    callback browse-requested();
+    callback running-app-requested();
+    callback running-app-selected(int);
+    callback save-requested(string, string, int);
+    callback cancel-requested();
+
+    visible: root.visible-editor;
+    background: AppPalette.background;
+    border-color: AppPalette.foreground;
+    border-width: 1px;
+    border-radius: 8px;
+    accessible-role: AccessibleRole.groupbox;
+    accessible-label: root.editing ? "Modifier un logiciel" : "Ajouter un logiciel";
+    accessible-description: root.validation-message;
+
+    editor-scroll := ScrollView {
+        width: parent.width;
+        height: parent.height;
+        content-width: self.visible-width;
+        horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
+        VerticalBox {
+            width: editor-scroll.visible-width;
+            padding: 24px;
+            spacing: 12px;
+
+            Text {
+                text: root.editing ? "Modifier le logiciel" : "Ajouter un logiciel";
+                font-size: 24px;
+                font-weight: 700;
+                wrap: word-wrap;
+            }
+            Text {
+                text: "Choisissez un fichier exécutable ou une application ouverte, puis le plan à utiliser.";
+                wrap: word-wrap;
+            }
+            HorizontalBox {
+                spacing: 10px;
+                Button { text: "Parcourir…"; accessible-label: "Parcourir les fichiers"; clicked => { root.browse-requested(); } }
+                Button { text: "Application ouverte…"; accessible-label: "Choisir une application ouverte"; clicked => { root.running-app-requested(); } }
+            }
+            ComboBox {
+                visible: root.running-apps.length > 0;
+                accessible-label: "Applications ouvertes avec chemin vérifié";
+                model: root.running-apps;
+                selected => { root.running-app-selected(self.current-index); }
+            }
+            Text { text: "Nom affiché"; }
+            LineEdit {
+                accessible-label: "Nom du logiciel";
+                placeholder-text: "Exemple : Mon jeu";
+                text <=> root.draft-label;
+                edited => { root.validation-message = ""; }
+            }
+            Text { text: "Chemin complet vérifié"; }
+            LineEdit {
+                accessible-label: "Chemin complet du logiciel";
+                placeholder-text: "Choisissez un fichier ou une application ouverte";
+                text <=> root.draft-path;
+                edited => { root.validation-message = ""; }
+            }
+            Text {
+                text: root.draft-path == "" ? "Aucun fichier sélectionné." : "Détails : " + root.draft-path;
+                wrap: word-wrap;
+                accessible-role: AccessibleRole.text;
+            }
+            Text { text: "Plan pendant l'exécution"; }
+            ComboBox {
+                accessible-label: "Plan pendant l'exécution";
+                model: root.plan-names;
+                current-index <=> root.draft-plan-index;
+                selected => { root.validation-message = ""; }
+            }
+            Text {
+                visible: root.validation-message != "";
+                text: root.validation-message;
+                color: AppPalette.foreground;
+                wrap: word-wrap;
+                accessible-role: AccessibleRole.text;
+                accessible-live-region: AccessibleLiveness.assertive;
+            }
+            HorizontalBox {
+                spacing: 10px;
+                Button { text: "Annuler"; accessible-label: "Annuler les modifications"; clicked => { root.cancel-requested(); } }
+                Button {
+                    text: "Enregistrer";
+                    accessible-label: "Enregistrer la règle";
+                    enabled: root.draft-label != "" && root.draft-path != "" && root.draft-plan-index >= 0;
+                    clicked => {
+                        if (self.enabled) { root.save-requested(root.draft-label, root.draft-path, root.draft-plan-index); }
+                        else { root.validation-message = "Choisissez un logiciel et un plan avant d'enregistrer."; }
+                    }
+                }
+            }
+        }
+    }
+}
