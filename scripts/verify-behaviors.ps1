@@ -8,6 +8,7 @@ param(
     [string]$TargetPlanGuid,
     [string]$ExternalPlanGuid,
     [ValidateRange(10, 1000)][int]$PollMilliseconds = 50,
+    [switch]$FixtureTimingSmoke,
     [switch]$AllowPowerSwitch
 )
 
@@ -152,6 +153,8 @@ function Find-OwnedChild([string]$Path, [datetime]$Since) {
         foreach ($process in @(Get-Process -Name ([IO.Path]::GetFileNameWithoutExtension($Path)) -ErrorAction SilentlyContinue)) {
             try {
                 if ($process.StartTime -ge $Since -and [string]::Equals([IO.Path]::GetFullPath($process.MainModule.FileName), $expected, [StringComparison]::OrdinalIgnoreCase)) {
+                    # Retenir le handle avant la sortie permet à .NET de lire sa véritable ExitTime.
+                    $null = $process.SafeHandle
                     $record = [pscustomobject]@{ Process = $process; Path = $expected }
                     $script:activeOwned.Add($record)
                     return $process
@@ -186,6 +189,39 @@ function Invoke-Case([string]$Name, [scriptblock]$Body) {
     }
     Write-Output "$Name : $(if ($caseResult.passed) { 'réussi' } else { 'échec' })"
     if ($caseError) { throw $caseError }
+}
+
+if ($FixtureTimingSmoke) {
+    if (-not (Test-Path -LiteralPath $fixture -PathType Leaf)) { throw "Témoin manquant : $fixture" }
+    $script:currentCasePath = Join-Path $evidence 'fixture-timing'
+    [IO.Directory]::CreateDirectory($script:currentCasePath) | Out-Null
+    $child = Join-Path $script:currentCasePath 'timing-child.exe'
+    Copy-Item -LiteralPath $fixture -Destination $child
+    try {
+        $launcher = Start-Owned $fixture @('--launch-child', ('"' + $child + '"'), '1000', '3000') 'launcher'
+        $childProcess = Find-OwnedChild $child $launcher.StartTime
+        $childStarted = $childProcess.get_StartTime()
+        $childProcess.WaitForExit()
+        $childProcess.Refresh()
+        $childExited = $childProcess.get_ExitTime()
+        if ($childExited -le $childStarted) { throw 'La date réelle de sortie ne suit pas la création.' }
+        if ($launcher.HasExited) { throw 'Le lanceur doit encore fonctionner après la sortie de son enfant.' }
+        [ordered]@{
+            mode = 'fixture-timing-only'
+            passed = $true
+            child_pid = $childProcess.Id
+            child_started_utc = $childStarted.ToUniversalTime().ToString('o')
+            child_exited_utc = $childExited.ToUniversalTime().ToString('o')
+            child_lifetime_ms = ($childExited - $childStarted).TotalMilliseconds
+            launcher_running_after_child_exit = $true
+            timestamp_source = 'System.Diagnostics.Process with retained SafeHandle'
+        } | ConvertTo-Json | Set-Content -LiteralPath $reportPath -Encoding utf8NoBOM
+        $launcher.WaitForExit()
+    } finally {
+        Stop-AllOwned
+    }
+    Write-Output "Horodatage du témoin vérifié sans PowerPlanSync ni accès aux plans. Preuve : $reportPath"
+    return
 }
 
 foreach ($path in @($application, $fixture)) {
@@ -251,8 +287,11 @@ try {
         $launcher = Start-Owned $script:fixture @('--launch-child', ('"' + $child + '"'), '10000', '20000') 'launcher'
         $measurements.activation_ms = Wait-ForPlan $script:targetPlan $launcher.StartTime
         $childProcess = Find-OwnedChild $child $launcher.StartTime
+        $measurements.child_started_utc = $childProcess.get_StartTime().ToUniversalTime().ToString('o')
         $childProcess.WaitForExit(); $childProcess.Refresh()
-        $measurements.return_ms = Wait-ForPlan $script:initialPlan $childProcess.ExitTime
+        $childExited = $childProcess.get_ExitTime()
+        $measurements.child_exited_utc = $childExited.ToUniversalTime().ToString('o')
+        $measurements.return_ms = Wait-ForPlan $script:initialPlan $childExited
         if ($launcher.HasExited) { throw 'Le lanceur s''est arrêté avant le retour du plan.' }
         $measurements.launcher_running_after_return = $true
         $launcher.WaitForExit()
