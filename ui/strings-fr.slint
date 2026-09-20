@@ -9,9 +9,13 @@ export global StringsFr {
 }
 
 export global AppPalette {
-    in property <color> background: Palette.background;
-    in property <color> alternate-background: Palette.alternate-background;
-    in property <color> foreground: Palette.foreground;
-    in property <color> accent: Palette.accent-background;
+    in property <color> system-background;
+    in property <color> system-alternate-background;
+    in property <color> system-foreground;
+    in property <color> system-accent;
     in property <bool> high-contrast: false;
+    out property <color> background: high-contrast ? system-background : Palette.background;
+    out property <color> alternate-background: high-contrast ? system-alternate-background : Palette.alternate-background;
+    out property <color> foreground: high-contrast ? system-foreground : Palette.foreground;
+    out property <color> accent: high-contrast ? system-accent : Palette.accent-background;
 }

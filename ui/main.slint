@@ -7,6 +7,7 @@ export struct RuleRow {
     label: string,
     path: string,
     plan: string,
+    plan-index: int,
     enabled: bool,
     state: string,
 }
@@ -96,6 +97,9 @@ export component MainWindow inherits Window {
 
     callback action(string, int, string, string, int, bool);
     callback hide-requested();
+    in-out property <string> editor-error;
+    callback editor-saved();
+    editor-saved => { editor.visible-editor = false; }
 
     property <bool> editor-visible: false;
     property <int> editing-index: -1;
@@ -175,7 +179,7 @@ export component MainWindow inherits Window {
                     can-move-up: index > 0;
                     can-move-down: index + 1 < root.rules.length;
                     set-enabled(index, enabled) => { root.action("set-rule-enabled", root.rules[index].id, "", "", -1, enabled); }
-                    edit(index) => { root.editing-index = index; root.editor-selected-label = root.rules[index].label; root.editor-selected-path = root.rules[index].path; editor.draft-plan-index = 0; editor.validation-message = ""; editor.visible-editor = true; }
+                    edit(index) => { root.editing-index = index; root.editor-selected-label = root.rules[index].label; root.editor-selected-path = root.rules[index].path; editor.draft-plan-index = root.rules[index].plan-index; editor.validation-message = ""; editor.visible-editor = true; }
                     remove(index) => { root.action("delete-rule", root.rules[index].id, "", "", -1, false); }
                     move-up(index) => { root.action("move-rule-up", root.rules[index].id, "", "", -1, false); }
                     move-down(index) => { root.action("move-rule-down", root.rules[index].id, "", "", -1, false); }
@@ -250,11 +254,12 @@ export component MainWindow inherits Window {
             plan-names: root.plan-names;
             running-apps: root.running-apps;
             draft-label <=> root.editor-selected-label;
-            draft-path <=> root.editor-selected-path;
+        draft-path <=> root.editor-selected-path;
+        validation-message <=> root.editor-error;
             browse-requested => { root.action("browse", root.editing-index >= 0 ? root.rules[root.editing-index].id : -1, "", "", -1, false); }
             running-app-requested => { root.action("choose-running", root.editing-index >= 0 ? root.rules[root.editing-index].id : -1, "", "", -1, false); }
             running-app-selected(index) => { root.action("running-app-selected", root.editing-index >= 0 ? root.rules[root.editing-index].id : -1, "", "", index, false); }
-            save-requested(label, path, plan-index) => { root.action(root.editing-index >= 0 ? "update-rule" : "add-rule", root.editing-index >= 0 ? root.rules[root.editing-index].id : -1, label, path, plan-index, true); editor.visible-editor = false; }
+        save-requested(label, path, plan-index) => { root.action(root.editing-index >= 0 ? "update-rule" : "add-rule", root.editing-index >= 0 ? root.rules[root.editing-index].id : -1, label, path, plan-index, true); }
             cancel-requested => { editor.visible-editor = false; }
         }
     }

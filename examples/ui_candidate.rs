@@ -73,8 +73,8 @@ fn fake_model() -> UiDisplayModel {
         return_plan_note: "Retour confirmé : Équilibré (simulation). Un changement s'appliquera au prochain cycle.".into(),
         return_plan_index: 0,
         rules: vec![
-            RuleDisplay { id: 1, label: "Jeu témoin".into(), path: r"C:\Démo\demo_target.exe".into(), plan: "Performances élevées (simulation)".into(), enabled: true, state: "En attente".into() },
-            RuleDisplay { id: 2, label: "Outil de création".into(), path: r"C:\Démo\creator.exe".into(), plan: "Équilibré (simulation)".into(), enabled: true, state: "En attente".into() },
+            RuleDisplay { id: 1, plan_index: 1, label: "Jeu témoin".into(), path: r"C:\Démo\demo_target.exe".into(), plan: "Performances élevées (simulation)".into(), enabled: true, state: "En attente".into() },
+            RuleDisplay { id: 2, plan_index: 0, label: "Outil de création".into(), path: r"C:\Démo\creator.exe".into(), plan: "Équilibré (simulation)".into(), enabled: true, state: "En attente".into() },
         ],
         plans: vec![
             PlanDisplay { id: "demo-balanced".into(), name: "Équilibré (simulation)".into() },
