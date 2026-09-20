@@ -13,12 +13,17 @@ use slint::{Image, Timer, TimerMode};
 const CYCLES: u32 = 100;
 const PHASE_DURATION: Duration = Duration::from_millis(200);
 const HIDDEN_STABILIZATION: Duration = Duration::from_secs(5);
+const EXIT_DELAY: Duration = Duration::from_millis(500);
+const STABILIZATION_TICKS: u32 =
+    (HIDDEN_STABILIZATION.as_millis() / PHASE_DURATION.as_millis()) as u32;
 
 #[derive(Clone, Copy)]
 enum Stage {
     WarmupVisible,
+    InitialHidden,
     CycleHidden,
     CycleVisible,
+    FinalHidden,
 }
 
 fn main() -> ExitCode {
@@ -49,6 +54,7 @@ fn run() -> Result<(), String> {
     let pid = std::process::id();
     let stage = Rc::new(Cell::new(Stage::WarmupVisible));
     let completed = Rc::new(Cell::new(0_u32));
+    let stabilization_ticks = Rc::new(Cell::new(0_u32));
     let successful_opens = Rc::new(Cell::new(1_u32));
     let hides = Rc::new(Cell::new(0_u32));
     let failure = Rc::new(RefCell::new(None::<String>));
@@ -59,6 +65,7 @@ fn run() -> Result<(), String> {
     let callback_ui = Rc::clone(&ui);
     let callback_stage = Rc::clone(&stage);
     let callback_completed = Rc::clone(&completed);
+    let callback_stabilization_ticks = Rc::clone(&stabilization_ticks);
     let callback_opens = Rc::clone(&successful_opens);
     let callback_hides = Rc::clone(&hides);
     let callback_failure = Rc::clone(&failure);
@@ -67,8 +74,19 @@ fn run() -> Result<(), String> {
             Stage::WarmupVisible => {
                 callback_ui.hide();
                 callback_hides.set(callback_hides.get() + 1);
-                callback_stage.set(Stage::CycleHidden);
-                println!("phase=baseline_begin pid={pid} warmup=1 window=hidden");
+                callback_stage.set(Stage::InitialHidden);
+                callback_stabilization_ticks.set(0);
+                println!(
+                    "phase=hidden_begin pid={pid} segment=initial duration_ms=5000 window=none"
+                );
+            }
+            Stage::InitialHidden => {
+                let ticks = callback_stabilization_ticks.get() + 1;
+                callback_stabilization_ticks.set(ticks);
+                if ticks == STABILIZATION_TICKS {
+                    println!("phase=baseline_begin pid={pid} warmup=1 window=none");
+                    callback_stage.set(Stage::CycleHidden);
+                }
             }
             Stage::CycleHidden => match callback_ui.open() {
                 Ok(()) => {
@@ -89,6 +107,17 @@ fn run() -> Result<(), String> {
                 callback_completed.set(cycle);
                 callback_stage.set(Stage::CycleHidden);
                 if cycle == CYCLES {
+                    callback_stage.set(Stage::FinalHidden);
+                    callback_stabilization_ticks.set(0);
+                    println!(
+                        "phase=hidden_stabilization_begin pid={pid} duration_ms=5000 window=none"
+                    );
+                }
+            }
+            Stage::FinalHidden => {
+                let ticks = callback_stabilization_ticks.get() + 1;
+                callback_stabilization_ticks.set(ticks);
+                if ticks == STABILIZATION_TICKS {
                     callback_timer.stop();
                     println!(
                         "phase=baseline_end pid={pid} cycles={} successful_opens={} hides={} window=none",
@@ -96,11 +125,10 @@ fn run() -> Result<(), String> {
                         callback_opens.get(),
                         callback_hides.get()
                     );
-                    println!("phase=hidden_begin pid={pid} duration_ms=5000 window=none");
+                    println!("phase=hidden_end pid={pid} duration_ms=5000 window=none");
                     let final_ui = Rc::clone(&callback_ui);
-                    Timer::single_shot(HIDDEN_STABILIZATION, move || {
+                    Timer::single_shot(EXIT_DELAY, move || {
                         final_ui.hide();
-                        println!("phase=hidden_end pid={pid} window=none");
                         let _ = slint::quit_event_loop();
                     });
                 }

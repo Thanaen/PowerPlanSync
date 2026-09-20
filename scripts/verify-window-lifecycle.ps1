@@ -184,6 +184,11 @@ try {
         stderr_path = $stderrPath
         exit_code = $exitCode
         measurement_scope = 'PrivateMemorySize64 and HandleCount for the launched process at probe phase markers; no ETW.'
+        stabilization = [ordered]@{
+            before_baseline_seconds = 5
+            after_cycles_seconds = 5
+            exit_delay_milliseconds = 500
+        }
         passed = $passed
         failure = $failure
     }
