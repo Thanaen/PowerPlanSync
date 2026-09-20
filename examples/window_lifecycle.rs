@@ -8,7 +8,7 @@ use power_plan_sync::domain::{
 };
 use power_plan_sync::presentation;
 use power_plan_sync::ui::{UiAction, UiRuntime};
-use slint::{Image, Timer, TimerMode};
+use slint::{Image, Rgba8Pixel, SharedPixelBuffer, Timer, TimerMode};
 
 const CYCLES: u32 = 100;
 const PHASE_DURATION: Duration = Duration::from_millis(200);
@@ -48,7 +48,7 @@ fn run() -> Result<(), String> {
         UiAction::WindowOpened => {}
         _ => {}
     });
-    let ui = Rc::new(UiRuntime::new(model, actions, Image::default()).map_err(|e| e.to_string())?);
+    let ui = Rc::new(UiRuntime::new(model, actions, probe_icon()).map_err(|e| e.to_string())?);
     ui.show().map_err(|e| e.to_string())?;
 
     let pid = std::process::id();
@@ -160,6 +160,20 @@ fn run() -> Result<(), String> {
         hides.get()
     );
     Ok(())
+}
+
+fn probe_icon() -> Image {
+    let mut pixels = SharedPixelBuffer::<Rgba8Pixel>::new(32, 32);
+    for (index, pixel) in pixels.make_mut_slice().iter_mut().enumerate() {
+        let x = index % 32;
+        let y = index / 32;
+        *pixel = if (6..26).contains(&x) && (6..26).contains(&y) {
+            Rgba8Pixel::new(69, 177, 255, 255)
+        } else {
+            Rgba8Pixel::new(0, 0, 0, 0)
+        };
+    }
+    Image::from_rgba8(pixels)
 }
 
 fn probe_view() -> ViewState {
