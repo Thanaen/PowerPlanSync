@@ -5,7 +5,7 @@ fn main() {
 
 #[cfg(target_os = "windows")]
 fn main() -> std::process::ExitCode {
-    match windows_probe::run(std::env::args().skip(1).collect()) {
+    match windows_probe::run(std::env::args_os().skip(1).collect()) {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(message) => {
             eprintln!("Erreur: {message}");
@@ -16,6 +16,7 @@ fn main() -> std::process::ExitCode {
 
 #[cfg(target_os = "windows")]
 mod windows_probe {
+    use std::ffi::OsString;
     use std::fs;
     use std::os::windows::io::AsRawHandle;
     use std::path::{Path, PathBuf};
@@ -30,7 +31,7 @@ mod windows_probe {
     use power_plan_sync::windows::processes::{paths_equal, snapshot_named};
     use power_plan_sync::windows::session::{ControlLease, probe_global_singleton};
 
-    pub fn run(args: Vec<String>) -> Result<(), String> {
+    pub fn run(args: Vec<OsString>) -> Result<(), String> {
         let Some(options) = Options::parse(args)? else {
             return Ok(());
         };
@@ -59,37 +60,41 @@ mod windows_probe {
     }
 
     impl Options {
-        fn parse(args: Vec<String>) -> Result<Option<Self>, String> {
+        fn parse(args: Vec<OsString>) -> Result<Option<Self>, String> {
             let mut allow_switch = false;
             let mut cycles = 1;
             let mut fixture = None;
             let mut arguments = args.into_iter();
             while let Some(argument) = arguments.next() {
-                match argument.as_str() {
-                    "--allow-switch" => allow_switch = true,
-                    "--cycles" => {
+                match argument.to_str() {
+                    Some("--allow-switch") => allow_switch = true,
+                    Some("--cycles") => {
                         let value = arguments
                             .next()
                             .ok_or("--cycles exige une valeur de 1 à 10")?;
                         cycles = value
+                            .to_str()
+                            .ok_or("--cycles exige une valeur de 1 à 10")?
                             .parse::<u8>()
                             .map_err(|_| "--cycles exige une valeur de 1 à 10")?;
                         if !(1..=10).contains(&cycles) {
                             return Err("--cycles exige une valeur de 1 à 10".into());
                         }
                     }
-                    "--fixture" => {
+                    Some("--fixture") => {
                         fixture = Some(PathBuf::from(
                             arguments.next().ok_or("--fixture exige un chemin")?,
                         ));
                     }
-                    "--help" => {
+                    Some("--help") => {
                         println!(
                             "windows_probe [--fixture CHEMIN_DEMO_TARGET] [--allow-switch [--cycles 1..10]]"
                         );
                         return Ok(None);
                     }
-                    _ => return Err(format!("argument inconnu: {argument}")),
+                    _ => {
+                        return Err(format!("argument inconnu: {}", argument.to_string_lossy()));
+                    }
                 }
             }
             if cycles != 1 && !allow_switch {
@@ -199,66 +204,169 @@ mod windows_probe {
             .ok_or("le nom du témoin est introuvable")?
             .to_owned();
 
+        let offsets = [170_u64, 530, 890];
         for cycle in 1..=cycles {
-            let lifetime_ms = 850 + u64::from(cycle % 3) * 175;
-            let mut child = Command::new(source)
-                .args(["--sleep-ms", &lifetime_ms.to_string()])
+            let launch_offset_ms = offsets[usize::from(cycle - 1) % offsets.len()];
+            let poll_origin = std::time::Instant::now();
+            sleep_until(poll_origin + Duration::from_millis(launch_offset_ms));
+            let child = Command::new(source)
+                .args(["--sleep-ms", "10000"])
                 .spawn()
                 .map_err(|error| format!("démarrage du cycle témoin impossible: {error}"))?;
+            let mut child = CycleChild::new(child);
+            let pid = child.id();
+            let mut tick = 1_u32;
 
-            let observation_deadline = std::time::Instant::now() + Duration::from_secs(3);
-            let (creation_ticks, observation_time) = loop {
+            let (creation_ticks, observation_time) =
+                loop {
+                    sleep_until(poll_origin + Duration::from_secs(u64::from(tick)));
+                    tick += 1;
+                    let observed = snapshot_named(std::slice::from_ref(&image_name))
+                        .map_err(|error| error.to_string())?;
+                    if let Some(instance) = observed.verified.iter().find(|item| {
+                        item.key.pid == pid && paths_equal(&item.executable_path, source)
+                    }) {
+                        break (instance.key.creation_time, SystemTime::now());
+                    }
+                    if tick > 4 {
+                        return Err("le témoin n'a pas été observé dans les trois secondes".into());
+                    }
+                };
+            let confirmed_target = set_active_plan(target).map_err(|error| error.to_string())?;
+            let target_confirmation_time = SystemTime::now();
+
+            let (absence_instant, absence_time) = loop {
+                sleep_until(poll_origin + Duration::from_secs(u64::from(tick)));
+                tick += 1;
                 let observed = snapshot_named(std::slice::from_ref(&image_name))
                     .map_err(|error| error.to_string())?;
-                if let Some(instance) = observed.verified.iter().find(|item| {
-                    item.key.pid == child.id() && paths_equal(&item.executable_path, source)
-                }) {
-                    break (instance.key.creation_time, SystemTime::now());
+                if tick > 20 {
+                    return Err("le témoin n'a pas quitté dans le délai borné".into());
                 }
-                if std::time::Instant::now() >= observation_deadline {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    return Err("le témoin n'a pas été observé dans les trois secondes".into());
-                }
-                thread::sleep(Duration::from_millis(100));
-            };
-            let confirmed_target = set_active_plan(target).map_err(|error| error.to_string())?;
-
-            loop {
-                if child
-                    .try_wait()
-                    .map_err(|error| error.to_string())?
-                    .is_some()
+                if observed.verified.iter().any(|item| item.key.pid == pid)
+                    || observed.uncertain.iter().any(|item| item.pid == pid)
                 {
-                    break;
+                    continue;
                 }
-                thread::sleep(Duration::from_millis(50));
-            }
-            let exit_ticks = process_exit_time(&child)?;
+                if child.try_wait()?.is_some() {
+                    break (std::time::Instant::now(), SystemTime::now());
+                }
+            };
+            let exit_ticks = process_exit_time(child.child())?;
             let exit_time = system_time_from_filetime(exit_ticks)?;
-            let elapsed_since_exit = SystemTime::now()
-                .duration_since(exit_time)
-                .unwrap_or_default();
-            if elapsed_since_exit < Duration::from_secs(3) {
-                thread::sleep(Duration::from_secs(3) - elapsed_since_exit);
-            }
+            let grace_deadline = absence_instant + Duration::from_secs(3);
+            println!(
+                "Cycle {cycle} absence: sortie-réelle={exit_ticks}, absence-observée={} ms Unix",
+                system_time_millis(absence_time)?
+            );
+            sleep_until(grace_deadline);
+            let grace_end_time = SystemTime::now();
+            println!(
+                "Cycle {cycle} grâce: fin={} ms Unix",
+                system_time_millis(grace_end_time)?
+            );
             let confirmed_return = set_active_plan(original).map_err(|error| error.to_string())?;
+            let return_confirmation_time = SystemTime::now();
+            child.wait()?;
 
             let creation_time = system_time_from_filetime(creation_ticks)?;
-            let observation_delay = observation_time
+            let activation_delay = target_confirmation_time
                 .duration_since(creation_time)
                 .unwrap_or_default();
-            let return_delay = SystemTime::now()
+            let return_delay = return_confirmation_time
                 .duration_since(exit_time)
                 .unwrap_or_default();
             println!(
-                "Cycle temporel {cycle}: création={creation_ticks}, observation={} ms, cible={confirmed_target}, sortie={exit_ticks}, retour={} ms, plan={confirmed_return}",
-                observation_delay.as_millis(),
+                "Cycle {cycle} création: réelle={creation_ticks}, décalage-lancement={launch_offset_ms} ms"
+            );
+            println!(
+                "Cycle {cycle} activation: présence-observée={} ms Unix, cible-confirmée={} ms Unix, délai={} ms, plan={confirmed_target}",
+                system_time_millis(observation_time)?,
+                system_time_millis(target_confirmation_time)?,
+                activation_delay.as_millis()
+            );
+            println!(
+                "Cycle {cycle} retour: confirmé={} ms Unix, délai-depuis-sortie={} ms, plan={confirmed_return}",
+                system_time_millis(return_confirmation_time)?,
                 return_delay.as_millis()
             );
+            if activation_delay > Duration::from_secs(2) {
+                return Err(format!(
+                    "le délai d'activation dépasse 2 s: {} ms",
+                    activation_delay.as_millis()
+                ));
+            }
+            if return_delay > Duration::from_secs(5) {
+                return Err(format!(
+                    "le délai de retour dépasse 5 s: {} ms",
+                    return_delay.as_millis()
+                ));
+            }
         }
+        println!(
+            "Faisabilité terminée sur {cycles} cycle(s). Le p95 complet exige 100 cycles futurs."
+        );
         drop(restore);
         Ok(())
+    }
+
+    struct CycleChild(Option<Child>);
+
+    impl CycleChild {
+        fn new(child: Child) -> Self {
+            Self(Some(child))
+        }
+
+        fn id(&self) -> u32 {
+            self.0.as_ref().expect("child present").id()
+        }
+
+        fn child(&self) -> &Child {
+            self.0.as_ref().expect("child present")
+        }
+
+        fn try_wait(&mut self) -> Result<Option<std::process::ExitStatus>, String> {
+            self.0
+                .as_mut()
+                .expect("child present")
+                .try_wait()
+                .map_err(|error| error.to_string())
+        }
+
+        fn wait(&mut self) -> Result<(), String> {
+            let status = self
+                .0
+                .as_mut()
+                .expect("child present")
+                .wait()
+                .map_err(|error| error.to_string())?;
+            if status.success() {
+                Ok(())
+            } else {
+                Err(format!("le témoin s'est terminé avec {status}"))
+            }
+        }
+    }
+
+    impl Drop for CycleChild {
+        fn drop(&mut self) {
+            if let Some(child) = self.0.as_mut() {
+                let _ = child.kill();
+                let _ = child.wait();
+            }
+        }
+    }
+
+    fn sleep_until(deadline: std::time::Instant) {
+        if let Some(remaining) = deadline.checked_duration_since(std::time::Instant::now()) {
+            thread::sleep(remaining);
+        }
+    }
+
+    fn system_time_millis(time: SystemTime) -> Result<u128, String> {
+        time.duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_millis())
+            .map_err(|error| error.to_string())
     }
 
     fn process_exit_time(child: &Child) -> Result<u64, String> {
