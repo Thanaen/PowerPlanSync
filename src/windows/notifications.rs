@@ -10,16 +10,14 @@ use windows::Win32::System::Power::{
 use windows::Win32::System::RemoteDesktop::{
     NOTIFY_FOR_THIS_SESSION, WTSRegisterSessionNotification, WTSUnRegisterSessionNotification,
 };
-use windows::Win32::System::SystemServices::{
-    GUID_ACDC_POWER_SOURCE, GUID_POWERSCHEME_PERSONALITY,
-};
+use windows::Win32::System::SystemServices::{GUID_ACDC_POWER_SOURCE, GUID_ACTIVE_POWERSCHEME};
 use windows::Win32::UI::WindowsAndMessaging::{
     CREATESTRUCTW, CreateWindowExW, DEVICE_NOTIFY_WINDOW_HANDLE, DefWindowProcW, DestroyWindow,
     DispatchMessageW, GWLP_USERDATA, GetMessageW, GetWindowLongPtrW, MSG, PBT_POWERSETTINGCHANGE,
-    PostMessageW, PostQuitMessage, RegisterClassW, SetWindowLongPtrW, WINDOW_EX_STYLE,
-    WINDOW_STYLE, WM_CLOSE, WM_DESTROY, WM_ENDSESSION, WM_NCCREATE, WM_POWERBROADCAST,
-    WM_QUERYENDSESSION, WM_SETTINGCHANGE, WM_SYSCOLORCHANGE, WM_THEMECHANGED, WM_WTSSESSION_CHANGE,
-    WNDCLASSW,
+    PostMessageW, PostQuitMessage, RegisterClassW, SetWindowLongPtrW, UnregisterClassW,
+    WINDOW_EX_STYLE, WINDOW_STYLE, WM_CLOSE, WM_DESTROY, WM_ENDSESSION, WM_NCCREATE,
+    WM_POWERBROADCAST, WM_QUERYENDSESSION, WM_SETTINGCHANGE, WM_SYSCOLORCHANGE, WM_THEMECHANGED,
+    WM_WTSSESSION_CHANGE, WNDCLASSW,
 };
 use windows::core::PCWSTR;
 
@@ -128,6 +126,7 @@ fn run_message_loop(callback: Callback, ready: mpsc::SyncSender<Result<isize, No
         Err(error) => {
             let _ = ready.send(Err(NotificationError(format!("CreateWindowExW: {error}"))));
             unsafe { drop(Box::from_raw(callback_ptr)) };
+            unregister_class(&class_name);
             return;
         }
     };
@@ -139,10 +138,11 @@ fn run_message_loop(callback: Callback, ready: mpsc::SyncSender<Result<isize, No
             let _ = DestroyWindow(window);
             drop(Box::from_raw(callback_ptr));
         }
+        unregister_class(&class_name);
         return;
     }
     let acdc = register_power(window, &GUID_ACDC_POWER_SOURCE);
-    let plan = register_power(window, &GUID_POWERSCHEME_PERSONALITY);
+    let plan = register_power(window, &GUID_ACTIVE_POWERSCHEME);
     let (acdc, plan) = match (acdc, plan) {
         (Ok(acdc), Ok(plan)) => (acdc, plan),
         (acdc, plan) => {
@@ -160,11 +160,12 @@ fn run_message_loop(callback: Callback, ready: mpsc::SyncSender<Result<isize, No
                 let _ = DestroyWindow(window);
                 drop(Box::from_raw(callback_ptr));
             }
+            unregister_class(&class_name);
             return;
         }
     };
     if ready.send(Ok(window.0 as isize)).is_err() {
-        cleanup(window, acdc, plan, callback_ptr);
+        cleanup(window, acdc, plan, callback_ptr, &class_name);
         return;
     }
     let mut message = MSG::default();
@@ -175,7 +176,7 @@ fn run_message_loop(callback: Callback, ready: mpsc::SyncSender<Result<isize, No
         }
         unsafe { DispatchMessageW(&message) };
     }
-    cleanup(window, acdc, plan, callback_ptr);
+    cleanup(window, acdc, plan, callback_ptr, &class_name);
 }
 
 fn register_power(
@@ -187,11 +188,23 @@ fn register_power(
     }
 }
 
-fn cleanup(window: HWND, acdc: HPOWERNOTIFY, plan: HPOWERNOTIFY, callback: *mut Callback) {
+fn cleanup(
+    window: HWND,
+    acdc: HPOWERNOTIFY,
+    plan: HPOWERNOTIFY,
+    callback: *mut Callback,
+    class_name: &[u16],
+) {
     let _ = unsafe { UnregisterPowerSettingNotification(acdc) };
     let _ = unsafe { UnregisterPowerSettingNotification(plan) };
     let _ = unsafe { WTSUnRegisterSessionNotification(window) };
+    let _ = unsafe { DestroyWindow(window) };
     unsafe { drop(Box::from_raw(callback)) };
+    unregister_class(class_name);
+}
+
+fn unregister_class(class_name: &[u16]) {
+    let _ = unsafe { UnregisterClassW(PCWSTR(class_name.as_ptr()), None) };
 }
 
 unsafe extern "system" fn window_proc(
@@ -210,7 +223,7 @@ unsafe extern "system" fn window_proc(
         match message {
             WM_POWERBROADCAST if wparam.0 as u32 == PBT_POWERSETTINGCHANGE && lparam.0 != 0 => {
                 let setting = unsafe { &*(lparam.0 as *const POWERBROADCAST_SETTING) };
-                if setting.PowerSetting == GUID_POWERSCHEME_PERSONALITY {
+                if setting.PowerSetting == GUID_ACTIVE_POWERSCHEME {
                     emit(callback, NativeNotification::PowerPlanChanged);
                 } else if setting.PowerSetting == GUID_ACDC_POWER_SOURCE {
                     emit(

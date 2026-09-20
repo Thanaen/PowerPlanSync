@@ -1,4 +1,5 @@
 use std::fmt;
+use std::os::windows::ffi::OsStrExt;
 use std::path::Path;
 
 use windows::Win32::Foundation::{ERROR_FILE_NOT_FOUND, WIN32_ERROR};
@@ -40,7 +41,7 @@ pub fn state(executable: &Path) -> Result<StartupState, StartupError> {
     Ok(match read_value()? {
         None => StartupState::Disabled,
         Some(actual) if actual == expected => StartupState::Enabled,
-        Some(actual) => StartupState::Conflict(actual),
+        Some(actual) => StartupState::Conflict(String::from_utf16_lossy(&actual)),
     })
 }
 
@@ -75,36 +76,38 @@ pub fn set_current_executable_enabled(enabled: bool) -> Result<StartupState, Sta
     set_enabled(&executable, enabled)
 }
 
-fn startup_command(executable: &Path) -> String {
-    format!("{} --start-minimized", quote_argument(executable))
+fn startup_command(executable: &Path) -> Vec<u16> {
+    let mut command = quote_argument(executable);
+    command.extend(" --start-minimized".encode_utf16());
+    command
 }
 
-fn quote_argument(path: &Path) -> String {
-    let text = path.as_os_str().to_string_lossy();
-    let mut quoted = String::with_capacity(text.len() + 2);
-    quoted.push('"');
+fn quote_argument(path: &Path) -> Vec<u16> {
+    let text: Vec<_> = path.as_os_str().encode_wide().collect();
+    let mut quoted = Vec::with_capacity(text.len() + 2);
+    quoted.push(b'"' as u16);
     let mut slashes = 0;
-    for character in text.chars() {
-        match character {
-            '\\' => slashes += 1,
-            '"' => {
-                quoted.extend(std::iter::repeat_n('\\', slashes * 2 + 1));
-                quoted.push('"');
+    for unit in text {
+        match unit {
+            unit if unit == b'\\' as u16 => slashes += 1,
+            unit if unit == b'"' as u16 => {
+                quoted.extend(std::iter::repeat_n(b'\\' as u16, slashes * 2 + 1));
+                quoted.push(b'"' as u16);
                 slashes = 0;
             }
             _ => {
-                quoted.extend(std::iter::repeat_n('\\', slashes));
-                quoted.push(character);
+                quoted.extend(std::iter::repeat_n(b'\\' as u16, slashes));
+                quoted.push(unit);
                 slashes = 0;
             }
         }
     }
-    quoted.extend(std::iter::repeat_n('\\', slashes * 2));
-    quoted.push('"');
+    quoted.extend(std::iter::repeat_n(b'\\' as u16, slashes * 2));
+    quoted.push(b'"' as u16);
     quoted
 }
 
-fn read_value() -> Result<Option<String>, StartupError> {
+fn read_value() -> Result<Option<Vec<u16>>, StartupError> {
     let subkey = wide_nul(RUN_KEY);
     let value_name = wide_nul(VALUE_NAME);
     let mut size = 0;
@@ -142,13 +145,14 @@ fn read_value() -> Result<Option<String>, StartupError> {
         .iter()
         .position(|unit| *unit == 0)
         .unwrap_or(wide.len());
-    Ok(Some(String::from_utf16_lossy(&wide[..length])))
+    wide.truncate(length);
+    Ok(Some(wide))
 }
 
-fn write_value(command: &str) -> Result<(), StartupError> {
+fn write_value(command: &[u16]) -> Result<(), StartupError> {
     let subkey = wide_nul(RUN_KEY);
     let value_name = wide_nul(VALUE_NAME);
-    let wide = wide_nul(command);
+    let wide: Vec<_> = command.iter().copied().chain([0]).collect();
     let bytes = unsafe {
         std::slice::from_raw_parts(wide.as_ptr().cast::<u8>(), wide.len() * size_of::<u16>())
     };
@@ -200,6 +204,8 @@ fn wide_nul(value: &str) -> Vec<u16> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ffi::OsString;
+    use std::os::windows::ffi::OsStringExt;
 
     #[test]
     fn command_quotes_spaces_and_uses_only_the_supported_argument() {
@@ -208,11 +214,39 @@ mod tests {
                 r"C:\Program Files\PowerPlanSync.exe"
             )),
             r#""C:\Program Files\PowerPlanSync.exe" --start-minimized"#
+                .encode_utf16()
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn command_preserves_unpaired_surrogates() {
+        let path = OsString::from_wide(&[
+            b'C' as u16,
+            b':' as u16,
+            b'\\' as u16,
+            0xD800,
+            b'.' as u16,
+            b'e' as u16,
+            b'x' as u16,
+            b'e' as u16,
+        ]);
+
+        assert_eq!(
+            startup_command(Path::new(&path)),
+            [
+                vec![b'"' as u16, b'C' as u16, b':' as u16, b'\\' as u16, 0xD800],
+                r#".exe" --start-minimized"#.encode_utf16().collect(),
+            ]
+            .concat()
         );
     }
 
     #[test]
     fn quote_doubles_trailing_slashes_before_the_closing_quote() {
-        assert_eq!(quote_argument(Path::new(r"C:\Temp\")), r#""C:\Temp\\""#);
+        assert_eq!(
+            quote_argument(Path::new(r"C:\Temp\")),
+            r#""C:\Temp\\""#.encode_utf16().collect::<Vec<_>>()
+        );
     }
 }
