@@ -4,7 +4,9 @@ use std::os::windows::ffi::{OsStrExt, OsStringExt};
 use std::path::PathBuf;
 
 use windows::Win32::Foundation::{CloseHandle, ERROR_NO_MORE_FILES, FILETIME, HANDLE};
-use windows::Win32::Globalization::{CSTR_EQUAL, CompareStringOrdinal};
+use windows::Win32::Globalization::{
+    CSTR_EQUAL, CompareStringOrdinal, LCMAP_UPPERCASE, LCMapStringEx, LOCALE_NAME_INVARIANT,
+};
 use windows::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPPROCESS,
 };
@@ -43,6 +45,13 @@ pub struct ProcessSnapshot {
     pub uncertain: Vec<ProcessIssue>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RunningApp {
+    pub pid: u32,
+    pub image_name: OsString,
+    pub executable_path: PathBuf,
+}
+
 #[derive(Debug)]
 pub struct SnapshotError(windows::core::Error);
 
@@ -65,6 +74,13 @@ impl Drop for OwnedHandle {
 }
 
 pub fn snapshot_named(names: &[OsString]) -> Result<ProcessSnapshot, SnapshotError> {
+    snapshot_named_in_session(names, None)
+}
+
+pub fn snapshot_named_in_session(
+    names: &[OsString],
+    session_id: Option<u32>,
+) -> Result<ProcessSnapshot, SnapshotError> {
     let handle = OwnedHandle(
         unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) }.map_err(SnapshotError)?,
     );
@@ -82,17 +98,27 @@ pub fn snapshot_named(names: &[OsString]) -> Result<ProcessSnapshot, SnapshotErr
     }
     loop {
         let image_name = nul_terminated_os_string(&entry.szExeFile);
-        if names
-            .iter()
-            .any(|candidate| os_eq_ignore_case(candidate, &image_name))
+        if names.is_empty()
+            || names
+                .iter()
+                .any(|candidate| os_eq_ignore_case(candidate, &image_name))
         {
-            match inspect_process(entry.th32ProcessID, image_name.clone()) {
-                Ok(instance) => result.verified.push(instance),
-                Err(reason) => result.uncertain.push(ProcessIssue {
-                    pid: entry.th32ProcessID,
-                    image_name,
-                    reason,
-                }),
+            let process_session = process_session_id(entry.th32ProcessID);
+            let belongs_to_session = !matches!(
+                (session_id, &process_session),
+                (Some(expected), Ok(actual)) if expected != *actual
+            );
+            if belongs_to_session {
+                match process_session.and_then(|session| {
+                    inspect_process(entry.th32ProcessID, image_name.clone(), session)
+                }) {
+                    Ok(instance) => result.verified.push(instance),
+                    Err(reason) => result.uncertain.push(ProcessIssue {
+                        pid: entry.th32ProcessID,
+                        image_name,
+                        reason,
+                    }),
+                }
             }
         }
         if let Err(error) = unsafe { Process32NextW(handle.0, &mut entry) } {
@@ -105,7 +131,38 @@ pub fn snapshot_named(names: &[OsString]) -> Result<ProcessSnapshot, SnapshotErr
     Ok(result)
 }
 
-fn inspect_process(pid: u32, image_name: OsString) -> Result<ProcessInstance, String> {
+pub fn observe_paths(paths: &[PathBuf], session_id: u32) -> Result<ProcessSnapshot, SnapshotError> {
+    let names: Vec<OsString> = paths
+        .iter()
+        .filter_map(|path| path.file_name().map(OsString::from))
+        .collect();
+    let mut snapshot = snapshot_named_in_session(&names, Some(session_id))?;
+    snapshot.verified.retain(|process| {
+        paths
+            .iter()
+            .any(|path| paths_equal(path, &process.executable_path))
+    });
+    Ok(snapshot)
+}
+
+pub fn running_apps(session_id: u32) -> Result<Vec<RunningApp>, SnapshotError> {
+    let snapshot = snapshot_named_in_session(&[], Some(session_id))?;
+    Ok(snapshot
+        .verified
+        .into_iter()
+        .map(|process| RunningApp {
+            pid: process.key.pid,
+            image_name: process.image_name,
+            executable_path: process.executable_path,
+        })
+        .collect())
+}
+
+fn inspect_process(
+    pid: u32,
+    image_name: OsString,
+    session_id: u32,
+) -> Result<ProcessInstance, String> {
     let process = OwnedHandle(
         unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) }
             .map_err(|error| error.to_string())?,
@@ -129,9 +186,6 @@ fn inspect_process(pid: u32, image_name: OsString) -> Result<ProcessInstance, St
     let mut user = FILETIME::default();
     unsafe { GetProcessTimes(process.0, &mut creation, &mut exit, &mut kernel, &mut user) }
         .map_err(|error| error.to_string())?;
-    let mut session_id = 0;
-    unsafe { ProcessIdToSessionId(pid, &mut session_id) }.map_err(|error| error.to_string())?;
-
     Ok(ProcessInstance {
         key: ProcessKey {
             pid,
@@ -143,19 +197,75 @@ fn inspect_process(pid: u32, image_name: OsString) -> Result<ProcessInstance, St
     })
 }
 
+fn process_session_id(pid: u32) -> Result<u32, String> {
+    let mut session_id = 0;
+    unsafe { ProcessIdToSessionId(pid, &mut session_id) }.map_err(|error| error.to_string())?;
+    Ok(session_id)
+}
+
 pub fn paths_equal(left: &std::path::Path, right: &std::path::Path) -> bool {
-    let left = normalized_wide(left);
-    let right = normalized_wide(right);
+    let Ok(left) = normalized_path_units(left) else {
+        return false;
+    };
+    let Ok(right) = normalized_path_units(right) else {
+        return false;
+    };
     unsafe { CompareStringOrdinal(&left, &right, true) == CSTR_EQUAL }
 }
 
-fn normalized_wide(path: &std::path::Path) -> Vec<u16> {
+pub fn normalized_path_units(path: &std::path::Path) -> std::io::Result<Vec<u16>> {
+    if !path.is_absolute() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "le chemin doit être absolu",
+        ));
+    }
     let canonical = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
     let wide: Vec<u16> = canonical.as_os_str().encode_wide().collect();
     const VERBATIM_PREFIX: [u16; 4] = [b'\\' as u16, b'\\' as u16, b'?' as u16, b'\\' as u16];
-    wide.strip_prefix(&VERBATIM_PREFIX)
-        .unwrap_or(&wide)
-        .to_vec()
+    const VERBATIM_UNC_PREFIX: [u16; 8] = [
+        b'\\' as u16,
+        b'\\' as u16,
+        b'?' as u16,
+        b'\\' as u16,
+        b'U' as u16,
+        b'N' as u16,
+        b'C' as u16,
+        b'\\' as u16,
+    ];
+    let source = if let Some(rest) = wide.strip_prefix(&VERBATIM_UNC_PREFIX) {
+        let mut unc = Vec::with_capacity(rest.len() + 2);
+        unc.extend([b'\\' as u16, b'\\' as u16]);
+        unc.extend_from_slice(rest);
+        unc
+    } else {
+        wide.strip_prefix(&VERBATIM_PREFIX)
+            .unwrap_or(&wide)
+            .to_vec()
+    };
+    if source.contains(&0) {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "le chemin contient un caractère nul",
+        ));
+    }
+    let mut folded = vec![0_u16; source.len()];
+    let written = unsafe {
+        LCMapStringEx(
+            LOCALE_NAME_INVARIANT,
+            LCMAP_UPPERCASE,
+            &source,
+            Some(&mut folded),
+            None,
+            None,
+            windows::Win32::Foundation::LPARAM(0),
+        )
+    };
+    if written == 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    folded.truncate(written as usize);
+    Ok(folded)
 }
 
 fn os_eq_ignore_case(left: &OsString, right: &OsString) -> bool {
@@ -221,5 +331,38 @@ mod tests {
             std::path::Path::new(r"C:\Jeux\demo_target.exe"),
             std::path::Path::new(r"C:\Autre\demo_target.exe")
         ));
+    }
+
+    #[test]
+    fn normalized_units_match_rule_and_observation_case() {
+        let upper = normalized_path_units(std::path::Path::new(r"C:\Jeux\DEMO.EXE")).unwrap();
+        let lower = normalized_path_units(std::path::Path::new(r"c:\jeux\demo.exe")).unwrap();
+        assert_eq!(upper, lower);
+    }
+
+    #[test]
+    fn normalized_units_preserve_unc_roots_and_reject_relative_paths() {
+        let units =
+            normalized_path_units(std::path::Path::new(r"\\?\UNC\server\share\game.exe")).unwrap();
+        assert_eq!(String::from_utf16_lossy(&units), r"\\SERVER\SHARE\GAME.EXE");
+        assert_eq!(
+            normalized_path_units(std::path::Path::new("game.exe"))
+                .unwrap_err()
+                .kind(),
+            std::io::ErrorKind::InvalidInput
+        );
+    }
+
+    #[test]
+    fn running_app_chooser_includes_this_accessible_process() {
+        let pid = std::process::id();
+        let session = process_session_id(pid).unwrap();
+        let apps = running_apps(session).unwrap();
+        assert!(apps.iter().any(|app| app.pid == pid));
+        assert!(
+            apps.iter()
+                .filter(|app| app.pid == pid)
+                .all(|app| app.executable_path.is_absolute())
+        );
     }
 }

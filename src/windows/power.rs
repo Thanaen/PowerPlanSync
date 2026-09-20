@@ -5,8 +5,8 @@ use windows::Win32::Foundation::{
     ERROR_MORE_DATA, ERROR_NO_MORE_ITEMS, HLOCAL, LocalFree, WIN32_ERROR,
 };
 use windows::Win32::System::Power::{
-    ACCESS_SCHEME, PowerEnumerate, PowerGetActiveScheme, PowerReadFriendlyName,
-    PowerSetActiveScheme,
+    ACCESS_SCHEME, GetSystemPowerStatus, PowerEnumerate, PowerGetActiveScheme,
+    PowerReadFriendlyName, PowerSetActiveScheme, SYSTEM_POWER_STATUS,
 };
 use windows::core::GUID;
 
@@ -33,6 +33,21 @@ impl fmt::Display for PlanId {
 pub struct PowerPlan {
     pub id: PlanId,
     pub name: String,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PowerSource {
+    Ac,
+    Battery,
+    Unknown,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PowerNotification {
+    ResumeAutomatic,
+    StatusChanged,
+    Suspend,
+    Other(u32),
 }
 
 #[derive(Debug)]
@@ -124,6 +139,26 @@ pub fn set_active_plan(id: PlanId) -> Result<PlanId, PowerError> {
     Ok(observed)
 }
 
+pub fn power_source() -> Result<PowerSource, PowerError> {
+    let mut status = SYSTEM_POWER_STATUS::default();
+    unsafe { GetSystemPowerStatus(&mut status) }
+        .map_err(|error| PowerError::new("GetSystemPowerStatus", error.code().0 as u32))?;
+    Ok(match status.ACLineStatus {
+        1 => PowerSource::Ac,
+        0 | 2 => PowerSource::Battery,
+        _ => PowerSource::Unknown,
+    })
+}
+
+pub fn classify_power_broadcast(code: u32) -> PowerNotification {
+    match code {
+        0x0012 => PowerNotification::ResumeAutomatic,
+        0x000A => PowerNotification::StatusChanged,
+        0x0004 => PowerNotification::Suspend,
+        other => PowerNotification::Other(other),
+    }
+}
+
 fn friendly_name(id: PlanId) -> Result<String, PowerError> {
     let mut size = 0;
     let status =
@@ -153,4 +188,26 @@ fn friendly_name(id: PlanId) -> Result<String, PowerError> {
         .take_while(|unit| *unit != 0)
         .collect();
     Ok(String::from_utf16_lossy(&wide))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resume_broadcast_requests_a_fresh_snapshot() {
+        assert_eq!(
+            classify_power_broadcast(0x0012),
+            PowerNotification::ResumeAutomatic
+        );
+        assert_eq!(classify_power_broadcast(99), PowerNotification::Other(99));
+    }
+
+    #[test]
+    fn reads_the_current_power_source_without_mutating_it() {
+        assert!(matches!(
+            power_source().unwrap(),
+            PowerSource::Ac | PowerSource::Battery | PowerSource::Unknown
+        ));
+    }
 }
