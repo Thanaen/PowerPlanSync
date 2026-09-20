@@ -208,5 +208,17 @@ Les contrôles Slint sont exposés et utilisables lors des essais de saisie, sé
 Deux défauts de disposition ont été corrigés puis recontrôlés. Le focus signalé par le pilote
 reste ambigu. Le Narrateur, les contrastes et la réouverture par l'icône ne sont pas validés.
 Slint reste candidat ; aucun échec certain justifiant un changement de framework n'est établi.
-T004 et T006 restent ouvertes. Le passage à la phase 2 exige de résoudre ces vérifications,
+T004 et T006 restent ouvertes. L'ordre de poursuite est précisé par D11,
 sans convertir des résultats inconnus en critères réussis.
+
+## D11. Poursuivre les fondations pendant la validation d'accessibilité
+
+L'objectif actif demande de poursuivre jusqu'à une v1 fonctionnelle. Le moteur pur, le journal
+durable et les adaptateurs Windows ne dépendent pas du choix graphique. Les preuves de T002
+et T005 permettent leur développement pendant les vérifications restantes de T004.
+Les types et transactions suivent le contrat Rust déjà comparé et retenu.
+
+La constitution exige la faisabilité d'accessibilité avant l'interface définitive. Cette règle
+reste intacte. L'intégration graphique reste candidate tant que clavier, Narrateur et contrastes
+ne sont pas vérifiés. Les critères SC-001 à SC-007 et les tâches de livraison ne changent pas.
+Les tests de récupération accompagnent le coordinateur avant tout usage automatique réel.

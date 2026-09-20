@@ -132,7 +132,10 @@ Les chemins sont relatifs à la racine du projet. `src/`, `ui/`, `tests/`, `exam
 
 T001 précède tous les prototypes. T002 et T003 peuvent avancer sur des fichiers distincts après
 épinglage commun des dépendances. T004 dépend de T003. T005 dépend de T002. T006 examine leurs preuves.
-T007 à T013 suivent T006. T008 précède T009. T010 à T012 partagent les types de T007, mais leurs
+Les preuves Windows de T002 et T005 autorisent T007 à T013 et le moteur T014 à T016.
+T004 et T006 précèdent toujours le choix de l'interface définitive et restent nécessaires
+à la livraison. Les tests T020 et la récupération T021 accompagnent la transaction de T016,
+avant son intégration UI. T008 précède T009. T010 à T012 partagent les types de T007, mais leurs
 fichiers sont disjoints. T013 les assemble. Toute modification de Cargo reste sérialisée.
 
 ### User Story Dependencies

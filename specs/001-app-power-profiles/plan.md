@@ -136,11 +136,15 @@ crates, de serveur local, de protocole web ni de framework de plugins.
 
 1. **Faisabilité, T001 à T006.** Établir l'environnement Rust et les deux prototypes.
    Windows et UI peuvent être étudiés séparément après l'épinglage des outils.
-   T006 consigne les résultats et autorise la suite uniquement si les critères passent.
+   T006 consigne les résultats. Les preuves Windows autorisent les fondations et le moteur
+   indépendants de l'UI. T004 et T006 restent ouvertes jusqu'à la conclusion d'accessibilité,
+   avant de retenir l'interface définitive. Voir D11 dans `research.md`.
    Sur demande de l'utilisateur, un exécutable témoin remplace Battlefield dans les essais.
    Aucune compatibilité propre au jeu n'est annoncée. Cela ne bloque pas la livraison générique.
 2. **Fondations, T007 à T013.** Modèle, stockage récupérable, contrôle unique, adaptateurs et démonstration.
    Les écritures de plan restent réservées au coordinateur.
+   Les contrats et tests de récupération de T020/T021 peuvent accompagner le coordinateur
+   avant son branchement graphique, car ils définissent les mêmes transactions durables.
 3. **US1, T014 à T019.** Premier cycle complet dans l'interface minimale.
 4. **US2, T020 à T027.** Changement externe, reprise, crash, batterie et session.
 5. **US4, T028 à T034.** Parcours accessible, choix du logiciel et démarrage facultatif.
