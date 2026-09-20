@@ -3,6 +3,7 @@ import { AppPalette } from "strings-fr.slint";
 
 export component RuleEditor inherits Rectangle {
     in property <bool> editing: false;
+    in property <float> text-scale: 1.0;
     in property <string> initial-label;
     in property <string> initial-path;
     in property <int> initial-plan-index: -1;
@@ -40,7 +41,7 @@ export component RuleEditor inherits Rectangle {
 
             Text {
                 text: root.editing ? "Modifier le logiciel" : "Ajouter un logiciel";
-                font-size: 24px;
+                font-size: 24px * root.text-scale;
                 font-weight: 700;
                 wrap: word-wrap;
             }
@@ -53,8 +54,7 @@ export component RuleEditor inherits Rectangle {
                 Button { text: "Parcourir…"; accessible-label: "Parcourir les fichiers"; clicked => { root.browse-requested(); } }
                 Button { text: "Application ouverte…"; accessible-label: "Choisir une application ouverte"; clicked => { root.running-app-requested(); } }
             }
-            ComboBox {
-                visible: root.running-apps.length > 0;
+            if root.running-apps.length > 0: ComboBox {
                 accessible-label: "Applications ouvertes avec chemin vérifié";
                 model: root.running-apps;
                 selected => { root.running-app-selected(self.current-index); }
@@ -85,8 +85,7 @@ export component RuleEditor inherits Rectangle {
                 current-index <=> root.draft-plan-index;
                 selected => { root.validation-message = ""; }
             }
-            Text {
-                visible: root.validation-message != "";
+            if root.validation-message != "": Text {
                 text: root.validation-message;
                 color: AppPalette.foreground;
                 wrap: word-wrap;

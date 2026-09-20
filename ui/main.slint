@@ -26,6 +26,7 @@ component RuleCard inherits Rectangle {
     in property <int> row-index;
     in property <bool> can-move-up;
     in property <bool> can-move-down;
+    in property <float> text-scale: 1.0;
     callback set-enabled(int, bool);
     callback edit(int);
     callback remove(int);
@@ -42,7 +43,7 @@ component RuleCard inherits Rectangle {
     VerticalBox {
         padding: 14px;
         spacing: 8px;
-        Text { text: root.rule.label; font-size: 18px; font-weight: 600; wrap: word-wrap; }
+        Text { text: root.rule.label; font-size: 18px * root.text-scale; font-weight: 600; wrap: word-wrap; }
         Text { text: "Plan : " + root.rule.plan; wrap: word-wrap; }
         Text { text: "État : " + root.rule.state; wrap: word-wrap; }
         Text { text: "Chemin : " + root.rule.path; wrap: word-wrap; accessible-role: AccessibleRole.text; }
@@ -116,9 +117,8 @@ export component MainWindow inherits Window {
             padding: 24px;
             spacing: 16px;
 
-            Text { text: "PowerPlanSync"; font-size: 28px; font-weight: 700; }
-            Rectangle {
-                visible: root.demo-mode;
+            Text { text: "PowerPlanSync"; font-size: 28px * root.text-scale; font-weight: 700; }
+            if root.demo-mode: Rectangle {
                 background: AppPalette.alternate-background;
                 border-radius: 8px;
                 min-height: 74px;
@@ -129,14 +129,13 @@ export component MainWindow inherits Window {
                 VerticalBox {
                     padding: 18px;
                     spacing: 8px;
-                    Text { text: "Plan actif"; font-size: 18px; font-weight: 600; }
-                    Text { text: root.observed-plan; font-size: 25px; font-weight: 700; wrap: word-wrap; accessible-role: AccessibleRole.text; }
+                    Text { text: "Plan actif"; font-size: 18px * root.text-scale; font-weight: 600; }
+                    Text { text: root.observed-plan; font-size: 25px * root.text-scale; font-weight: 700; wrap: word-wrap; accessible-role: AccessibleRole.text; }
                     Text { text: root.reason; wrap: word-wrap; }
                     Text { text: "État : " + root.status; wrap: word-wrap; accessible-role: AccessibleRole.text; accessible-live-region: AccessibleLiveness.polite; }
                 }
             }
-            Rectangle {
-                visible: root.error-message != "";
+            if root.error-message != "": Rectangle {
                 background: AppPalette.alternate-background;
                 border-width: 2px;
                 border-color: AppPalette.foreground;
@@ -147,9 +146,9 @@ export component MainWindow inherits Window {
                     spacing: 8px;
                     Text { text: "Action nécessaire"; font-weight: 700; }
                     Text { text: root.error-message; wrap: word-wrap; accessible-role: AccessibleRole.text; accessible-live-region: AccessibleLiveness.assertive; }
-                    HorizontalBox {
+                    VerticalBox {
                         spacing: 8px;
-                        Button { text: "Réessayer"; visible: root.blocked; clicked => { root.action("retry", -1, "", "", -1, false); } }
+                        if root.blocked: Button { text: "Réessayer"; clicked => { root.action("retry", -1, "", "", -1, false); } }
                         Button { text: "Ouvrir les réglages Windows"; clicked => { root.action("open-windows-settings", -1, "", "", -1, false); } }
                         Button { text: "Quitter quand même…"; clicked => { root.action("quit-after-failed-restore", -1, "", "", -1, false); } }
                     }
@@ -168,7 +167,7 @@ export component MainWindow inherits Window {
                 toggled => { root.action("set-automation", -1, "", "", -1, self.checked); }
             }
             Text { text: StringsFr.priority-help; font-weight: 600; wrap: word-wrap; }
-            Text { visible: root.rules.length == 0; text: "Aucun logiciel configuré. Ajoutez votre premier logiciel, choisissez son plan et confirmez le plan de retour."; wrap: word-wrap; }
+            if root.rules.length == 0: Text { text: "Aucun logiciel configuré. Ajoutez votre premier logiciel, choisissez son plan et confirmez le plan de retour."; wrap: word-wrap; }
             VerticalBox {
                 accessible-role: AccessibleRole.list;
                 accessible-label: "Règles par ordre de priorité";
@@ -176,6 +175,7 @@ export component MainWindow inherits Window {
                 for rule[index] in root.rules: RuleCard {
                     rule: rule;
                     row-index: index;
+                    text-scale: root.text-scale;
                     can-move-up: index > 0;
                     can-move-down: index + 1 < root.rules.length;
                     set-enabled(index, enabled) => { root.action("set-rule-enabled", root.rules[index].id, "", "", -1, enabled); }
@@ -190,7 +190,7 @@ export component MainWindow inherits Window {
                 VerticalBox {
                     padding: 18px;
                     spacing: 10px;
-                    Text { text: "Réglages"; font-size: 20px; font-weight: 700; }
+                    Text { text: "Réglages"; font-size: 20px * root.text-scale; font-weight: 700; }
                     Text { text: "Après fermeture, revenir à"; }
                     ComboBox {
                         accessible-label: "Plan de retour confirmé";
@@ -198,13 +198,12 @@ export component MainWindow inherits Window {
                         current-index <=> root.return-plan-index;
                         selected => { root.action("set-return-plan", -1, "", "", self.current-index, false); }
                     }
-                    Text { visible: root.return-plan-note != ""; text: root.return-plan-note; wrap: word-wrap; }
+                    if root.return-plan-note != "": Text { text: root.return-plan-note; wrap: word-wrap; }
                     CheckBox { text: "Autoriser sur batterie"; checked: root.allow-on-battery; toggled => { root.action("set-battery", -1, "", "", -1, self.checked); } }
                     CheckBox { text: "Démarrer avec Windows"; checked: root.start-at-login; toggled => { root.action("set-startup", -1, "", "", -1, self.checked); } }
                 }
             }
-            Rectangle {
-                visible: root.demo-mode;
+            if root.demo-mode: Rectangle {
                 min-height: 96px;
                 background: AppPalette.alternate-background;
                 border-radius: 8px;
@@ -220,10 +219,10 @@ export component MainWindow inherits Window {
                 VerticalBox {
                     padding: 18px;
                     spacing: 10px;
-                    Text { text: "Aide et limites"; font-size: 20px; font-weight: 700; }
+                    Text { text: "Aide et limites"; font-size: 20px * root.text-scale; font-weight: 700; }
                     Text { text: StringsFr.recovery-help; wrap: word-wrap; }
                     Text { text: StringsFr.performance-help; wrap: word-wrap; }
-                    Text { visible: root.show-first-hide-explanation; text: StringsFr.hidden-help; wrap: word-wrap; }
+                    if root.show-first-hide-explanation: Text { text: StringsFr.hidden-help; wrap: word-wrap; }
                 }
             }
             HorizontalBox {
@@ -250,7 +249,8 @@ export component MainWindow inherits Window {
             width: parent.width;
             height: parent.height;
             visible-editor: false;
-            editing: root.editing-index >= 0;
+        editing: root.editing-index >= 0;
+        text-scale: root.text-scale;
             plan-names: root.plan-names;
             running-apps: root.running-apps;
             draft-label <=> root.editor-selected-label;
