@@ -137,12 +137,14 @@ La vérification des plans réels est une campagne séparée et sérialisée. Ne
 
 Ce script requiert PowerShell 7.5 ou plus récent. Il utilise le témoin, prépare des données isolées, attend les plans observés et restaure le plan initial dans son nettoyage. Lire son rapport et vérifier la restauration, même si une assertion échoue. Cent cycles API/processus ne prouvent pas cent parcours UI.
 
-Pour mesurer une instance déjà préparée avec vingt règles, utiliser son PID exact et son chemin Doctor. L'état de fenêtre est une déclaration de l'opérateur. La commande ne lance ni n'arrête aucun processus et ne change aucun plan.
+Le lancement et le Doctor précédents utilisent `--demo` et `$ppsData/simulation`. Ils servent au smoke de l'interface et ne qualifient jamais SC-004.
+
+Pour SC-004, suivre les quatre états de **Mesurer la consommation et la stabilité** dans `specs/001-app-power-profiles/quickstart.md`. Préparer une instance réelle sans `--demo`, avec vingt règles, puis refaire les contrôles d'identité Doctor sous des variables distinctes `$ppsRealProcess`, `$ppsRealExe`, `$ppsRealData` et `$ppsRealEvidence`. Utiliser le PID exact et le chemin vérifié de cette instance. L'état de fenêtre est une déclaration de l'opérateur. La commande ne lance ni n'arrête aucun processus et ne change aucun plan.
 
 ```powershell
-.\scripts\measure-overhead.ps1 -ProcessId $ppsProcess.Id -ExecutablePath $ppsExe -WindowState hidden -OutputDirectory $ppsEvidence -DataDirectory (Join-Path $ppsData 'simulation') -RuleCount 20 -DurationSeconds 1800 -WarmupSeconds 60 -SampleIntervalMilliseconds 5000
+.\scripts\measure-overhead.ps1 -ProcessId $ppsRealProcess.Id -ExecutablePath $ppsRealExe -WindowState hidden -OutputDirectory $ppsRealEvidence -DataDirectory $ppsRealData -RuleCount 20 -DurationSeconds 1800 -WarmupSeconds 60 -SampleIntervalMilliseconds 5000
 ```
 
-Répéter avec `-WindowState open` après ouverture effectivement constatée. Les valeurs par défaut du script restent adaptées à un usage général. La campagne SC-004 utilise explicitement 60 s de stabilisation, un intervalle de 5 s et une mesure de 1800 s. Lire les échantillons et les statistiques JSON. Les limites sont 40 MiB de mémoire privée masquée, 100 MiB ouverte et 0,1 % CPU de la machine. Une mesure raccourcie reste un essai du script, pas une preuve de trente minutes.
+Répéter selon les quatre états du quickstart, dont `-WindowState open` après ouverture effectivement constatée. Utiliser un dossier de preuve distinct par état. Les valeurs par défaut du script restent adaptées à un usage général. La campagne SC-004 utilise explicitement 60 s de stabilisation, un intervalle de 5 s et une mesure de 1800 s. Lire les échantillons et les statistiques JSON. Les limites sont 40 MiB de mémoire privée masquée, 100 MiB ouverte et 0,1 % CPU de la machine. Une mesure raccourcie reste un essai du script, pas une preuve de trente minutes.
 
 Lors de la création ou d'une révision du skill, exécuter Launch, Doctor, une fonctionnalité, Evidence et Cleanup une fois avant de déclarer ce skill validé. En délégation documentaire, laisser cette exécution au coordinateur et signaler explicitement qu'elle reste à faire. Utiliser `/maintain-verification-skill` quand les parcours ou les noms changent.
