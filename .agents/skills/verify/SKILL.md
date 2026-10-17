@@ -95,7 +95,7 @@ Les panneaux et listes Slint peuvent finir leur animation après l'action. Si la
 
 ## Evidence
 
-Chaque étape prouvée conserve l'action, le résultat visuel, l'arbre accessible et les effets persistés dans `$ppsEvidence`. Nommer les fichiers avec l'ID de fonctionnalité et un compteur, par exemple `configuration-01-before.png`, `configuration-02-after.png`, `configuration-02-tree.txt` et `configuration-02-config.json`.
+Chaque étape prouvée conserve l'action, le résultat visuel, l'arbre accessible et les effets persistés dans `$ppsEvidence`. Nommer les fichiers avec l'ID de fonctionnalité et un compteur, par exemple `configuration-01-before.png`, `configuration-02-after.jpg`, `configuration-02-tree.txt` et `configuration-02-config.json`.
 
 Les captures retournées par sky s'affichent automatiquement. Les sauvegarder uniquement pour l'archive de preuve, sans les réémettre pour les inspecter. Affecter à `globalThis.ppsEvidence` le chemin absolu imprimé par la préparation et à `globalThis.ppsStep` le nom de l'étape courante.
 
@@ -105,9 +105,10 @@ Les captures retournées par sky s'affichent automatiquement. Les sauvegarder un
   const path = await import('node:path');
   await fs.writeFile(path.join(ppsEvidence, ppsStep + '-tree.txt'), ppsState.accessibility?.tree || 'Arbre indisponible', 'utf8');
   for (const [index, shot] of ppsState.screenshots.entries()) {
-    const match = /^data:image\/png;base64,(.+)$/s.exec(shot.url);
-    if (!match) throw new Error('Capture PNG indisponible; ne pas déclarer la preuve visuelle complète.');
-    await fs.writeFile(path.join(ppsEvidence, ppsStep + '-' + index + '.png'), Buffer.from(match[1], 'base64'));
+    const match = /^data:image\/(png|jpeg);base64,(.+)$/s.exec(shot.url);
+    if (!match) throw new Error('Format de capture inconnu; ne pas déclarer la preuve visuelle complète.');
+    const extension = match[1] === 'png' ? '.png' : '.jpg';
+    await fs.writeFile(path.join(ppsEvidence, ppsStep + '-' + index + extension), Buffer.from(match[2], 'base64'));
   }
 }
 ```
@@ -124,7 +125,7 @@ Utiliser **Quitter PowerPlanSync** dans la fenêtre ou **Quitter** dans son menu
 
 Si la démo créée par cet essai est bloquée, relever les preuves, revérifier PID, chemin et heure de création, puis arrêter seulement ce PID. Ne pas utiliser un arrêt par nom. Un processus réel ayant un cycle n'est pas un processus démo à tuer pour gagner du temps.
 
-Copier les fichiers de données utiles dans la preuve avant tout nettoyage. Supprimer uniquement le dossier de scratch `$ppsData` créé par la séance, après vérification de son chemin absolu sous `.audit/verify-data/` et de l'arrêt de son propriétaire. Ne pas supprimer `$ppsEvidence`. Confirmer que PNG, arbre, configuration et rapport existent encore après le nettoyage.
+Copier les fichiers de données utiles dans la preuve avant tout nettoyage. Supprimer uniquement le dossier de scratch `$ppsData` créé par la séance, après vérification de son chemin absolu sous `.audit/verify-data/` et de l'arrêt de son propriétaire. Ne pas supprimer `$ppsEvidence`. Confirmer que les captures PNG ou JPEG, l'arbre, la configuration et le rapport existent encore après le nettoyage.
 
 ## Helpers
 
