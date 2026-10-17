@@ -95,7 +95,7 @@ Les panneaux et listes Slint peuvent finir leur animation après l'action. Si la
 
 ## Evidence
 
-Chaque étape prouvée conserve l'action, le résultat visuel, l'arbre accessible et les effets persistés dans `$ppsEvidence`. Nommer les fichiers avec l'ID de fonctionnalité et un compteur, par exemple `configuration-01-before.png`, `configuration-02-after.png`, `configuration-02-tree.txt` et `configuration-02-config.json`.
+Chaque étape prouvée conserve l'action, le résultat visuel, l'arbre accessible et les effets persistés dans `$ppsEvidence`. Nommer les fichiers avec l'ID de fonctionnalité et un compteur, par exemple `configuration-01-before.png`, `configuration-02-after.jpg`, `configuration-02-tree.txt` et `configuration-02-config.json`.
 
 Les captures retournées par sky s'affichent automatiquement. Les sauvegarder uniquement pour l'archive de preuve, sans les réémettre pour les inspecter. Affecter à `globalThis.ppsEvidence` le chemin absolu imprimé par la préparation et à `globalThis.ppsStep` le nom de l'étape courante.
 
@@ -105,9 +105,10 @@ Les captures retournées par sky s'affichent automatiquement. Les sauvegarder un
   const path = await import('node:path');
   await fs.writeFile(path.join(ppsEvidence, ppsStep + '-tree.txt'), ppsState.accessibility?.tree || 'Arbre indisponible', 'utf8');
   for (const [index, shot] of ppsState.screenshots.entries()) {
-    const match = /^data:image\/png;base64,(.+)$/s.exec(shot.url);
-    if (!match) throw new Error('Capture PNG indisponible; ne pas déclarer la preuve visuelle complète.');
-    await fs.writeFile(path.join(ppsEvidence, ppsStep + '-' + index + '.png'), Buffer.from(match[1], 'base64'));
+    const match = /^data:image\/(png|jpeg);base64,(.+)$/s.exec(shot.url);
+    if (!match) throw new Error('Format de capture inconnu; ne pas déclarer la preuve visuelle complète.');
+    const extension = match[1] === 'png' ? '.png' : '.jpg';
+    await fs.writeFile(path.join(ppsEvidence, ppsStep + '-' + index + extension), Buffer.from(match[2], 'base64'));
   }
 }
 ```
@@ -124,7 +125,7 @@ Utiliser **Quitter PowerPlanSync** dans la fenêtre ou **Quitter** dans son menu
 
 Si la démo créée par cet essai est bloquée, relever les preuves, revérifier PID, chemin et heure de création, puis arrêter seulement ce PID. Ne pas utiliser un arrêt par nom. Un processus réel ayant un cycle n'est pas un processus démo à tuer pour gagner du temps.
 
-Copier les fichiers de données utiles dans la preuve avant tout nettoyage. Supprimer uniquement le dossier de scratch `$ppsData` créé par la séance, après vérification de son chemin absolu sous `.audit/verify-data/` et de l'arrêt de son propriétaire. Ne pas supprimer `$ppsEvidence`. Confirmer que PNG, arbre, configuration et rapport existent encore après le nettoyage.
+Copier les fichiers de données utiles dans la preuve avant tout nettoyage. Supprimer uniquement le dossier de scratch `$ppsData` créé par la séance, après vérification de son chemin absolu sous `.audit/verify-data/` et de l'arrêt de son propriétaire. Ne pas supprimer `$ppsEvidence`. Confirmer que les captures PNG ou JPEG, l'arbre, la configuration et le rapport existent encore après le nettoyage.
 
 ## Helpers
 
@@ -136,12 +137,14 @@ La vérification des plans réels est une campagne séparée et sérialisée. Ne
 
 Ce script requiert PowerShell 7.5 ou plus récent. Il utilise le témoin, prépare des données isolées, attend les plans observés et restaure le plan initial dans son nettoyage. Lire son rapport et vérifier la restauration, même si une assertion échoue. Cent cycles API/processus ne prouvent pas cent parcours UI.
 
-Pour mesurer une instance déjà préparée avec vingt règles, utiliser son PID exact et son chemin Doctor. L'état de fenêtre est une déclaration de l'opérateur. La commande ne lance ni n'arrête aucun processus et ne change aucun plan.
+Le lancement et le Doctor précédents utilisent `--demo` et `$ppsData/simulation`. Ils servent au smoke de l'interface et ne qualifient jamais SC-004.
+
+Pour SC-004, suivre les quatre états de **Mesurer la consommation et la stabilité** dans `specs/001-app-power-profiles/quickstart.md`. Préparer une instance réelle sans `--demo`, avec vingt règles, puis refaire les contrôles d'identité Doctor sous des variables distinctes `$ppsRealProcess`, `$ppsRealExe`, `$ppsRealData` et `$ppsRealEvidence`. Utiliser le PID exact et le chemin vérifié de cette instance. L'état de fenêtre est une déclaration de l'opérateur. La commande ne lance ni n'arrête aucun processus et ne change aucun plan.
 
 ```powershell
-.\scripts\measure-overhead.ps1 -ProcessId $ppsProcess.Id -ExecutablePath $ppsExe -WindowState hidden -OutputDirectory $ppsEvidence -DataDirectory (Join-Path $ppsData 'simulation') -RuleCount 20
+.\scripts\measure-overhead.ps1 -ProcessId $ppsRealProcess.Id -ExecutablePath $ppsRealExe -WindowState hidden -OutputDirectory $ppsRealEvidence -DataDirectory $ppsRealData -RuleCount 20 -DurationSeconds 1800 -WarmupSeconds 60 -SampleIntervalMilliseconds 5000
 ```
 
-Répéter avec `-WindowState open` après ouverture effectivement constatée. La durée par défaut est 1800 s après 10 s de stabilisation. Lire les échantillons et les statistiques JSON. Les limites sont 40 MiB de mémoire privée masquée, 100 MiB ouverte et 0,1 % CPU de la machine. Une mesure raccourcie reste un essai du script, pas une preuve de trente minutes.
+Répéter selon les quatre états du quickstart, dont `-WindowState open` après ouverture effectivement constatée. Utiliser un dossier de preuve distinct par état. Les valeurs par défaut du script restent adaptées à un usage général. La campagne SC-004 utilise explicitement 60 s de stabilisation, un intervalle de 5 s et une mesure de 1800 s. Lire les échantillons et les statistiques JSON. Les limites sont 40 MiB de mémoire privée masquée, 100 MiB ouverte et 0,1 % CPU de la machine. Une mesure raccourcie reste un essai du script, pas une preuve de trente minutes.
 
 Lors de la création ou d'une révision du skill, exécuter Launch, Doctor, une fonctionnalité, Evidence et Cleanup une fois avant de déclarer ce skill validé. En délégation documentaire, laisser cette exécution au coordinateur et signaler explicitement qu'elle reste à faire. Utiliser `/maintain-verification-skill` quand les parcours ou les noms changent.
