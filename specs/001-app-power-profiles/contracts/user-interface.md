@@ -68,7 +68,7 @@ s'annonce par « Fichier introuvable » ; l'utilisateur choisit le nouveau fichi
 
 ## États signalés dans la fenêtre
 
-Les situations qui demandent une décision s'affichent dans un message intégré à la page, jamais
+Les situations à signaler s'affichent dans un message intégré à la page, jamais
 dans une boîte de dialogue bloquante :
 
 - **Plan modifié dans Windows** : statut « Automatisation suspendue · plan choisi dans Windows »,

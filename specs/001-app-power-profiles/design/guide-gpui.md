@@ -1,6 +1,6 @@
-# PowerPlanSync 0.1.0
+# PowerPlanSync
 
-> Brouillon du guide utilisateur pour l'interface GPUI. Il remplacera [docs/guide-utilisateur.md](../../../docs/guide-utilisateur.md) quand cette interface sera livrée. D'ici là, le guide de `docs/` décrit l'application actuelle.
+> Brouillon du guide utilisateur pour l'interface GPUI. Il remplacera [docs/guide-utilisateur.md](../../../docs/guide-utilisateur.md) quand cette interface sera livrée. D'ici là, le guide de `docs/` décrit l'application actuelle. Au remplacement, les liens vers les notices reprennent les chemins du paquet, et le titre reprend le numéro de version.
 
 PowerPlanSync associe les plans d'alimentation déjà installés dans Windows aux logiciels ouverts. Il fonctionne sur Windows 11 x64 avec les droits de votre session. Il ne crée pas de plan et ne modifie pas le contenu des plans existants.
 
@@ -84,6 +84,6 @@ Les plans classiques d'alimentation et le mode **Recommandé** des Paramètres W
 
 Aucun gain de FPS, de température ou de consommation n'est garanti. Battlefield 6 n'a pas été testé pour cette version. Les essais de développement utilisent un petit exécutable témoin.
 
-Les licences des composants sont accessibles dans **Aide et limites**, avec **Voir les licences**. Les composants tiers et leurs textes de licence figurent dans [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) et [notices/THIRD_PARTY_LICENSES.txt](notices/THIRD_PARTY_LICENSES.txt). Ces notices ne définissent pas une licence de redistribution de PowerPlanSync.
+Les licences des composants sont accessibles dans **Aide et limites**, avec **Voir les licences**. Les composants tiers et leurs textes de licence figurent dans [THIRD_PARTY_NOTICES.md](../../../THIRD_PARTY_NOTICES.md) et [notices/THIRD_PARTY_LICENSES.txt](../../../notices/THIRD_PARTY_LICENSES.txt). Ces notices ne définissent pas une licence de redistribution de PowerPlanSync.
 
 Le fichier `manifest.json` donne la taille et le SHA-256 de l'exécutable et des documents livrés. Le fichier `.zip.sha256` fourni à côté de l'archive permet de comparer son empreinte. Ces empreintes vérifient l'identité des fichiers ; elles ne constituent pas une signature d'éditeur.
