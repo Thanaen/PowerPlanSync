@@ -48,9 +48,9 @@ Une erreur de configuration de cette option ne bloque pas l'usage manuel de l'ap
 
 Le refus de Windows affiche une explication courte et **Réessayer**. L'outil ne propose pas
 un autre plan à la place d'une cible disparue. L'utilisateur peut choisir un remplacement.
-Une application protégée inaccessible affiche « Ce logiciel ne peut pas être identifié ».
+Une application protégée inaccessible affiche « Fichier inaccessible · impossible à suivre ».
 Aucun repli automatique au nom de fichier ou élévation ne contourne cette limite.
 
-Quitter après un retour échoué propose **Réessayer**, **Ouvrir les réglages Windows** et
+Quitter après un retour échoué propose **Réessayer**, **Ouvrir les options d'alimentation** et
 **Quitter quand même**. Ce dernier choix conserve le journal pour la récupération et indique
 le plan encore actif. Une fermeture imposée par Windows n'attend pas une réponse indéfiniment.
