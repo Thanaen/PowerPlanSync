@@ -23,7 +23,7 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
 - Merger soi-même (squash, titre Conventional Commits) seulement si les trois conditions
   sont réunies : la dernière revue de `pullfrog[bot]` est APPROVED sur le SHA de tête,
   toute la CI est verte, aucun conflit. Jamais si Clément a demandé des changements
-  ou écrit d'attendre.
+  ou écrit d'attendre. Cette règle reste à confirmer, voir « Tâches qui attendent Clément ».
 - Jusqu'au 1er novembre 2026, Pullfrog et la CI sont indisponibles. Ils sont remplacés par
   une revue d'un agent relecteur dédié, lancé à neuf sur le diff du SHA de tête, et par la
   validation locale. Le merge exige alors son verdict APPROVED sur ce SHA, la validation
@@ -33,7 +33,7 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
   (`design:design-critique`), UX Writer (`design:ux-copy`) et Screenshot reviewer,
   jusqu'à leur accord. Chaque changement d'UI met à jour les maquettes. Le design system
   « Bientôt GPUI » n'est pas modifié depuis ce dépôt : les écarts sont listés dans
-  `specs/001-app-power-profiles/design/README.md` et leur adoption est demandée au projet Bientôt.
+  `specs/001-app-power-profiles/design/README.md` (ajouté par #4) et leur adoption est demandée au projet Bientôt.
 - Ne jamais lancer Battlefield. Ne jamais toucher aux PR qui ne sont pas celles de la routine,
   en particulier #4.
 - Issues : labels `bug`, `enhancement` ou `documentation`, jalon v1, cases des epics à jour.
