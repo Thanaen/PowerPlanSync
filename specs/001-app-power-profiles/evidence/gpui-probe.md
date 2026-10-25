@@ -26,6 +26,7 @@ dans les sources de GPUI, pas sur un bureau Windows. T048 les vérifie sur Windo
 | Fenêtre créée à la demande | `cx.open_window(WindowOptions, …)` | Renvoie un `WindowHandle`. |
 | Fenêtre détruite à la fermeture | `window.remove_window()` | La vue est libérée avec la fenêtre. |
 | Application gardée après fermeture | `Application::with_quit_mode(QuitMode::Explicit)` | Arrêt par `cx.quit()`. |
+| Fermeture observée | `cx.on_window_closed` | Plus fiable qu'un `update` refusé, qui peut venir d'un `App` occupé. |
 | Barre de titre dessinée | `TitlebarOptions { appears_transparent: true }` | Zones par `window_control_area(Drag / Close)`. |
 | Rôles et noms accessibles | `.role(Role::…)`, `.aria_label(…)` | Rôles AccessKit, adaptateur `accesskit_windows` 0.34. |
 | Interrupteur | `Role::Switch`, `.aria_toggled(Toggled::…)` | |
@@ -34,8 +35,9 @@ dans les sources de GPUI, pas sur un bureau Windows. T048 les vérifie sur Windo
 | Ordre de tabulation | `.focusable()`, `.tab_stop(true)`, `window.focus_next` | Liés à Tab et Maj+Tab. |
 | Mouvement réduit | `cx.set_reduce_motion(…)` | Lu par `SPI_GETCLIENTAREAANIMATION` au démarrage. |
 | Ressort | `.with_spring(id, SpringAnimation::new(config).to(cible), …)` | Statique quand `reduce_motion` est actif. |
-| Sélecteur GPUI | `cx.prompt_for_paths(PathPromptOptions)` | Réponse asynchrone. |
-| Sélecteur Win32 | `src/windows/file_dialog.rs::choose_executable` | HWND obtenu par `raw-window-handle`. |
+| Sélecteur GPUI | `cx.prompt_for_paths(PathPromptOptions)` | Réponse asynchrone. `prompt` nomme le bouton de validation. |
+| Sélecteur Win32 | `src/windows/file_dialog.rs::choose_executable` | Sur un thread dédié ; HWND obtenu par `raw-window-handle`. |
+| DPI par écran | `WM_DPICHANGED` traité par `gpui-pre-windows` (`events.rs`) | Vérifié en T048. |
 | Icône de notification | `tray-icon` 0.26.1 et son menu `muda` 0.21.2 | Événements lus toutes les 100 ms. |
 
 ## Manques relevés
@@ -44,8 +46,14 @@ dans les sources de GPUI, pas sur un bureau Windows. T048 les vérifie sur Windo
   (`aria-live`) ni aucune annonce explicite. `Role::Status` est publié, mais rien ne garantit que
   le Narrateur lise un changement de texte. T048 doit le vérifier. En cas d'échec, il faudra un
   contournement dans `src/interface/`, par exemple `UiaRaiseNotificationEvent` sur le HWND.
-- **Filtre de type de fichier.** `PathPromptOptions` ne permet pas de limiter le choix aux `.exe`.
-  Le sélecteur Win32 existant garde ce filtre ; il reste le choix par défaut de T059.
+- **Filtre et titre du sélecteur GPUI.** `PathPromptOptions` ne permet ni de limiter le choix aux
+  `.exe` ni de donner un titre : `prompt` nomme seulement le bouton de validation. Le sélecteur Win32
+  existant garde son filtre et son titre ; il reste le choix par défaut de T059.
+- **Sélecteur Win32 et boucle GPUI.** `choose_executable` ne doit pas être appelé directement depuis
+  un écouteur GPUI. Sa boucle modale distribue les messages de la fenêtre propriétaire, donc les
+  tâches GPUI, pendant que `App` est emprunté : une tâche qui appelle `cx.update` panique. GPUI
+  ouvre ses propres dialogues sur un thread séparé pour cette raison. La sonde fait de même, et
+  T059 doit suivre ce modèle.
 - **Changement d'« Effets d'animation » en cours d'exécution.** La sonde lit le réglage au démarrage
   seulement. T052 relira le réglage à chaque `WM_SETTINGCHANGE`.
 - **Événements de l'icône.** `tray-icon` publie ses événements sur des canaux globaux. La sonde les
@@ -55,7 +63,7 @@ dans les sources de GPUI, pas sur un bureau Windows. T048 les vérifie sur Windo
 
 | Paquet | Version | Licence |
 | --- | --- | --- |
-| `gpui-pre` et ses 14 paquets `gpui-pre-*` | 0.3.9 | Apache-2.0 |
+| `gpui-pre` et les 13 paquets `gpui-pre-*` du graphe Windows | 0.3.9 | Apache-2.0 |
 | `accesskit` | 0.24.1 | MIT OR Apache-2.0 |
 | `accesskit_windows` | 0.34.0 | MIT OR Apache-2.0 |
 | `tray-icon` | 0.26.1 | MIT OR Apache-2.0 |
@@ -64,4 +72,6 @@ dans les sources de GPUI, pas sur un bureau Windows. T048 les vérifie sur Windo
 | `futures` | 0.3.34 | MIT OR Apache-2.0 |
 | `raw-window-handle` | 0.6.2 | MIT OR Apache-2.0 OR Zlib |
 
+`Cargo.lock` liste aussi des paquets `gpui-pre-*` pour d'autres plateformes (macOS, web) ; ils ne
+sont pas compilés pour Windows et leurs licences n'ont pas été vérifiées ici.
 Aucune de ces licences n'impose de copyleft. Les notices seront régénérées en T071.

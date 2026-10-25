@@ -15,13 +15,16 @@ fn main() {
 
 #[cfg(windows)]
 mod probe {
+    use std::cell::Cell;
     use std::path::PathBuf;
+    use std::rc::Rc;
     use std::time::Duration;
 
     use gpui::{
         AnimationExt as _, App, Bounds, Context, FocusHandle, KeyBinding, PathPromptOptions,
         QuitMode, Role, SharedString, SpringAnimation, SpringConfig, Toggled, Window, WindowBounds,
-        WindowControlArea, WindowHandle, WindowOptions, actions, div, prelude::*, px, rgb, size,
+        WindowControlArea, WindowHandle, WindowId, WindowOptions, actions, div, prelude::*, px,
+        rgb, size,
     };
     use power_plan_sync::windows::file_dialog::choose_executable;
     use raw_window_handle::{HasWindowHandle, RawWindowHandle};
@@ -59,7 +62,18 @@ mod probe {
                     }
                 };
 
-                let first = open_probe_window(cx);
+                // Fenêtre ouverte, effacée par GPUI à sa fermeture. Un `update` refusé ne
+                // prouve pas une fermeture : l'application peut être occupée.
+                let open_window: Rc<Cell<Option<WindowId>>> = Rc::default();
+                let closed = Rc::clone(&open_window);
+                cx.on_window_closed(move |_, id| {
+                    if closed.get() == Some(id) {
+                        closed.set(None);
+                    }
+                })
+                .detach();
+
+                let first = open_probe_window(cx, &open_window);
                 cx.spawn(async move |cx| {
                     // L'icône vit tant que la boucle tourne.
                     let _tray: TrayIcon = tray;
@@ -72,7 +86,7 @@ mod probe {
                         cx.background_executor()
                             .timer(Duration::from_millis(400))
                             .await;
-                        window = cx.update(open_probe_window);
+                        window = cx.update(|cx| open_probe_window(cx, &open_window));
                         cx.background_executor()
                             .timer(Duration::from_millis(400))
                             .await;
@@ -105,13 +119,11 @@ mod probe {
                             cx.update(|cx| cx.quit());
                             return;
                         }
-                        let still_open =
-                            window.is_some_and(|handle| handle.update(cx, |_, _, _| ()).is_ok());
-                        if !still_open {
+                        if open_window.get().is_none() {
                             window = None;
                         }
                         if (wants_open || open_from_menu) && window.is_none() {
-                            window = cx.update(open_probe_window);
+                            window = cx.update(|cx| open_probe_window(cx, &open_window));
                         }
                     }
                 })
@@ -130,6 +142,7 @@ mod probe {
             .with_tooltip("Sonde GPUI PowerPlanSync")
             .with_icon(tray_icon_image()?)
             .with_menu(Box::new(menu))
+            .with_menu_on_left_click(false)
             .build()
             .map_err(|error| error.to_string())?;
         Ok((tray, open.id().clone(), quit.id().clone()))
@@ -151,7 +164,10 @@ mod probe {
         Icon::from_rgba(rgba, SIDE, SIDE).map_err(|error| error.to_string())
     }
 
-    fn open_probe_window(cx: &mut App) -> Option<WindowHandle<ProbeView>> {
+    fn open_probe_window(
+        cx: &mut App,
+        open_window: &Cell<Option<WindowId>>,
+    ) -> Option<WindowHandle<ProbeView>> {
         let bounds = Bounds::centered(None, size(px(520.), px(440.)), cx);
         let options = WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
@@ -166,6 +182,7 @@ mod probe {
             cx.new(|cx| ProbeView::new(window, cx))
         }) {
             Ok(handle) => {
+                open_window.set(Some(handle.window_id()));
                 cx.activate(true);
                 Some(handle)
             }
@@ -240,7 +257,7 @@ mod probe {
                 files: true,
                 directories: false,
                 multiple: false,
-                prompt: Some("Choisir un logiciel".into()),
+                prompt: Some("Choisir".into()),
             });
             cx.spawn(async move |this, cx| {
                 let path = match paths.await {
@@ -258,11 +275,31 @@ mod probe {
             .detach();
         }
 
+        /// La boucle modale du sélecteur distribue les messages de la fenêtre propriétaire.
+        /// Appelé depuis un écouteur GPUI, elle relancerait les tâches pendant que `App` est
+        /// emprunté : le sélecteur tourne donc sur son propre thread, comme les dialogues GPUI.
         fn browse_with_win32(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-            match choose_executable(window_hwnd(window)) {
-                Ok(path) => self.show_selection("Win32", path, cx),
-                Err(error) => self.set_status(format!("Win32 : {error}"), cx),
+            let owner = window_hwnd(window).map(|hwnd| hwnd.0 as isize);
+            let (sender, receiver) = futures::channel::oneshot::channel();
+            let started = std::thread::Builder::new()
+                .name("probe-file-dialog".into())
+                .spawn(move || {
+                    let owner = owner.map(|hwnd| HWND(hwnd as *mut _));
+                    let _ = sender.send(choose_executable(owner));
+                });
+            if let Err(error) = started {
+                self.set_status(format!("Win32 : thread impossible ({error})"), cx);
+                return;
             }
+            cx.spawn(async move |this, cx| {
+                let status = receiver.await;
+                let _ = this.update(cx, |this, cx| match status {
+                    Ok(Ok(path)) => this.show_selection("Win32", path, cx),
+                    Ok(Err(error)) => this.set_status(format!("Win32 : {error}"), cx),
+                    Err(_) => this.set_status("Win32 : sélecteur interrompu", cx),
+                });
+            })
+            .detach();
         }
     }
 
