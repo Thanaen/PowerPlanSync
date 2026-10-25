@@ -24,9 +24,16 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
   sont réunies : la dernière revue de `pullfrog[bot]` est APPROVED sur le SHA de tête,
   toute la CI est verte, aucun conflit. Jamais si Clément a demandé des changements
   ou écrit d'attendre.
+- Jusqu'au 1er novembre 2026, Pullfrog et la CI sont indisponibles. Ils sont remplacés par
+  une revue d'un agent relecteur dédié, lancé à neuf sur le diff du SHA de tête, et par la
+  validation locale. Le merge exige alors son verdict APPROVED sur ce SHA, la validation
+  locale verte et aucun conflit. Le verdict est publié en commentaire sur la PR.
+  À partir du 1er novembre, la règle Pullfrog et CI reprend.
 - Interface : chaque décision de design ou de libellé passe par Designer
   (`design:design-critique`), UX Writer (`design:ux-copy`) et Screenshot reviewer,
-  jusqu'à leur accord. Chaque changement d'UI met à jour les maquettes et le design system.
+  jusqu'à leur accord. Chaque changement d'UI met à jour les maquettes. Le design system
+  « Bientôt GPUI » n'est pas modifié depuis ce dépôt : les écarts sont listés dans
+  `specs/001-app-power-profiles/design/README.md` et leur adoption est demandée au projet Bientôt.
 - Ne jamais lancer Battlefield. Ne jamais toucher aux PR qui ne sont pas celles de la routine,
   en particulier #4.
 - Issues : labels `bug`, `enhancement` ou `documentation`, jalon v1, cases des epics à jour.
@@ -43,13 +50,12 @@ Aucun bug ouvert au 25 octobre 2026.
 
 - [ ] Migrer l'interface de Slint vers GPUI (#5). Commence après le merge de #4 et la
       planification dans `plan.md` et `tasks.md`, faite dans le fil de la refonte GPUI.
-- [ ] Ajouter une CI Windows : formatage, Clippy, tests (#7). Attend le budget Actions.
+- [ ] Ajouter une CI Windows : formatage, Clippy, tests (#7). Peut être préparée maintenant ; elle tournera à partir du 1er novembre.
 
 ### 3. Tâches qui attendent Clément
 
 - [ ] Relire et merger la synchronisation de la conception GPUI (#4).
-- [ ] Débloquer le budget GitHub Actions : Pullfrog ne démarre plus depuis le 17 octobre,
-      et aucune CI ne peut tourner.
+- [ ] Budget GitHub Actions épuisé : Pullfrog et la CI reviennent le 1er novembre 2026.
 - [ ] Confirmer la règle de merge : Pullfrog publie ses revues en COMMENTED, jamais APPROVED.
 - [ ] Créer le jalon v1 : l'outil GitHub de la routine ne crée pas de jalon.
 - [ ] Valider la v1 sur un Windows réel (#6).
