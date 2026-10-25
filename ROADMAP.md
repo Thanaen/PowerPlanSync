@@ -75,4 +75,5 @@ Aucun bug ouvert au 25 octobre 2026.
 | 2026-10-25 | [#4](https://github.com/Thanaen/PowerPlanSync/pull/4) | Conception GPUI synchronisée (fil de la refonte GPUI). |
 | 2026-10-25 | [#11](https://github.com/Thanaen/PowerPlanSync/pull/11) | CI Windows ajoutée ; règles de merge et d'autonomie mises à jour. |
 | 2026-10-25 | [#10](https://github.com/Thanaen/PowerPlanSync/pull/10) | Migration GPUI planifiée (fil de la refonte GPUI). |
-| 2026-10-25 | #12 | T046 : dépendances GPUI épinglées. |
+| 2026-10-25 | [#12](https://github.com/Thanaen/PowerPlanSync/pull/12) | T046 : dépendances GPUI épinglées. |
+| 2026-10-26 | #13 | T047 : sonde GPUI, compilée ; essais réels en T048. |
