@@ -53,10 +53,11 @@ Aucun bug ouvert au 25 octobre 2026.
 ### 2. Fonctionnalités
 
 - [ ] Migrer l'interface de Slint vers GPUI (#5). La conception est synchronisée
-      ([#4](https://github.com/Thanaen/PowerPlanSync/pull/4)). La planification est en
-      cours dans [#10](https://github.com/Thanaen/PowerPlanSync/pull/10), fil de la refonte GPUI.
-      La routine enchaîne ensuite les tâches T046 à T072 dans l'ordre de `tasks.md`.
-- [ ] Ajouter une CI Windows : formatage, Clippy, tests (#7). Elle tournera à partir du 1er novembre.
+      ([#4](https://github.com/Thanaen/PowerPlanSync/pull/4)). La migration est planifiée
+      ([#10](https://github.com/Thanaen/PowerPlanSync/pull/10)). La routine enchaîne les tâches
+      T046 à T072 dans l'ordre de `tasks.md`. T048 et T070 se font sur un Windows réel.
+- [x] Ajouter une CI Windows : formatage, Clippy, tests ([#11](https://github.com/Thanaen/PowerPlanSync/pull/11)).
+      Elle tournera à partir du 1er novembre.
 
 ### 3. Tâches qui attendent Clément
 
@@ -73,3 +74,5 @@ Aucun bug ouvert au 25 octobre 2026.
 | 2026-10-25 | [#9](https://github.com/Thanaen/PowerPlanSync/pull/9) | Feuille de route créée, issues #5 à #8 ouvertes. |
 | 2026-10-25 | [#4](https://github.com/Thanaen/PowerPlanSync/pull/4) | Conception GPUI synchronisée (fil de la refonte GPUI). |
 | 2026-10-25 | [#11](https://github.com/Thanaen/PowerPlanSync/pull/11) | CI Windows ajoutée ; règles de merge et d'autonomie mises à jour. |
+| 2026-10-25 | [#10](https://github.com/Thanaen/PowerPlanSync/pull/10) | Migration GPUI planifiée (fil de la refonte GPUI). |
+| 2026-10-25 | #12 | T046 : dépendances GPUI épinglées. |
