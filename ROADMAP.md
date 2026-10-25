@@ -71,4 +71,4 @@ Aucun bug ouvert au 25 octobre 2026.
 | --- | --- | --- |
 | 2026-10-25 | [#9](https://github.com/Thanaen/PowerPlanSync/pull/9) | Feuille de route créée, issues #5 à #8 ouvertes. |
 | 2026-10-25 | [#4](https://github.com/Thanaen/PowerPlanSync/pull/4) | Conception GPUI synchronisée (fil de la refonte GPUI). |
-| 2026-10-25 | #10 | CI Windows ajoutée ; règles de merge et d'autonomie mises à jour. |
+| 2026-10-25 | [#11](https://github.com/Thanaen/PowerPlanSync/pull/11) | CI Windows ajoutée ; règles de merge et d'autonomie mises à jour. |
