@@ -23,6 +23,9 @@ cargo fmt --check
 cargo clippy --locked --all-targets --target x86_64-pc-windows-msvc -- -D warnings
 ```
 
+Après T046, ce contrôle demande aussi `llvm-rc` dans le `PATH` : la fonctionnalité
+`windows-manifest` de GPUI intègre un manifeste à la compilation.
+
 Les tests restent à exécuter sous Windows, puis dans la CI Windows prévue (issue #7). Si T057
 aboutit, `cargo run --locked --features screenshots --bin screenshots` produit aussi les captures
 hors écran sous Linux, avec un pilote Vulkan logiciel comme Mesa lavapipe.
@@ -56,7 +59,8 @@ vérifier le [contrat d'interface](contracts/user-interface.md). Vérifier aussi
 
 1. Les quatre transitions du contrat s'animent à la souris, jamais au clavier.
 2. En build debug, `POWERPLANSYNC_MOTION_SLOWDOWN=4` ralentit chaque animation quatre fois pour
-   la juger au ressenti face aux images de [design/mouvement](design/mouvement).
+   la juger au ressenti face aux images de [design/mouvement](design/mouvement), par exemple avec
+   `$env:POWERPLANSYNC_MOTION_SLOWDOWN=4; cargo run --locked -- --demo --gpui` (sans `--release`).
 3. Avec « Effets d'animation » désactivé dans Windows, l'état final s'affiche directement, y
    compris après un changement du réglage pendant que l'application est ouverte.
 
