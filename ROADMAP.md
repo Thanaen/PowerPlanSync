@@ -53,8 +53,9 @@ Aucun bug ouvert au 25 octobre 2026.
 ### 2. Fonctionnalités
 
 - [ ] Migrer l'interface de Slint vers GPUI (#5). La conception est synchronisée
-      ([#4](https://github.com/Thanaen/PowerPlanSync/pull/4)). Prochaine étape : passer
-      `plan.md`, `research.md` et `tasks.md` à GPUI avec `speckit-plan` et `speckit-tasks`.
+      ([#4](https://github.com/Thanaen/PowerPlanSync/pull/4)). La planification est en
+      cours dans [#10](https://github.com/Thanaen/PowerPlanSync/pull/10), fil de la refonte GPUI.
+      La routine enchaîne ensuite les tâches T046 à T072 dans l'ordre de `tasks.md`.
 - [ ] Ajouter une CI Windows : formatage, Clippy, tests (#7). Elle tournera à partir du 1er novembre.
 
 ### 3. Tâches qui attendent Clément
