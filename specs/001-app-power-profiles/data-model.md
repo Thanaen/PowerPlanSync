@@ -1,6 +1,7 @@
 # Modèle de données et transitions
 
-Ce document décrit les types à implémenter. Aucun type Rust n'est encore livré.
+Ce document décrit les types du domaine. Ils sont livrés dans `src/domain.rs` (T007) et ne
+dépendent d'aucune interface. La migration vers GPUI ne les change pas.
 
 ## Identités et configuration
 
@@ -59,7 +60,7 @@ Les raisons de blocage sont des variantes typées. Une accumulation de booléens
    Persister cette révocation. Aucun retour n'est appliqué lorsque ce cycle s'achève.
 6. **Reprendre** révoque la pause ou la suspension, clôture le journal révoqué sans écriture,
    relit Windows et démarre un nouveau cycle si une règle est éligible.
-7. **Pause**, batterie non autorisée, session quittée ou **Quitter** clôturent le cycle par un
+7. **Mettre en pause**, batterie non autorisée, session quittée ou **Quitter** clôturent le cycle par un
    retour protégé. Le plan externe distinct observé reste prioritaire.
 8. Une instance connue devient indéterminée. La conserver provisoirement durant dix secondes.
    Un snapshot complet sans son PID confirme son absence. Si l'incertitude persiste, tenter

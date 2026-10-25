@@ -2,6 +2,8 @@
 
 Recherche effectuée le 2026-09-20. Les constats Windows sont locaux et en lecture seule.
 Les choix ci-dessous définissent le point de départ des prototypes, pas leurs résultats.
+Complétée le 2026-10-25 pour la migration de l'interface vers GPUI, décidée par le responsable
+produit. D12 à D16 remplacent D05 pour l'interface. D01 à D04 et D06 à D11 restent valables.
 
 ## D01. Commencer par les plans Windows existants
 
@@ -102,6 +104,9 @@ et [arrêt de Windows](https://learn.microsoft.com/en-us/windows/win32/shutdown/
 
 ## D05. Valider Slint sur un petit parcours accessible
 
+> Remplacée par D12 le 2026-10-25. Ce texte reste l'historique du premier lot et des preuves
+> Slint conservées dans `evidence/`.
+
 **Décision.** Premier candidat, Rust avec Slint et ses contrôles standards. La déclaration `.slint`
 est compilée avec le binaire Rust. Le moteur reste indépendant de cette interface.
 Créer les réglages à la demande et libérer la fenêtre à leur fermeture.
@@ -175,7 +180,8 @@ et [release utilisée](https://github.com/github/spec-kit/releases/tag/v1.0.8).
 | --- | --- | --- |
 | API et droits standards | Plans identiques à powercfg, bascule et lecture concordantes, refus maîtrisé | Trois cycles sous compte non élevé, GUID confirmés ; voir D10 |
 | Détection de l'exécutable témoin | Chemin exact, lanceur séparé, instances et homonyme reconnus | Réussi, sans Battlefield ; voir D10 |
-| Interface Slint | Parcours clavier et Narrateur complet, contraste et DPI conformes | Partiel, Narrateur et contrastes ouverts |
+| Interface Slint | Parcours clavier et Narrateur complet, contraste et DPI conformes | Partiel, Narrateur et contrastes ouverts ; remplacée par GPUI, voir D12 |
+| Interface GPUI | Même critère, plus tray, mouvement réduit et budgets SC-004 et SC-007 | Non exécuté ; sonde prévue en T047 et T048 |
 | Coût du moteur et de la fenêtre | Budgets SC-004 et SC-007, mesures brutes conservées | Interface seule mesurée une minute par état ; moteur et campagnes longues à faire |
 | Session et verrou global | Une seule instance écrit, abandon récupérable sans élévation | Refus interprocessus réussi ; sessions et récupération à faire |
 | Récupération interrompue | Chaque coupure entre journal et écriture possède une issue sûre documentée | Non exécuté |
@@ -222,3 +228,157 @@ La constitution exige la faisabilité d'accessibilité avant l'interface défini
 reste intacte. L'intégration graphique reste candidate tant que clavier, Narrateur et contrastes
 ne sont pas vérifiés. Les critères SC-001 à SC-007 et les tâches de livraison ne changent pas.
 Les tests de récupération accompagnent le coordinateur avant tout usage automatique réel.
+
+## D12. Migrer l'interface vers GPUI en gardant le moteur
+
+**Décision.** Le responsable produit a validé le 2026-10-25 la migration de l'interface vers GPUI,
+avec les maquettes de [design/README.md](design/README.md) et le
+[contrat d'interface](contracts/user-interface.md). Seule la couche d'interface est remplacée :
+`src/ui.rs`, `ui/*.slint`, la boucle Slint de `src/runtime.rs` et l'icône Slint. Le domaine,
+le moteur, le coordinateur, le stockage, la récupération, les adaptateurs Windows et la
+présentation sans type Slint restent en place. La nouvelle couche vit dans `src/interface/`.
+Le nom `gpui` est réservé à la dépendance pour éviter une ambiguïté de chemin Rust.
+
+Les versions reprennent l'application de référence Bientôt, dépôt Thanaen/WorkTime. Les chemins
+ci-dessous viennent de la branche `main` du clone local (commit `72d3f5b`, crates `worktime-*`)
+ou de `origin/main` (commit `d698537`, crates renommées `bientot-*` par la PR #65 de WorkTime).
+
+| Dépendance | Version retenue | Preuve dans Thanaen/WorkTime |
+| --- | --- | --- |
+| `gpui` | `=0.3.9`, paquet `gpui-pre` | `crates/worktime-app/Cargo.toml` |
+| `gpui_platform` | `=0.3.9`, paquet `gpui-pre-platform` | `crates/worktime-app/Cargo.toml` |
+| `gpui_wgpu` | `=0.3.9`, paquet `gpui-pre-wgpu`, Linux seulement, optionnel | fonctionnalité `screenshots` du même fichier |
+| `tray-icon` | `0.26`, sans fonctionnalités par défaut, Windows seulement | même fichier ; `Cargo.lock` résout 0.26.1 |
+| `image` | `0.25`, fonctionnalités `ico` et `png` | même fichier |
+| `futures`, `raw-window-handle` | `0.3`, `0.6`, Windows seulement | même fichier |
+| `windows` | `0.62.2`, déjà épinglé ici | `gpui-pre-windows` dépend de `windows 0.62.2` dans `Cargo.lock` |
+
+**Raison.** Les maquettes utilisent le design system Bientôt GPUI et ses composants. Bientôt
+utilise ces versions sur Windows avec une icône de notification, des fenêtres créées à la demande
+et un arbre accessible. Slint n'avait pas d'échec certain (D10), mais garder Slint obligerait à
+recréer ce design system dans un autre langage. Le retrait de Slint supprime aussi l'obligation
+d'attribution `AboutSlint` notée dans [ui-probe.md](evidence/ui-probe.md).
+La constitution admet une interface Rust sans navigateur embarqué. GPUI ne change pas ce point.
+
+**Alternatives.** Garder Slint et imiter les maquettes : rejeté, deux design systems à maintenir.
+egui, Win32 et iced : non réévalués, la décision produit porte sur GPUI. Une bascule d'un seul
+bloc est rejetée : la couche GPUI grandit à côté de Slint derrière l'option de développement
+`--gpui`, puis T071 retire Slint et cette option. Voir Complexity Tracking dans [plan.md](plan.md).
+
+**Version de Rust.** PowerPlanSync épingle Rust 1.98.1. Bientôt compile `gpui-pre` 0.3.9 avec
+Rust 1.97.0 (`rust-toolchain.toml`). T046 vérifie la compilation avec 1.98.1 par Clippy pour
+`x86_64-pc-windows-msvc`. Un échec est consigné avant tout changement de version.
+
+**Réseau.** Les fonctionnalités `usage-ping`, `updates` et `release` de Bientôt
+(`crates/bientot-app/Cargo.toml`, `origin/main`) ne sont pas reprises : la constitution exclut
+toute télémétrie et toute communication réseau. `gpui-pre` dépend de `gpui-pre-http-client`
+(`Cargo.lock`) ; T043 vérifie qu'aucune connexion n'est ouverte par l'application.
+
+**Licence.** La licence publiée de `gpui-pre`, `gpui-pre-platform` et de leurs dépendances n'a
+pas été vérifiée hors ligne. T044 la vérifie avant toute distribution, comme pour Slint.
+
+## D13. Icône de notification, fenêtre et instance unique
+
+**Décision.** L'icône et son menu natif utilisent `tray-icon` 0.26 et ses menus `muda`. Leurs
+événements rejoignent le thread principal de GPUI par des canaux lus dans une tâche GPUI, comme
+dans `crates/worktime-app/src/tray.rs`. La fenêtre des réglages est ouverte par `cx.open_window`
+et détruite par `window.remove_window()` à sa fermeture, comme `crates/worktime-app/src/shell.rs`
+et `crates/worktime-app/src/week_view.rs`. Ce dernier montre aussi une barre de titre dessinée
+par l'application, avec `WindowControlArea::Close`, nécessaire à la barre « Commandes » des maquettes.
+
+Le contrôle unique reste celui de PowerPlanSync, dans `src/windows/session.rs` : objet nommé
+global et ouverture de la fenêtre dans la même session (FR-016). Bientôt garde une instance par
+dossier de données et par session avec un canal nommé (`crates/worktime-windows/src/single_instance.rs`).
+Ce modèle ne protège pas contre une seconde session et n'est donc pas repris. Le démarrage
+avec Windows reste `src/windows/startup.rs` (T033). Bientôt utilise la même clé `Run`
+(`crates/worktime-windows/src/startup.rs`), ce qui confirme le choix sans le changer.
+
+Les notifications Windows du produit restent dans la fenêtre cachée de
+`src/windows/notifications.rs`, qui reçoit déjà `WM_SETTINGCHANGE` et `WM_THEMECHANGED`.
+Le sélecteur de fichier garde `src/windows/file_dialog.rs`. Bientôt utilise
+`cx.prompt_for_paths` (`crates/bientot-app/src/file_dialogs.rs`, `origin/main`). T047 compare les
+deux, car le filtre `.exe` de `prompt_for_paths` n'est pas confirmé.
+
+**Raison.** GPUI n'a pas d'icône de notification ; Bientôt documente ce manque dans `tray.rs`.
+Créer la fenêtre à la demande garde l'objectif SC-007 déjà prévu pour Slint.
+
+**Alternatives.** Garder l'icône Slint : impossible sans boucle Slint. Écrire l'icône avec
+`Shell_NotifyIcon` : possible, mais `tray-icon` est déjà éprouvé avec GPUI par Bientôt.
+
+## D14. Thème, composants et écarts locaux
+
+**Décision.** `src/interface/theme.rs` reprend les jetons du design system Bientôt GPUI : thème
+WorkTime One clair et sombre, IBM Plex Sans et Mono. Le modèle est `crates/worktime-app/src/theme.rs`,
+qui choisit la variante selon `window.appearance()`. Les écarts propres à PowerPlanSync, listés
+dans [design/README.md](design/README.md) « Écarts avec le design system », vivent seulement dans
+ce thème. Le design system lui-même n'est pas modifié depuis ce dépôt.
+
+Le champ de texte suit `crates/worktime-app/src/text_input.rs`, que Bientôt maintient lui-même.
+La palette de commandes suit `crates/bientot-app/src/palette.rs` et `palette_view.rs` (`origin/main`).
+
+**Raison.** Les maquettes ont été validées sur ce design system. Les écarts sont déjà revus.
+
+**Risque.** Bientôt ne traite pas les thèmes de contraste : aucune occurrence de
+`SPI_GETHIGHCONTRAST` ni de couleur système dans ses crates. PowerPlanSync lit déjà le contraste
+élevé dans `src/windows/preferences.rs`. Le remplacement des jetons par les couleurs système
+(contrat, section Accessibilité) est donc à construire et à vérifier (T068, T070).
+
+## D15. Mouvement et réglage « Effets d'animation »
+
+**Décision.** `src/interface/motion.rs` reprend le module `theme::motion` de Bientôt,
+`crates/bientot-app/src/theme/motion.rs` (`origin/main`) : durées PRESS 140 ms, TOOLTIP 150 ms,
+MENU 200 ms et DIALOG 250 ms, courbes `ease_out` `(0.23, 1, 0.32, 1)` et `ease_in_out`
+`(0.77, 0, 0.175, 1)`, poses `slide_in` et `slide_over`, `Entrance` et `OPAQUE_AT` = 0,1.
+Le ralenti de débogage `BIENTOT_MOTION_SLOWDOWN` devient `POWERPLANSYNC_MOTION_SLOWDOWN`.
+
+`App::reduce_motion` suit le réglage Windows « Effets d'animation ». Bientôt lit
+`SPI_GETCLIENTAREAANIMATION`, appelle `cx.set_reduce_motion` au démarrage puis à chaque
+`WM_SETTINGCHANGE` (`crates/bientot-windows/src/animation_effects.rs`, `animation_effects/native.rs`
+et `crates/bientot-app/src/main.rs`, fonction `follow_animation_effects`). Une lecture échouée
+garde le mouvement. Bientôt installe un hook de thread, car GPUI ne transmet pas `WM_SETTINGCHANGE`.
+PowerPlanSync reçoit déjà ce message dans sa fenêtre cachée et n'a pas besoin de ce hook.
+
+**Raison.** Le contrat d'interface et les maquettes citent ce module. Le commentaire de
+`motion.rs` indique que `with_animation` et `with_spring` montrent leur état final quand
+`reduce_motion` est actif.
+
+**Risque.** Bientôt n'appelle `with_spring` nulle part ; seul ce commentaire le mentionne.
+Les recettes « Monter ou Descendre » et « Étape validée » de design/README.md en dépendent.
+T047 vérifie que `with_spring` existe dans `gpui-pre` 0.3.9 avec les paramètres voulus.
+Sinon, ces deux transitions passent sur `ease_in_out` et `ease_out`, après accord du design.
+
+## D16. Accessibilité, preuves et validation
+
+**Décision.** Les éléments GPUI portent `.role(Role::…)`, `.aria_label`, `.aria_description`,
+`.aria_toggled`, `.tab_index` et `.track_focus`, comme `crates/worktime-app/src/flyout.rs` et
+`settings_view.rs`. `gpui-pre` 0.3.9 dépend d'`accesskit` 0.24.1, et `gpui-pre-windows` d'`accesskit_windows`
+0.34.0 (`Cargo.lock` de Bientôt). L'arbre accessible passe donc par UI Automation. Un texte simple
+n'est pas dans cet arbre : Bientôt passe par `readable` dans `flyout.rs`. PowerPlanSync suit la même règle.
+
+Les tests de vues utilisent `gpui/test-support`, `HeadlessAppContext`, `set_reduce_motion` et
+`advance_clock`, comme `crates/bientot-app/tests/common/mod.rs` (`origin/main`). La fonctionnalité `screenshots` rend les écrans hors
+écran sous Linux avec `gpui_wgpu` et Mesa lavapipe, comme `crates/worktime-app/src/bin/screenshots.rs`
+et l'étape « Capture GPUI screenshots » de `.github/workflows/ci.yml`.
+
+Dans le conteneur Linux, les contrôles locaux restent `cargo fmt --check` et
+`cargo clippy --locked --all-targets --target x86_64-pc-windows-msvc -- -D warnings`.
+Le crate dépend de `windows` et ne compile pas pour Linux. Les tests ne s'exécutent que sous
+Windows, en attendant la CI Windows prévue (issue #7). Narrateur, contraste, échelle et texte
+agrandi exigent un vrai Windows. Les cycles réels utilisent l'exécutable témoin, jamais Battlefield.
+
+**Risques et questions ouvertes.**
+
+- Annonce sans déplacement du focus : Bientôt utilise `Role::Status` et `Role::Alert`, mais
+  aucune preuve ne montre que le Narrateur les annonce comme une région active. T048 le vérifie.
+- Texte agrandi de Windows : aucun traitement trouvé dans Bientôt. T048 et T070 le vérifient.
+- Échelle par écran : Bientôt lit seulement `GetDpiForMonitor` pour placer son volet
+  (`crates/bientot-app/src/tray.rs`, `origin/main`). La gestion du DPI par écran de
+  `gpui-pre-windows` n'est pas confirmée. T047 et T048 la vérifient, avec un changement d'écran.
+- Budgets SC-004 : Bientôt fixe une porte v1 de 60 Mo de mémoire, indicative sur un runner sans
+  GPU, et un budget de 150 Mio de working set (`docs/ci-quality-gates.md` et
+  `scripts/measure-performance.ps1`, `origin/main`). PowerPlanSync
+  vise 40 Mio de mémoire privée fenêtre fermée. T048 mesure avant les fondations GPUI. Un échec
+  exige un amendement explicite de SC-004, jamais une baisse silencieuse.
+- Captures Linux : `screenshots` exige que les modules Windows soient compilés sous
+  `cfg(windows)`. T057 isole ces modules. S'il coûte trop, il reste facultatif.
+- Licence de `gpui-pre` et des polices IBM Plex : à vérifier en T044.

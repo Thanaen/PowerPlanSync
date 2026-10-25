@@ -1,8 +1,9 @@
 # Valider PowerPlanSync sur Windows
 
-Ce guide décrit la validation à réaliser pendant l'implémentation.
-Les commandes Cargo et les scripts produit ci-dessous ne sont pas encore disponibles.
-La seule preuve d'exécution actuelle est [l'inventaire Windows](evidence/environment.txt).
+Ce guide décrit la validation à réaliser pendant l'implémentation. La version Slint et ses
+scripts existent ; leurs preuves sont dans `evidence/`. La migration GPUI (T046 à T072) reprend
+les mêmes vérifications sur la nouvelle interface. Un contrôle non exécuté porte la mention
+« non exécuté ».
 
 ## Préparer l'environnement
 
@@ -10,8 +11,24 @@ La seule preuve d'exécution actuelle est [l'inventaire Windows](evidence/enviro
 2. Installer la chaîne Rust MSVC retenue en T001, les outils C++ et le SDK Windows.
 3. Vérifier les versions avec `rustc --version`, `cargo --version` et la version du SDK.
 4. Exécuter `cargo build --locked --release` après création du package.
-5. Exécuter `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings` et `cargo test --locked`.
+5. Installer `rustfmt` et `clippy` avec `rustup component add rustfmt clippy` tant que T046 n'est pas faite, puis exécuter `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings` et `cargo test --locked`.
 6. Conserver versions, sorties et code de retour dans `evidence/validation/`.
+
+Dans un conteneur Linux, le crate ne compile pas pour Linux car il dépend de `windows`. Seuls ces
+contrôles s'y exécutent :
+
+```bash
+rustup component add rustfmt clippy
+cargo fmt --check
+cargo clippy --locked --all-targets --target x86_64-pc-windows-msvc -- -D warnings
+```
+
+Après T046, ce contrôle demande aussi `llvm-rc` dans le `PATH` : la fonctionnalité
+`windows-manifest` de GPUI intègre un manifeste à la compilation.
+
+Les tests restent à exécuter sous Windows, puis dans la CI Windows prévue (issue #7). Si T057
+aboutit, `cargo run --locked --features screenshots --bin screenshots` produit aussi les captures
+hors écran sous Linux, avec un pilote Vulkan logiciel comme Mesa lavapipe.
 
 Les essais de changement de plan utilisent un PC de test ou une séance explicitement dédiée.
 Capturer le plan actif avec `powercfg /getactivescheme` avant de commencer. Restaurer ce plan en
@@ -20,7 +37,8 @@ démarrage automatique sans étape explicite et réversible.
 
 ## Vérifier l'interface isolée
 
-Après T032, lancer le mode de démonstration prévu.
+Lancer le mode de démonstration. Pendant la migration, ajouter `--gpui` après T056 pour ouvrir
+l'interface GPUI. Après T071, GPUI est l'interface par défaut et `--gpui` n'existe plus.
 
 ```powershell
 cargo run --locked --release -- --demo --data-dir .audit/demo-data
@@ -33,7 +51,18 @@ Fermer la fenêtre puis la rouvrir depuis la notification.
 Parcourir tous les contrôles au clavier. Répéter avec le Narrateur et inspecter l'arbre accessible.
 Tester les thèmes clair, sombre et contrasté, les échelles 100 %, 150 % et 200 %, le texte agrandi,
 une fenêtre de faible hauteur et un déplacement entre écrans de DPI différents.
-Conserver les captures, l'arbre inspecté et les résultats dans `evidence/accessibility/`.
+Conserver les captures, l'arbre inspecté et les résultats dans `evidence/accessibility/`, et ceux
+de l'interface GPUI dans `evidence/accessibility/gpui/`.
+
+Pour l'interface GPUI, comparer chaque écran aux captures de [design/ecrans](design/ecrans) et
+vérifier le [contrat d'interface](contracts/user-interface.md). Vérifier aussi le mouvement :
+
+1. Les quatre transitions du contrat s'animent à la souris, jamais au clavier.
+2. En build debug, `POWERPLANSYNC_MOTION_SLOWDOWN=4` ralentit chaque animation quatre fois pour
+   la juger au ressenti face aux images de [design/mouvement](design/mouvement), par exemple avec
+   `$env:POWERPLANSYNC_MOTION_SLOWDOWN=4; cargo run --locked -- --demo --gpui` (sans `--release`).
+3. Avec « Effets d'animation » désactivé dans Windows, l'état final s'affiche directement, y
+   compris après un changement du réglage pendant que l'application est ouverte.
 
 ## Prouver le cycle complet
 
@@ -138,5 +167,5 @@ Le CLI local est `.tools/bin/specify.exe`. Sa version se vérifie avec la comman
 ```
 
 Pour reproduire l'installation depuis un nouveau clone, installer `specify-cli` depuis
-`git+https://github.com/github/spec-kit.git@v1.0.8` avec uv. Les skills et modèles sont déjà
+`git+https://github.com/github/spec-kit.git@v1.1.3` avec uv. Les skills et modèles sont déjà
 versionnables dans le dépôt. L'initialisation ne doit pas écraser des modifications existantes.
