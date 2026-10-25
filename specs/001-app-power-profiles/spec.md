@@ -50,7 +50,7 @@ L'utilisateur peut suspendre l'automatisation ou modifier son plan dans Windows.
 
 1. **Given** une règle active, **When** un autre plan est observé, **Then** l'application affiche « Automatisation suspendue · plan choisi dans Windows » et n'effectue plus de changement durant ce cycle.
 2. **Given** cette suspension, **When** tous les logiciels correspondants sont fermés depuis trois secondes, **Then** le cycle s'achève sans restauration et l'automatisation attend un nouveau lancement.
-3. **Given** cette suspension, **When** l'utilisateur choisit **Reprendre**, **Then** l'application recalcule immédiatement la règle gagnante et démarre un nouveau cycle si nécessaire.
+3. **Given** cette suspension, **When** l'utilisateur choisit **Reprendre l'automatisation**, **Then** l'application recalcule immédiatement la règle gagnante et démarre un nouveau cycle si nécessaire.
 4. **Given** un cycle contrôlé par l'application, **When** l'utilisateur choisit **Mettre en pause** ou **Quitter**, **Then** elle tente un retour protégé au plan choisi. Un plan externe observé est conservé.
 5. **Given** un arrêt forcé de PowerPlanSync, **When** il redémarre, **Then** il examine le cycle interrompu avant de reprendre ses règles. Un plan externe distinct reste inchangé.
 6. **Given** un refus Windows ou un plan supprimé, **When** une bascule échoue, **Then** l'erreur reste visible et aucune réussite n'est annoncée.
@@ -111,7 +111,7 @@ L'utilisateur réalise le parcours depuis une fenêtre courte et une icône prè
 - **FR-006**: La première règle éligible dans l'ordre visible DOIT gagner. Les contrôles **Monter** et **Descendre** rendent cet ordre modifiable au clavier.
 - **FR-007**: La perte naturelle de la règle gagnante DOIT attendre trois secondes avant recalcul. Une réapparition annule ce délai. Une action explicite sur les règles recalcule immédiatement.
 - **FR-008**: La fin d'un cycle DOIT rétablir le plan de retour validé au début de ce cycle, y compris si le plan cible était déjà actif.
-- **FR-009**: Tout changement externe distinct observé pendant un cycle DOIT suspendre les écritures jusqu'à sa fin ou une action **Reprendre**. La fin de cette suspension ne restaure pas le plan de retour.
+- **FR-009**: Tout changement externe distinct observé pendant un cycle DOIT suspendre les écritures jusqu'à sa fin ou une action **Reprendre l'automatisation**. La fin de cette suspension ne restaure pas le plan de retour.
 - **FR-010**: Avant toute écriture ou restauration, l'application DOIT relire le plan actif et abandonner l'écriture si celui-ci diffère de son dernier état attendu. Après écriture, elle DOIT vérifier le résultat.
 - **FR-011**: L'application DOIT enregistrer de quoi récupérer un cycle avant d'agir. Au redémarrage, elle conserve un plan externe distinct, réévalue les applications et ne restaure qu'un état compatible avec le cycle enregistré.
 - **FR-012**: **Mettre en pause** DOIT rester active après redémarrage. **Reprendre** recalcule immédiatement les règles. **Quitter** tente la restauration protégée avant l'arrêt. Fermer la fenêtre laisse le suivi actif.
@@ -127,7 +127,7 @@ L'utilisateur réalise le parcours depuis une fenêtre courte et une icône prè
 - **FR-022**: Le premier produit DOIT utiliser exclusivement les plans existants. Il ne change ni priorité de processus, ni affinité, ni réglages internes des plans, et ne promet aucun gain de FPS.
 - **FR-023**: Un nouveau processus inaccessible ne DOIT jamais être reconnu par approximation. Une instance précédemment reconnue mais devenue indéterminée maintient l'état pendant au plus dix secondes, puis provoque une suspension visible et un retour protégé.
 - **FR-024**: Modifier le plan de retour pendant un cycle DOIT affecter le cycle suivant. L'interface indique le retour déjà réservé pour le cycle courant.
-- **FR-025**: L'activation initiale DOIT attendre la validation du plan de retour et d'au moins une règle. Être au repos sans cycle ne force jamais ce plan. Après cette activation, l'interface n'offre pas d'interrupteur global permanent : seule la pause suspend l'automatisation.
+- **FR-025**: L'activation initiale DOIT attendre la validation du plan de retour et d'au moins une règle. Être au repos sans cycle ne force jamais ce plan. Après cette activation, l'interface n'offre pas d'interrupteur global permanent : seule **Mettre en pause** arrête temporairement l'automatisation.
 - **FR-026**: Les tests automatiques DOIVENT couvrir les décisions de bascule, les erreurs et la récupération. Les essais Windows réels DOIVENT vérifier séparément l'accessibilité, la consommation et le cycle d'un exécutable témoin léger. Battlefield 6 n'est pas lancé pendant ce développement.
 
 ### Key Entities *(include if feature involves data)*

@@ -80,7 +80,8 @@ dans une boîte de dialogue bloquante :
 - **Sur batterie** : « Automatisation en attente · sur batterie, aucun plan ne sera changé ».
 - **Les réglages sont illisibles** : l'automatisation reste arrêtée. Actions **Ouvrir le dossier
   des données**, **Relire les réglages** et **Ouvrir le guide**, qui renvoie à la section
-  « Réglages illisibles » du guide.
+  « Réglages illisibles » du guide. Le texte prévu pour ce guide est dans
+  [design/guide-gpui.md](../design/guide-gpui.md).
 
 ## Réglages et notification
 
@@ -94,7 +95,7 @@ Le menu natif de l'icône contient l'état (« Automatisation active · Battlefi
 **Ouvrir PowerPlanSync**, **Mettre en pause** ou **Reprendre**, puis **Quitter PowerPlanSync**. Un
 clic ouvre la fenêtre. L'infobulle donne le plan actif et sa raison. La couleur de l'icône suit
 l'état : bleu pour un plan de logiciel appliqué, gris quand aucun plan de logiciel n'est appliqué,
-orange pour une automatisation suspendue, rouge quand une action est nécessaire. Fermer la fenêtre
+orange pour une automatisation suspendue par un choix fait dans Windows, rouge quand une action est nécessaire. Fermer la fenêtre
 conserve l'icône et libère les ressources de la fenêtre. Au premier masquage, une notification
 l'explique une seule fois : « PowerPlanSync reste ouvert ».
 
@@ -126,8 +127,8 @@ DIALOG 250 ms, poses `slide_in` et `slide_over`). Quatre transitions seulement s
 1. le message de retrait annulable, qui entre en glissant de 4 px, seulement si le retrait vient
    d'être fait fenêtre ouverte ;
 2. l'échange de deux lignes après **Monter** ou **Descendre** à la souris ;
-3. l'ouverture du dialogue d'ajout au clic ;
-4. la coche d'une étape validée dans « Pour commencer ».
+3. l'ouverture au clic du dialogue **Ajouter un logiciel** ;
+4. la pastille (coche) d'une étape validée dans « Pour commencer ».
 
 Une action au clavier n'est jamais animée. La palette, le menu de l'icône, les valeurs lues
 (plan, statut, compteur) et la navigation ne le sont pas non plus. Les fermetures sont

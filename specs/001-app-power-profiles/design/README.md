@@ -5,7 +5,7 @@ Ces maquettes préparent la migration de l'interface vers GPUI. Elles reprennent
 Les originaux se trouvent sur la toile Claude Design « PowerPlanSync GPUI · maquettes »
 (https://claude.ai/artifact/Lzw5kCJu484qb26Tk6V9ni, privée). Les captures ci-dessous en
 sont des copies figées. Les libellés et les comportements qui font foi sont dans
-[contracts/user-interface.md](../contracts/user-interface.md).
+[contracts/user-interface.md](../contracts/user-interface.md). Le brouillon du guide utilisateur pour cette interface est [guide-gpui.md](guide-gpui.md).
 
 Deux boucles de revue indépendantes ont validé ces maquettes. La première en quatre tours, avec
 trois relecteurs : design, textes et captures. La seconde en trois tours, avec un quatrième
@@ -29,7 +29,7 @@ relecteur consacré au mouvement.
 Le mouvement suit les skills d'Emil Kowalski (`animate`, `find-animation-opportunities`,
 `review-animations`) et la section Mouvement du design system, qui décrit le module
 `theme::motion` de Bientôt (dépôt WorkTime) : poses `slide_in` et `slide_over`, fermeture
-instantanée, entrée seulement si l'évènement arrive fenêtre ouverte. Les durées sont : PRESS 140 ms, TOOLTIP 150 ms,
+instantanée, entrée seulement si l'événement arrive fenêtre ouverte. Les durées sont : PRESS 140 ms, TOOLTIP 150 ms,
 MENU 200 ms et DIALOG 250 ms. Les courbes sont : `ease_out` = `cubic-bezier(0.23, 1, 0.32, 1)`
 pour une entrée, et `ease_in_out` = `cubic-bezier(0.77, 0, 0.175, 1)` pour un déplacement.
 
@@ -37,7 +37,7 @@ pour une entrée, et `ease_in_out` = `cubic-bezier(0.77, 0, 0.175, 1)` pour un d
 | --- | --- | --- |
 | Retrait annulable | `slide_in(MENU, 4 px)` sous la liste, uniquement si le retrait vient d'être fait fenêtre ouverte. Un second retrait garde le message et change son texte. Annuler, Ctrl+Z et × sont instantanés. | [0 %](mouvement/Idle-000.png), [50 %](mouvement/Idle-050.png), [100 %](mouvement/Idle-100.png) |
 | Monter ou Descendre à la souris | `with_spring` sans rebond, 0,2 s, sur la hauteur mesurée de l'autre ligne. La ligne qui descend part 40 ms plus tard. La ligne qui monte passe au-dessus avec une bordure `border` de 1 px, sans ombre, le temps du déplacement. Le numéro, le badge et le plan actif changent immédiatement. | [0 %](mouvement/Reorder-000.png), [50 %](mouvement/Reorder-050.png), [100 %](mouvement/Reorder-100.png) |
-| Ouverture du dialogue au clic | Voile en fondu sur DIALOG, carte en `slide_over(DIALOG, 6 px)`, opaque dès 10 % de l'animation, comme le composant Dialog du design system. Ctrl+N ouvre sans animation. La fermeture est instantanée. | [0 %](mouvement/AddRule-000.png), [50 %](mouvement/AddRule-050.png), [100 %](mouvement/AddRule-100.png) |
+| Ouverture au clic du dialogue Ajouter un logiciel | Voile en fondu sur DIALOG, carte en `slide_over(DIALOG, 6 px)`, opaque dès 10 % de l'animation, comme le composant Dialog du design system. Ctrl+N ouvre sans animation. La fermeture est instantanée. | [0 %](mouvement/AddRule-000.png), [50 %](mouvement/AddRule-050.png), [100 %](mouvement/AddRule-100.png) |
 | Étape validée dans « Pour commencer » | La pastille entre avec `with_spring` (bounce 0.2) en 250 ms. C'est un moment unique : ce rebond n'est pas un jeton. | [0 %](mouvement/FirstLaunchReady-000.png), [50 %](mouvement/FirstLaunchReady-050.png), [100 %](mouvement/FirstLaunchReady-100.png) |
 
 Les messages Plan modifié dans Windows, Changement refusé et Retour échoué apparaissent sans
@@ -61,5 +61,5 @@ thème, jusqu'à ce que Bientôt les adopte.
 - glissement de la pastille du Switch en PRESS (140 ms) au lieu de 120 ms.
 
 Les couleurs `tray-*` ont un sens propre à PowerPlanSync : bleu pour un plan de logiciel appliqué,
-gris quand aucun ne l'est, orange pour une automatisation suspendue, rouge quand une action est
+gris quand aucun ne l'est, orange pour une automatisation suspendue par un choix fait dans Windows, rouge quand une action est
 nécessaire.
