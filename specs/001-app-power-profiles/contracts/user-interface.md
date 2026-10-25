@@ -1,7 +1,7 @@
 # Contrat de l'interface
 
 Les maquettes de référence sont décrites dans [design/README.md](../design/README.md). Elles
-utilisent le design system WorkTime GPUI. Ce contrat fixe les libellés, les comportements et
+utilisent le design system Bientôt GPUI (anciennement WorkTime GPUI). Ce contrat fixe les libellés, les comportements et
 l'accessibilité. En cas d'écart, ce contrat et la spécification font foi.
 
 ## Vocabulaire
@@ -120,8 +120,8 @@ latérale à ses icônes et défile plutôt que de serrer les contrôles.
 
 ## Mouvement
 
-Le mouvement reste rare et court. Il suit les jetons `theme::motion` du design system (MENU 200 ms,
-DIALOG 250 ms). Quatre transitions seulement sont animées :
+Le mouvement reste rare et court. Il suit la section Mouvement du design system Bientôt GPUI (MENU 200 ms,
+DIALOG 250 ms, poses `slide_in` et `slide_over`). Quatre transitions seulement sont animées :
 
 1. le message de retrait annulable, qui entre en glissant de 4 px, seulement si le retrait vient
    d'être fait fenêtre ouverte ;
