@@ -18,6 +18,7 @@ Dans un conteneur Linux, le crate ne compile pas pour Linux car il dépend de `w
 contrôles s'y exécutent :
 
 ```bash
+rustup component add rustfmt clippy
 cargo fmt --check
 cargo clippy --locked --all-targets --target x86_64-pc-windows-msvc -- -D warnings
 ```
