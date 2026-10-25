@@ -11,7 +11,7 @@ les mêmes vérifications sur la nouvelle interface. Un contrôle non exécuté 
 2. Installer la chaîne Rust MSVC retenue en T001, les outils C++ et le SDK Windows.
 3. Vérifier les versions avec `rustc --version`, `cargo --version` et la version du SDK.
 4. Exécuter `cargo build --locked --release` après création du package.
-5. Exécuter `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings` et `cargo test --locked`.
+5. Installer `rustfmt` et `clippy` avec `rustup component add rustfmt clippy` tant que T046 n'est pas faite, puis exécuter `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings` et `cargo test --locked`.
 6. Conserver versions, sorties et code de retour dans `evidence/validation/`.
 
 Dans un conteneur Linux, le crate ne compile pas pour Linux car il dépend de `windows`. Seuls ces
@@ -58,7 +58,7 @@ vérifier le [contrat d'interface](contracts/user-interface.md). Vérifier aussi
 2. En build debug, `POWERPLANSYNC_MOTION_SLOWDOWN=4` ralentit chaque animation quatre fois pour
    la juger au ressenti face aux images de [design/mouvement](design/mouvement).
 3. Avec « Effets d'animation » désactivé dans Windows, l'état final s'affiche directement, y
-   compris après un changement du réglage application ouverte.
+   compris après un changement du réglage pendant que l'application est ouverte.
 
 ## Prouver le cycle complet
 
