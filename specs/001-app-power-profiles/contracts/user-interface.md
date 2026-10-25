@@ -1,8 +1,9 @@
 # Contrat de l'interface
 
 Les maquettes de référence sont décrites dans [design/README.md](../design/README.md). Elles
-utilisent le design system Bientôt GPUI (anciennement WorkTime GPUI). Ce contrat fixe les libellés, les comportements et
-l'accessibilité. En cas d'écart, ce contrat et la spécification font foi.
+utilisent le design system Bientôt GPUI (anciennement WorkTime GPUI). Ce contrat fixe les
+libellés, les comportements et l'accessibilité. En cas d'écart, ce contrat et la spécification
+font foi.
 
 ## Vocabulaire
 
@@ -11,8 +12,8 @@ l'accessibilité. En cas d'écart, ce contrat et la spécification font foi.
 - **Suivre** s'applique à un logiciel. Un logiciel suivi a son interrupteur activé. La liste
   s'intitule **Logiciels associés**. Le mot « règle » reste interne et n'apparaît pas à l'écran.
 - Quand un nom de plan est le sujet d'une phrase, on écrit « le plan Haute performance ». Les noms
-  de plan cités sont insécables. La typographie suit les règles françaises (espace insécable avant
-  « : ; ? », espace fine dans les guillemets, apostrophe ’).
+  de plan cités sont insécables. Les textes affichés à l'écran suivent la typographie française
+  (espace insécable avant « : ; ? », espace fine dans les guillemets, apostrophe ’).
 
 ## Fenêtre principale
 
@@ -44,12 +45,12 @@ suivis sur 3 ») et la source d'alimentation. La palette de commandes (Ctrl+Maj+
 
 ## Premier lancement
 
-La page **Logiciels** affiche « Pour commencer », avec trois étapes. **Ajouter un logiciel**,
+La page **Logiciels** affiche « Pour commencer », avec trois étapes : **Ajouter un logiciel**,
 **Confirmer le plan de retour** (le plan normal installé est proposé et doit être confirmé ; s'il
-manque, rien n'est présélectionné) et **Activer l'automatisation**. Le bouton de l'étape 3
-reste indisponible tant que les deux premières ne sont pas faites. Rien ne change dans Windows
-avant l'étape 3. Une fois l'automatisation activée, la liste « Logiciels associés » remplace ces
-étapes.
+manque, rien n'est présélectionné) et **Activer l'automatisation**. L'étape 2 associe la liste
+des plans à un bouton **Confirmer**, qui valide le plan choisi. Le bouton de l'étape 3 reste
+indisponible tant que les deux premières ne sont pas faites. Rien ne change dans Windows avant
+l'étape 3. Une fois l'automatisation activée, la liste « Logiciels associés » remplace ces étapes.
 
 ## Ajouter ou modifier un logiciel
 
@@ -143,4 +144,4 @@ choisit des plans d'alimentation Windows existants. Le mode « Recommandé » de
 être un réglage distinct. Les libellés affichés viennent de la machine. Un arrêt forcé peut laisser
 le dernier plan actif ; au lancement suivant, PowerPlanSync vérifie le plan actif et conserve un
 plan choisi entre-temps. Aucun gain d'images par seconde, de température ou de consommation n'est
-annoncé.
+annoncé. La page se termine par **Voir les licences** et **Ouvrir le guide**.

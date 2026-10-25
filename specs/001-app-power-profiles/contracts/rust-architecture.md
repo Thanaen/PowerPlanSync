@@ -75,3 +75,22 @@ de la session. La crainte initiale d'une réutilisation du PID entre ces lecture
 après vérification de la [durée de vie des identifiants Windows](https://devblogs.microsoft.com/oldnewthing/20150918-00/?p=91561).
 Un handle ouvert conserve l'identité du processus. Le filtrage de session et le suivi des
 observations incertaines sur plusieurs snapshots restent des travaux du produit.
+
+## Couche d'interface GPUI
+
+Décidée le 2026-10-25, voir D12 à D16 de `research.md`. Ce contrat ne change pas pour le moteur,
+le coordinateur ni les adaptateurs.
+
+- `src/interface/` est le seul module qui dépend de GPUI et de `tray-icon`. Le domaine, le moteur,
+  le coordinateur et `src/presentation.rs` n'en dépendent pas.
+- `src/presentation.rs` transforme `ViewState` en un modèle d'affichage sans type graphique,
+  testé sans fenêtre. Les vues GPUI lisent ce modèle et envoient des commandes typées.
+- Le thread principal exécute GPUI. Le coordinateur garde son thread. Ses états publiés arrivent
+  par canal, lus dans une tâche GPUI. Les événements de l'icône et de son menu suivent le même
+  chemin, comme dans Bientôt.
+- La fenêtre est créée à la demande et détruite à sa fermeture. L'icône, le coordinateur et la
+  fenêtre cachée des notifications Windows vivent sans elle.
+- `reduce_motion` est une donnée de GPUI, mise à jour depuis `src/windows/preferences.rs` à chaque
+  `WM_SETTINGCHANGE`. Aucune vue ne lit le registre ni n'appelle Win32 directement.
+- Jusqu'à T071, l'interface GPUI s'ouvre seulement avec `--gpui`. Les deux interfaces utilisent le
+  même `Controller` et ne s'exécutent jamais ensemble.

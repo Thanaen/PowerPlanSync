@@ -1,6 +1,7 @@
 # Implementation Plan: Associer un plan d'alimentation à un logiciel
 
-**Branch**: `main`, premier lot de faisabilité intégré | **Date**: 2026-09-20 | **Spec**: [spec.md](spec.md)
+**Branch**: `main`, premier lot intégré, migration GPUI planifiée | **Date**: 2026-09-20,
+mise à jour le 2026-10-25 | **Spec**: [spec.md](spec.md)
 
 **Input**: `specs/001-app-power-profiles/spec.md`
 
@@ -10,7 +11,14 @@ PowerPlanSync applique un plan Windows existant lorsqu'un logiciel configuré fo
 puis revient au plan explicitement choisi. Une interface Rust accessible expose les règles et l'état.
 Le premier développement démontre la faisabilité Windows, l'accessibilité et le coût de fonctionnement.
 La conception initiale est suivie d'un premier lot de sondes et d'adaptateurs Rust.
-Voir les [résultats réels](evidence/prototype-results.md). Le moteur complet reste à construire.
+Voir les [résultats réels](evidence/prototype-results.md). Une première version Slint fonctionne
+depuis, avec ses preuves dans `evidence/`.
+
+Le 2026-10-25, le responsable produit a validé la migration de l'interface vers GPUI, avec les
+maquettes de [design/README.md](design/README.md) et la session de clarification du même jour.
+Ce plan remplace la seule couche d'interface. Le moteur, le coordinateur, le stockage, la
+récupération, le suivi des processus et les adaptateurs Windows restent en place.
+Les décisions sont D12 à D16 dans [research.md](research.md).
 
 ## Technical Context
 
@@ -18,18 +26,28 @@ Voir les [résultats réels](evidence/prototype-results.md). Le moteur complet r
 Rust 1.98.1 est épinglé dans `rust-toolchain.toml`. Les exemples compilent avec MSVC 14.44.35207
 et le SDK Windows 10.0.26100.0. Les versions et preuves sont dans [toolchain.md](evidence/toolchain.md).
 
-**Primary Dependencies**: `windows` pour Win32, `slint` et `slint-build` pour l'interface candidate,
-`serde` et `serde_json` pour les fichiers versionnés. Versions et fonctionnalités minimales
-épinglées en T001 puis T003. Bibliothèque standard pour le thread de surveillance, les canaux et
-les horloges. Aucun runtime asynchrone général ajouté sans besoin mesuré.
+**Primary Dependencies**: `windows` 0.62.2 pour Win32, `serde` et `serde_json` pour les fichiers
+versionnés. Interface GPUI : `gpui` `=0.3.9` (paquet `gpui-pre`) et `gpui_platform` `=0.3.9`
+(paquet `gpui-pre-platform`), `tray-icon` 0.26 sans fonctionnalités par défaut, `image` 0.25
+(`ico`, `png`), `futures` 0.3 et `raw-window-handle` 0.6. La fonctionnalité `screenshots` ajoute
+`gpui/test-support`, `gpui_platform/test-support` et `gpui_wgpu` `=0.3.9` (paquet `gpui-pre-wgpu`)
+sous Linux. Versions reprises de Bientôt (D12), épinglées en T046. `slint` 1.18.0 et `slint-build`
+restent jusqu'à leur retrait en T071. Bibliothèque standard pour le thread de surveillance, les
+canaux et les horloges. L'exécuteur de GPUI sert la seule interface ; aucun runtime asynchrone
+général n'est ajouté au moteur.
 
 **Storage**: `%LOCALAPPDATA%/PowerPlanSync/config.json`, `recovery.json` et journaux bornés.
 Dossier alternatif obligatoire pour les essais. Remplacement de fichier et synchronisation
 durable dans le même volume. Un seul coordinateur écrit l'état. Aucune base distante.
 
-**Testing**: tests Rust du décideur, erreurs injectées des adaptateurs, essais Windows en compte
-standard, Narrateur et inspection de l'arbre accessible, mesures en binaire release.
-Les essais qui changent les plans réels sont explicites et sérialisés.
+**Testing**: tests Rust du décideur, erreurs injectées des adaptateurs, tests de vues GPUI sans
+fenêtre (`HeadlessAppContext`), essais Windows en compte standard, Narrateur et inspection de
+l'arbre UI Automation, mesures en binaire release. Les essais qui changent les plans réels sont
+explicites, sérialisés et utilisent l'exécutable témoin, jamais Battlefield.
+Dans un conteneur Linux, seuls `cargo fmt --check` et
+`cargo clippy --locked --all-targets --target x86_64-pc-windows-msvc -- -D warnings` s'exécutent :
+le crate dépend de `windows`. Les tests s'exécutent sous Windows, puis dans la CI Windows prévue
+(issue #7). Accessibilité, Narrateur, contraste et DPI exigent un vrai Windows.
 
 **Target Platform**: Windows 11 x64. Matrice de validation prévue sur 24H2 et le PC local 25H2.
 Une seule session interactive active contrôle la machine. ARM64 et Windows 10 hors périmètre.
@@ -47,9 +65,10 @@ Mémoire privée ≤ 100 Mio fenêtre ouverte au repos. Méthode dans [quickstar
 ou navigateur embarqué. Aucune création ou modification interne d'un plan Windows.
 La protection contre un changement simultané n'est pas atomique.
 
-**Scale/Scope**: validation nominale avec 20 règles et environ 200 processus. Liste de règles,
-éditeur d'une règle et réglages généraux. Interface française initiale. Stocker les libellés
-dans une ressource pour permettre une traduction ultérieure.
+**Scale/Scope**: validation nominale avec 20 règles et environ 200 processus. Pages Logiciels,
+Réglages et Aide et limites, dialogue d'un logiciel, palette de commandes et menu de l'icône,
+selon [user-interface.md](contracts/user-interface.md). Interface française initiale. Les libellés
+restent dans une table (`src/interface/strings.rs`) pour permettre une traduction ultérieure.
 
 ## Constitution Check
 
@@ -57,13 +76,20 @@ dans une ressource pour permettre une traduction ultérieure.
 | --- | --- | --- | --- |
 | I. Spécification avant code | Conforme | Conforme | Modèles officiels, spec et tâches traçables, aucune source produit |
 | II. Priorité utilisateur | Conforme | Conforme sur conception | Journal, suspension externe et matrice de restauration |
-| III. Rust et coût mesuré | Conforme | Conforme sur conception | Rust, Slint candidate, budgets et prototypes bloquants |
-| IV. Interface accessible | Conforme | Conforme sur conception | Contrat UI et validation clavier, Narrateur, DPI |
+| III. Rust et coût mesuré | Conforme | Conforme sur conception | Rust et GPUI sans navigateur, budgets mesurés en T048 puis T039 |
+| IV. Interface accessible | Conforme | Conforme sur conception | Contrat UI, sonde GPUI T048 avant les fondations, matrice T070 |
 | V. Droits et preuves | Conforme | Conforme sur conception | Compte standard, données isolées, aucune compatibilité jeu annoncée |
 
 Les contrôles de conception passent. Le premier lot vérifie les appels Windows, le témoin,
 trois cycles et une partie du parcours graphique. L'accessibilité complète reste ouverte.
+Pour GPUI, la constitution impose la faisabilité d'accessibilité avant l'interface définitive :
+la sonde T047 et sa vérification T048 précèdent les fondations T050 à T057.
 Aucune exception constitutionnelle n'est demandée.
+
+Réévaluation après conception GPUI, le 2026-10-25 : les cinq principes restent conformes sur
+conception. Le principe III dépend de la mesure T048. Si GPUI dépasse SC-004, le plan s'arrête
+et propose un amendement explicite de la spec. Le principe IV dépend des annonces sans
+déplacement du focus et des thèmes de contraste, non prouvés par Bientôt (D16).
 
 ## Project Structure
 
@@ -78,58 +104,91 @@ specs/001-app-power-profiles/
 ├── quickstart.md
 ├── contracts/
 │   ├── user-interface.md
-│   └── runtime.md
-├── checklists/requirements.md
-├── evidence/environment.txt
+│   ├── runtime.md
+│   └── rust-architecture.md
+├── design/
+│   ├── README.md
+│   ├── guide-gpui.md
+│   ├── ecrans/
+│   └── mouvement/
+├── checklists/
+├── evidence/
 └── tasks.md
 ```
 
 ### Source Code (repository root)
 
-Structure cible. Les adaptateurs Windows et exemples existent ; les autres modules restent planifiés.
+Structure cible après la migration. `src/interface/`, `src/bin/screenshots.rs`,
+`examples/gpui_probe.rs`, `assets/` et `tests/presentation.rs` sont planifiés. `src/ui.rs`,
+`ui/*.slint`, `build.rs` et les exemples Slint disparaissent en T071.
 
 ```text
 Cargo.toml
 Cargo.lock
 rust-toolchain.toml
-build.rs
+assets/
+├── fonts/            IBM Plex Sans et Mono
+└── tray/             icônes bleue, grise, orange et rouge
 src/
 ├── main.rs
 ├── lib.rs
+├── app_args.rs
 ├── domain.rs
 ├── engine.rs
 ├── coordinator.rs
 ├── storage.rs
 ├── diagnostics.rs
-├── demo.rs
-├── ui.rs
+├── presentation.rs   modèle d'affichage sans type graphique
+├── runtime.rs
+├── runtime_power.rs
+├── bin/
+│   └── screenshots.rs
+├── interface/
+│   ├── mod.rs        application GPUI, globals et raccourcis
+│   ├── strings.rs
+│   ├── theme.rs
+│   ├── motion.rs
+│   ├── widgets.rs
+│   ├── text_input.rs
+│   ├── window.rs     barre de titre, barre latérale et barre d'état
+│   ├── tray.rs
+│   ├── software_page.rs
+│   ├── first_launch.rs
+│   ├── rule_dialog.rs
+│   ├── messages.rs
+│   ├── settings_page.rs
+│   ├── help_page.rs
+│   └── palette.rs
 └── windows/
     ├── mod.rs
+    ├── file_dialog.rs
+    ├── notifications.rs
     ├── power.rs
+    ├── preferences.rs
     ├── processes.rs
     ├── session.rs
     └── startup.rs
-ui/
-├── main.slint
-├── rule-editor.slint
-├── tray.slint
-└── strings-fr.slint
 tests/
 ├── engine_scenarios.rs
+├── presentation.rs
 ├── recovery_scenarios.rs
 ├── storage_failures.rs
 └── windows_integration.rs
 examples/
 ├── windows_probe.rs
-├── ui_probe.rs
+├── gpui_probe.rs
+├── window_lifecycle.rs
 └── demo_target.rs
 scripts/
 ├── measure-overhead.ps1
+├── verify-window-lifecycle.ps1
 └── verify-windows.ps1
 ```
 
-**Structure Decision**: un seul package Rust. Le domaine et la décision ne dépendent pas de Slint
-ni de Win32. Les effets système passent par les adaptateurs ciblés. Pas de workspace de multiples
+**Structure Decision**: un seul package Rust. Le domaine et la décision ne dépendent pas de GPUI
+ni de Win32. `src/presentation.rs` produit un modèle d'affichage sans type graphique, testable
+sans fenêtre. Seul `src/interface/` dépend de GPUI. Le module ne s'appelle pas `gpui` pour ne pas
+masquer la dépendance. Les effets système passent par les adaptateurs ciblés. Pas de workspace de multiples
 crates, de serveur local, de protocole web ni de framework de plugins.
 
 ## Phases et conditions de passage
@@ -137,8 +196,8 @@ crates, de serveur local, de protocole web ni de framework de plugins.
 1. **Faisabilité, T001 à T006.** Établir l'environnement Rust et les deux prototypes.
    Windows et UI peuvent être étudiés séparément après l'épinglage des outils.
    T006 consigne les résultats. Les preuves Windows autorisent les fondations et le moteur
-   indépendants de l'UI. T004 et T006 restent ouvertes jusqu'à la conclusion d'accessibilité,
-   avant de retenir l'interface définitive. Voir D11 dans `research.md`.
+   indépendants de l'UI. T004 et T006 restaient ouvertes jusqu'à la conclusion d'accessibilité.
+   Avec la décision GPUI, T048 et T049 les remplacent. Voir D11 et D12 dans `research.md`.
    Sur demande de l'utilisateur, un exécutable témoin remplace Battlefield dans les essais.
    Aucune compatibilité propre au jeu n'est annoncée. Cela ne bloque pas la livraison générique.
 2. **Fondations, T007 à T013.** Modèle, stockage récupérable, contrôle unique, adaptateurs et démonstration.
@@ -149,7 +208,25 @@ crates, de serveur local, de protocole web ni de framework de plugins.
 4. **US2, T020 à T027.** Changement externe, reprise, crash, batterie et session.
 5. **US4, T028 à T034.** Parcours accessible, choix du logiciel et démarrage facultatif.
 6. **US3, T035 à T038.** Arbitrage et édition des règles pendant l'exécution.
-7. **Validation, T039 à T045.** Ressources, essais d'usage, exécutable témoin, conditionnement et revue finale.
+7. **Faisabilité GPUI, T046 à T049.** Épingler GPUI, construire la sonde, la vérifier sur
+   Windows et conclure. Remplace T003, T004 et T006 pour l'interface. Ces tâches précèdent
+   toute interface GPUI définitive, comme l'exige la constitution.
+8. **Fondations GPUI, T050 à T057.** Modèle d'affichage neutre, thème, mouvement, composants,
+   fenêtre, icône, branchement sur le coordinateur et captures hors écran. L'interface GPUI
+   s'ouvre avec l'option de développement `--gpui` ; l'application Slint reste le défaut.
+9. **US1 en GPUI, T058 à T060.** Page Logiciels, dialogue d'un logiciel et « Pour commencer ».
+10. **US2 en GPUI, T061 à T063.** Relecture des réglages, messages intégrés, pause et sortie.
+11. **US3 en GPUI, T064.** Suivre, réordonner, modifier et retirer avec annulation.
+12. **US4 en GPUI, T065 à T070.** Réglages, aide, palette, accessibilité, thèmes, mouvement et
+    vérification Windows complète. US3 passe avant US4 dans cette vague, car T069 et T070
+    vérifient aussi l'échange de lignes de T064.
+13. **Retrait de Slint, T071 et T072.** GPUI devient l'interface par défaut, Slint et `--gpui`
+    disparaissent. Le guide GPUI remplace `docs/guide-utilisateur.md` à la livraison.
+14. **Validation, T039 à T045.** Ressources, essais d'usage, exécutable témoin, conditionnement et
+    revue finale, sur le binaire GPUI.
+
+Les tâches Slint terminées restent cochées comme historique et portent la mention de leur
+remplacement dans [tasks.md](tasks.md). Les tâches non UI terminées restent valables.
 
 Le premier prototype utile démontre US1. La première version distribuable exige aussi US2, US4,
 l'arbitrage déterministe de US3 et les critères transversaux. « MVP » ne dispense pas de restaurer
@@ -175,13 +252,20 @@ Les détails sont dans [data-model.md](data-model.md) et [runtime.md](contracts/
 
 ## Complexity Tracking
 
-Aucune violation justifiée à déclarer. Les couches ont chacune une responsabilité testable.
+Aucune violation constitutionnelle. Les couches ont chacune une responsabilité testable.
 Une architecture différente exige une preuve de besoin dans `research.md` avant la modification.
+
+| Complexité temporaire | Pourquoi | Alternative plus simple rejetée |
+| --- | --- | --- |
+| Slint et GPUI dans le même binaire de T050 à T071, GPUI derrière `--gpui` | Garder une application utilisable et vérifiable pendant la migration | Bascule d'un seul bloc : aucune version utilisable avant la fin, revue impossible par étapes |
 
 ## Provenance du processus
 
-Le CLI officiel 1.0.8 a initialisé le projet. Les skills installés fournissent les procédures
+Le CLI officiel 1.0.8 a initialisé le projet, mis à jour en 1.1.3 le 2026-10-11. Les skills installés fournissent les procédures
 constitution, specify, plan et tasks. Les résolveurs PowerShell officiels créent les modèles et
 valident leurs prérequis. Aucun exécutable `speckit.plan` n'est simulé.
-L'état actif est `.specify/feature.json`. Le script peut afficher son identifiant comme
-`BRANCH` même si Git est encore sur `main`.
+L'état actif est `.specify/feature.json`. Ce fichier est local et ignoré par Git. Le script peut
+afficher son identifiant comme `BRANCH` même si Git est encore sur `main`.
+La mise à jour GPUI du 2026-10-25 a suivi `speckit-plan`, `speckit-tasks` puis une passe
+`speckit-analyze`, à la main : les scripts PowerShell ne s'exécutent pas dans le conteneur Linux
+utilisé et `.specify/feature.json` y était absent.
