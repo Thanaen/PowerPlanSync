@@ -59,7 +59,7 @@ thème, jusqu'à ce que Bientôt les adopte.
 - `g-badge--error` (texte `#e8999c` dans le thème sombre) et badge accent en `accent-on-active` ;
 - Switch éteint : pastille en `text-muted`, piste en `element-active` et bordure en `text-placeholder` ;
 - glissement de la pastille du Switch en PRESS (140 ms) au lieu de 120 ms ;
-- boutons de fenêtre comme ceux de Windows : glyphes de 10 px, glyphe blanc sur **Fermer** survolé (HighlightText sur Highlight en contraste élevé) et glyphe de restauration quand la fenêtre est agrandie ;
+- boutons de fenêtre comme ceux de Windows : glyphes de 10 px, glyphe blanc sur le rouge de **Fermer** survolé (`#c42b1c` dans le thème sombre, HighlightText sur Highlight en contraste élevé) et glyphe de restauration quand la fenêtre est agrandie ;
 - infobulles de la barre latérale étroite affichées sans le fondu `tooltip` de 150 ms : GPUI les montre au survol sans animation d'entrée.
 
 Les couleurs `tray-*` ont un sens propre à PowerPlanSync : bleu pour un plan de logiciel appliqué,

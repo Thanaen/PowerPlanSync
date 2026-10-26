@@ -123,7 +123,7 @@ pub struct Theme {
     pub switch_knob_off: Hsla,
     /// Pastille d'un interrupteur allumé, sur `accent` (`tl-on-fill` de Bientôt).
     pub switch_knob_on: Hsla,
-    /// Écart : fond du bouton Fermer survolé, rouge comme dans Windows.
+    /// Écart : fond du bouton Fermer survolé, rouge de Windows (`#c42b1c`) dans le thème sombre.
     pub close_hover: Hsla,
     /// Écart : glyphe du bouton Fermer survolé, posé sur `close_hover`.
     pub close_hover_text: Hsla,
@@ -218,7 +218,7 @@ impl Theme {
             switch_track_off: color(0x454a56ff),
             switch_knob_off: text_muted,
             switch_knob_on: color(0x282c33ff),
-            close_hover: color(0xdf8589ff),
+            close_hover: color(0xc42b1cff),
             close_hover_text: color(0xffffffff),
             high_contrast: false,
             elevation_palette: [
@@ -593,6 +593,29 @@ mod tests {
         assert!(t.shadow_modal().is_empty());
         assert!(t.shadow_elevated().is_empty());
         assert!(t.shadow_palette().is_empty());
+    }
+
+    fn contrast_ratio(foreground: Hsla, background: Hsla) -> f32 {
+        let luminance = |color: Hsla| {
+            let rgb = color.to_rgb();
+            let channel = |c: f32| {
+                if c <= 0.04045 {
+                    c / 12.92
+                } else {
+                    ((c + 0.055) / 1.055).powf(2.4)
+                }
+            };
+            0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b)
+        };
+        let (a, b) = (luminance(foreground), luminance(background));
+        (a.max(b) + 0.05) / (a.min(b) + 0.05)
+    }
+
+    #[test]
+    fn close_glyph_stays_visible_on_its_hover_background() {
+        for theme in [Theme::light(), Theme::dark()] {
+            assert!(contrast_ratio(theme.close_hover_text, theme.close_hover) >= 4.5);
+        }
     }
 
     #[test]
