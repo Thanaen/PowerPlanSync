@@ -6,6 +6,8 @@ pub struct Options {
     pub demo: bool,
     pub data_directory: PathBuf,
     pub start_minimized: bool,
+    /// Interface GPUI en cours de migration, à la place de Slint.
+    pub gpui: bool,
 }
 
 pub enum Arguments {
@@ -13,7 +15,7 @@ pub enum Arguments {
     Run(Options),
 }
 
-pub const HELP: &str = "PowerPlanSync\n\nAssocie les plans d'alimentation Windows aux logiciels ouverts.\n\n  --demo                 Plans simulés, aucune écriture de plan Windows\n  --data-dir <dossier>    Dossier de configuration et de diagnostics séparé\n  --start-minimized      Ouvrir seulement la zone de notification\n  --help                 Afficher cette aide\n\nLe dossier séparé ne simule pas Windows. Utilisez --demo pour cela.";
+pub const HELP: &str = "PowerPlanSync\n\nAssocie les plans d'alimentation Windows aux logiciels ouverts.\n\n  --demo                 Plans simulés, aucune écriture de plan Windows\n  --data-dir <dossier>    Dossier de configuration et de diagnostics séparé\n  --start-minimized      Ouvrir seulement la zone de notification\n  --gpui                 Essayer la nouvelle interface, encore incomplète\n  --help                 Afficher cette aide\n\nLe dossier séparé ne simule pas Windows. Utilisez --demo pour cela.";
 
 pub fn parse(
     arguments: impl IntoIterator<Item = OsString>,
@@ -23,6 +25,7 @@ pub fn parse(
     let mut demo = false;
     let mut data_directory = None;
     let mut start_minimized = false;
+    let mut gpui = false;
     while let Some(argument) = arguments.next() {
         if argument == "--help" {
             return Ok(Arguments::Help);
@@ -30,6 +33,8 @@ pub fn parse(
             demo = true;
         } else if argument == "--start-minimized" {
             start_minimized = true;
+        } else if argument == "--gpui" {
+            gpui = true;
         } else if argument == "--data-dir" {
             let directory = arguments
                 .next()
@@ -59,6 +64,7 @@ pub fn parse(
         demo,
         data_directory,
         start_minimized,
+        gpui,
     }))
 }
 
@@ -81,6 +87,27 @@ mod tests {
         };
         assert_ne!(demo.data_directory, live.data_directory);
         assert!(demo.demo);
+    }
+
+    #[test]
+    fn gpui_is_opt_in_and_keeps_the_other_options() {
+        let base = Some(OsString::from("C:/Users/Test/AppData/Local"));
+        let Arguments::Run(slint) = parse([], base.clone()).unwrap() else {
+            panic!()
+        };
+        assert!(!slint.gpui);
+        let Arguments::Run(gpui) = parse(
+            ["--gpui".into(), "--demo".into(), "--start-minimized".into()],
+            base,
+        )
+        .unwrap() else {
+            panic!()
+        };
+        assert!(gpui.gpui && gpui.demo && gpui.start_minimized);
+        assert_eq!(
+            gpui.data_directory,
+            slint.data_directory.with_file_name("PowerPlanSyncDemo")
+        );
     }
 
     #[test]

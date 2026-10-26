@@ -79,6 +79,14 @@ dans une boîte de dialogue bloquante :
 - **Le retour au plan Utilisation normale a échoué** (en quittant) : actions **Réessayer**,
   **Ouvrir les options d'alimentation** et **Quitter quand même**.
 - **Sur batterie** : « Automatisation en attente · sur batterie, aucun plan ne sera changé ».
+- **Contrôle indisponible** (une autre session Windows gère déjà les plans) : message titré
+  « Contrôle indisponible », texte « PowerPlanSync gère déjà les plans depuis une autre session
+  Windows. Aucun plan n’a été modifié. Quittez-le dans cette autre session, puis réessayez. »,
+  action **Réessayer**. La barre d'état n'affiche pas le compte des logiciels, que cette
+  instance ne lit pas. Si le verrou ne peut pas être lu, le message, sans titre, dit « PowerPlanSync
+  ne peut pas vérifier si une autre session gère déjà les plans. Aucun plan n’a été modifié.
+  Réessayez dans un instant. ». Une seconde instance de la même session ne montre rien : elle
+  ramène la fenêtre de la première et s'arrête.
 - **Les réglages sont illisibles** : l'automatisation reste arrêtée. Actions **Ouvrir le dossier
   des données**, **Relire les réglages** et **Ouvrir le guide**, qui renvoie à la section
   « Réglages illisibles » du guide. Le texte prévu pour ce guide est dans

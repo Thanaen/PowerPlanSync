@@ -476,7 +476,8 @@ impl MainWindow {
                     )
                     .child(muted(strings::automation(model.automation).into())),
             )
-            .when(!narrow, |bar| {
+            // Sans contrôle, la configuration n'est pas lue : le compte serait faux.
+            .when(!narrow && !model.read_only, |bar| {
                 bar.child(muted(model.followed.clone().into()))
             })
             .child(div().flex_1())

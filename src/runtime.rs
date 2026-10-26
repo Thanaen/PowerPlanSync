@@ -3,7 +3,7 @@ use crate::{
     coordinator::{Controller, PowerPort},
     domain::*,
     interface::strings::error_message,
-    presentation::{self, RunningAppDisplay, UiAction, UiDisplayModel},
+    presentation::{self, RunningAppDisplay, UiAction, UiCommand, UiDisplayModel},
     runtime_power::RuntimePower,
     storage::FileStore,
     ui::{UiPalette, UiRuntime},
@@ -22,7 +22,7 @@ use std::{
     path::PathBuf,
     rc::Rc,
     sync::{
-        Arc,
+        Arc, OnceLock,
         atomic::{AtomicBool, Ordering},
         mpsc::{self, Sender},
     },
@@ -40,15 +40,43 @@ enum AppEvent {
 }
 type AppController = Controller<RuntimePower, FileStore>;
 
-fn on_ui(action: impl FnOnce(&UiRuntime) + Send + 'static) {
-    let _ = slint::invoke_from_event_loop(move || {
-        UI.with(|slot| {
-            if let Some(ui) = slot.borrow().as_ref() {
-                action(ui);
-            }
-        })
-    });
+/// L'interface en cours, Slint ou GPUI, vue depuis le thread du coordinateur.
+static UI_SINK: OnceLock<Box<dyn Fn(UiCommand) + Send + Sync>> = OnceLock::new();
+
+fn send_ui(command: UiCommand) {
+    if let Some(sink) = UI_SINK.get() {
+        sink(command);
+    }
 }
+
+fn slint_command(ui: &UiRuntime, command: UiCommand) {
+    match command {
+        UiCommand::Update { model, alert } => {
+            ui.update(model);
+            if alert {
+                let _ = ui.open();
+            }
+        }
+        UiCommand::Open => {
+            let _ = ui.open();
+        }
+        UiCommand::Quit => ui.quit(),
+        UiCommand::QuitFailure(reason) => ui.show_quit_failure(reason),
+        UiCommand::EditorExecutable { text, label } => ui.set_editor_executable(text, label),
+        UiCommand::EditorError(error) => ui.set_editor_error(error),
+        UiCommand::FinishEditorSave => ui.finish_editor_save(),
+        UiCommand::RunningApps(apps) => ui.show_running_apps(apps),
+        UiCommand::PreferencesChanged => apply_preferences(ui),
+    }
+}
+fn read_power_source() -> PowerSource {
+    match windows::power::power_source() {
+        Ok(windows::power::PowerSource::Ac) => PowerSource::Ac,
+        Ok(windows::power::PowerSource::Battery) => PowerSource::Battery,
+        _ => PowerSource::Unknown,
+    }
+}
+
 fn empty_view(error: &str) -> ViewState {
     ViewState {
         configuration: Configuration::default(),
@@ -64,6 +92,19 @@ fn empty_view(error: &str) -> ViewState {
 }
 
 pub fn run(options: Options) -> Result<(), String> {
+    if options.gpui {
+        run_gpui(options);
+        return Ok(());
+    }
+    let _ = UI_SINK.set(Box::new(|command| {
+        let _ = slint::invoke_from_event_loop(move || {
+            UI.with(|slot| {
+                if let Some(ui) = slot.borrow().as_ref() {
+                    slint_command(ui, command);
+                }
+            })
+        });
+    }));
     let (tx, rx) = mpsc::channel();
     let initial = presentation::display(
         &empty_view("Initialisation en cours"),
@@ -99,6 +140,47 @@ pub fn run(options: Options) -> Result<(), String> {
     result
 }
 
+/// Interface GPUI : le coordinateur garde son thread, l'interface prend le thread principal.
+fn run_gpui(options: Options) {
+    let (tx, rx) = mpsc::channel();
+    let (commands, receiver) = futures::channel::mpsc::unbounded();
+    let quit = commands.clone();
+    let _ = UI_SINK.set(Box::new(move |command| {
+        let _ = commands.unbounded_send(command);
+    }));
+    let initial = presentation::display(
+        &empty_view("Initialisation en cours"),
+        options.demo,
+        false,
+        None,
+    );
+    let start_minimized = options.start_minimized;
+    let worker_tx = tx.clone();
+    let worker = std::thread::spawn(move || worker(options, worker_tx, rx));
+    let ui_tx = tx.clone();
+    let exit_tx = tx.clone();
+    crate::interface::app::run(
+        initial,
+        start_minimized,
+        receiver,
+        move |action| {
+            // Sans coordinateur, plus rien ne peut répondre : l'interface s'arrête.
+            if ui_tx.send(AppEvent::Ui(action)).is_err() {
+                let _ = quit.unbounded_send(UiCommand::Quit);
+            }
+        },
+        // Même délai que pour la fin de session vue par les notifications Windows.
+        move || {
+            let (ack, done) = mpsc::sync_channel(1);
+            if exit_tx.send(AppEvent::Shutdown(ack)).is_ok() {
+                let _ = done.recv_timeout(Duration::from_millis(1500));
+            }
+        },
+    );
+    let _ = tx.send(AppEvent::Stop);
+    let _ = worker.join();
+}
+
 struct Worker {
     options: Options,
     owner: session::OwnerIdentity,
@@ -132,7 +214,7 @@ impl Worker {
             );
         }
         if !self.options.demo && !session::is_active_interactive_session(&self.owner) {
-            return Err("Cette session n'est pas active. Le contrôle reste suspendu.".into());
+            return Err("Cette session n’est pas active. Le contrôle reste suspendu.".into());
         }
         let mut lease = None;
         let mut open_listener = None;
@@ -151,7 +233,7 @@ impl Worker {
                     .map_err(|_| "Cette démonstration est déjà ouverte dans ce dossier.")?,
             );
         } else {
-            lease = Some(ControlLease::acquire_controller().map_err(|_| "Une autre session ou instance contrôle déjà les plans. Aucun plan n'a été modifié.")?);
+            lease = Some(ControlLease::acquire_controller().map_err(lease_refusal)?);
             if let Some(sender) = self.sender.clone() {
                 open_listener = Some(OpenListener::start(self.owner.clone(), sender)?);
             }
@@ -242,11 +324,7 @@ impl Worker {
         let mut result = Snapshot {
             now_ms,
             session_active: session::is_active_interactive_session(&self.owner),
-            power_source: match windows::power::power_source() {
-                Ok(windows::power::PowerSource::Ac) => PowerSource::Ac,
-                Ok(windows::power::PowerSource::Battery) => PowerSource::Battery,
-                _ => PowerSource::Unknown,
-            },
+            power_source: read_power_source(),
             complete: true,
             ..Default::default()
         };
@@ -323,6 +401,7 @@ impl Worker {
             view.plans = plans;
         }
         view.observed_plan = power.active_plan().ok();
+        view.power_source = read_power_source();
         self.read_only_view = Some(view);
     }
     fn view(&self) -> ViewState {
@@ -378,7 +457,7 @@ impl Worker {
             .to_string_lossy()
             .into_owned();
         self.chosen.insert(text.clone(), path);
-        on_ui(move |ui| ui.set_editor_executable(text, label));
+        send_ui(UiCommand::EditorExecutable { text, label });
     }
     fn action(&mut self, action: UiAction) -> Result<(), String> {
         match action {
@@ -400,7 +479,7 @@ impl Worker {
             UiAction::Quit | UiAction::QuitAfterFailedRestore => {
                 self.quit_requested = true;
                 if self.controller.is_none() {
-                    on_ui(|ui| ui.quit());
+                    send_ui(UiCommand::Quit);
                 } else {
                     self.command(if action == UiAction::Quit {
                         Command::Quit
@@ -415,12 +494,19 @@ impl Worker {
             }
             UiAction::BrowseForExecutable { .. } => {
                 if let Some(sender) = self.sender.clone() {
-                    on_ui(move |_| {
+                    let choose = move || {
                         let result = windows::file_dialog::choose_executable(None).map_err(|_| {
                             "Le sélecteur de fichier ne peut pas être ouvert.".to_string()
                         });
                         let _ = sender.send(AppEvent::Chosen(result));
-                    });
+                    };
+                    // Jamais dans un écouteur GPUI (réentrance) ; T059 donne au sélecteur son
+                    // thread STA et la fenêtre propriétaire.
+                    if self.options.gpui {
+                        std::thread::spawn(choose);
+                    } else {
+                        let _ = slint::invoke_from_event_loop(choose);
+                    }
                 }
                 return Ok(());
             }
@@ -433,7 +519,7 @@ impl Worker {
                         label: "Logiciel témoin simulé".into(),
                         path: path.to_string_lossy().into_owned(),
                     }];
-                    on_ui(move |ui| ui.show_running_apps(apps));
+                    send_ui(UiCommand::RunningApps(apps));
                     return Ok(());
                 }
                 let apps = windows::processes::running_apps(self.owner.session_id)
@@ -446,7 +532,7 @@ impl Worker {
                         path: p.executable_path.to_string_lossy().into_owned(),
                     })
                     .collect();
-                on_ui(move |ui| ui.show_running_apps(display));
+                send_ui(UiCommand::RunningApps(display));
                 return Ok(());
             }
             UiAction::SelectRunningApplication { index } => {
@@ -487,14 +573,14 @@ impl Worker {
                 .iter()
                 .find(|p| p.id.to_string() == id)
                 .map(|p| p.id)
-                .ok_or_else(|| "Ce plan n'est plus disponible. Actualisez la fenêtre.".to_string())
+                .ok_or_else(|| "Ce plan n’est plus disponible. Actualisez la fenêtre.".to_string())
         };
         let position = |id: i32| {
             config
                 .rules
                 .iter()
                 .position(|r| r.id.0 == id as u64)
-                .ok_or_else(|| "Cette règle n'existe plus.".to_string())
+                .ok_or_else(|| "Cette règle n’existe plus.".to_string())
         };
         let editing = matches!(
             action,
@@ -575,7 +661,7 @@ impl Worker {
                 let previous = windows::startup::current_executable_state()
                     .map_err(|_| "Le démarrage Windows ne peut pas être vérifié.")?;
                 windows::startup::set_current_executable_enabled(value)
-                    .map_err(|_| "Le réglage de démarrage Windows n'a pas pu être modifié.")?;
+                    .map_err(|_| "Le réglage de démarrage Windows n’a pas pu être modifié.")?;
                 startup_change = Some(previous);
                 config.start_at_login = value;
             }
@@ -596,7 +682,7 @@ impl Worker {
             );
         }
         if editing && saved {
-            on_ui(|ui| ui.finish_editor_save());
+            send_ui(UiCommand::FinishEditorSave);
         }
         Ok(())
     }
@@ -647,6 +733,20 @@ impl Drop for OpenListener {
     }
 }
 
+/// Un verrou détenu par un autre compte se lit souvent comme un accès refusé : c'est aussi
+/// une autre session qui contrôle.
+fn lease_refusal(error: session::LeaseError) -> &'static str {
+    let access_denied =
+        ::windows::core::HRESULT::from_win32(::windows::Win32::Foundation::ERROR_ACCESS_DENIED.0);
+    match error {
+        session::LeaseError::AlreadyHeld => crate::interface::strings::CONTROL_HELD,
+        session::LeaseError::Windows(error) if error.code() == access_denied => {
+            crate::interface::strings::CONTROL_HELD
+        }
+        session::LeaseError::Windows(_) => crate::interface::strings::CONTROL_LOCK_UNREADABLE,
+    }
+}
+
 fn request_existing_open(owner: &session::OwnerIdentity) -> bool {
     for _ in 0..20 {
         if session::signal_existing_window(owner).is_ok() {
@@ -661,9 +761,9 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
     let owner = match session::current_owner() {
         Ok(owner) => owner,
         Err(_) => {
-            on_ui(|ui| {
-                ui.show_quit_failure("L'identité de cette session ne peut pas être vérifiée.")
-            });
+            send_ui(UiCommand::QuitFailure(
+                "L’identité de cette session ne peut pas être vérifiée.".into(),
+            ));
             return;
         }
     };
@@ -704,13 +804,13 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
     {
         worker.error = Some(error);
         if !worker.options.demo && worker.lease.is_none() && request_existing_open(&worker.owner) {
-            on_ui(|ui| ui.quit());
+            send_ui(UiCommand::Quit);
             return;
         }
     }
     if notifications.is_err() {
         worker.error = Some(
-            "Les notifications Windows sont indisponibles. L'automatisation reste suspendue."
+            "Les notifications Windows sont indisponibles. L’automatisation reste suspendue."
                 .into(),
         );
         worker.controller = None;
@@ -724,15 +824,16 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
     loop {
         let view = worker.view();
         if view.status == Status::Exited {
-            on_ui(|ui| ui.quit());
+            send_ui(UiCommand::Quit);
             break;
         }
-        let display = presentation::display(
+        let mut display = presentation::display(
             &view,
             worker.options.demo,
             worker.demo_running,
             worker.error.clone(),
         );
+        display.read_only = worker.controller.is_none();
         if previous.as_ref() != Some(&display) {
             if let Some(log) = &mut worker.diagnostics {
                 let _ = log.record(
@@ -748,11 +849,9 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
                     .as_ref()
                     .is_none_or(|old: &UiDisplayModel| old.error_message != display.error_message);
             previous = Some(display.clone());
-            on_ui(move |ui| {
-                ui.update(display);
-                if alert {
-                    let _ = ui.open();
-                }
+            send_ui(UiCommand::Update {
+                model: display,
+                alert,
             });
         }
         let event = if view.poll_processes {
@@ -776,7 +875,7 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
             Some(AppEvent::Ui(action)) => {
                 if let Err(error) = worker.action(action) {
                     worker.error = Some(error.clone());
-                    on_ui(move |ui| ui.set_editor_error(error));
+                    send_ui(UiCommand::EditorError(error));
                 }
             }
             Some(AppEvent::Chosen(result)) => match result {
@@ -786,17 +885,15 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
             },
             Some(AppEvent::Open) => {
                 worker.command(Command::Refresh);
-                on_ui(|ui| {
-                    let _ = ui.open();
-                });
+                send_ui(UiCommand::Open);
             }
             Some(AppEvent::Native(NativeNotification::PreferencesChanged)) => {
-                on_ui(apply_preferences)
+                send_ui(UiCommand::PreferencesChanged)
             }
             Some(AppEvent::Shutdown(ack)) => {
                 worker.command(Command::Quit);
                 let _ = ack.send(());
-                on_ui(|ui| ui.quit());
+                send_ui(UiCommand::Quit);
                 break;
             }
             Some(AppEvent::Native(NativeNotification::Shutdown(
@@ -876,6 +973,23 @@ fn tray_icon() -> slint::Image {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_lock_held_or_denied_reads_as_another_session_in_control() {
+        use ::windows::Win32::Foundation::{ERROR_ACCESS_DENIED, ERROR_INVALID_HANDLE};
+        use ::windows::core::{Error, HRESULT};
+        let windows = |code: u32| {
+            session::LeaseError::Windows(Error::from_hresult(HRESULT::from_win32(code)))
+        };
+        let held = crate::interface::strings::CONTROL_HELD;
+        assert_eq!(lease_refusal(session::LeaseError::AlreadyHeld), held);
+        assert_eq!(lease_refusal(windows(ERROR_ACCESS_DENIED.0)), held);
+        assert_eq!(
+            lease_refusal(windows(ERROR_INVALID_HANDLE.0)),
+            crate::interface::strings::CONTROL_LOCK_UNREADABLE
+        );
+    }
+
     fn demo() -> Worker {
         let directory = std::env::temp_dir().join(format!(
             "pps-runtime-{}-{}",
@@ -890,6 +1004,7 @@ mod tests {
                 demo: true,
                 data_directory: directory,
                 start_minimized: false,
+                gpui: false,
             },
             owner: session::OwnerIdentity {
                 sid: "runtime-tests".into(),

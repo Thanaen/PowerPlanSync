@@ -125,6 +125,12 @@ pub const MINIMIZE: &str = "Réduire";
 pub const MAXIMIZE: &str = "Agrandir";
 pub const RESTORE: &str = "Restaurer";
 pub const CLOSE: &str = "Fermer";
+pub const CONTROL_UNAVAILABLE: &str = "Contrôle indisponible";
+pub const CONTROL_HELD: &str = "PowerPlanSync gère déjà les plans depuis une autre session Windows. \
+Aucun plan n’a été modifié. Quittez-le dans cette autre session, puis réessayez.";
+pub const CONTROL_LOCK_UNREADABLE: &str = "PowerPlanSync ne peut pas vérifier si une autre \
+session gère déjà les plans. Aucun plan n’a été modifié. Réessayez dans un instant.";
+pub const RETRY: &str = "Réessayer";
 
 pub const SELECT_PLACEHOLDER: &str = "Choisir un plan";
 

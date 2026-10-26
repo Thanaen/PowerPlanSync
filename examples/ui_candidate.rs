@@ -77,6 +77,7 @@ fn fake_model() -> UiDisplayModel {
         demo_mode: true,
         demo_process_running: false,
         show_first_hide_explanation: true,
+        read_only: false,
         return_plan_note: "Retour confirmé : Équilibré (simulation). Un changement s'appliquera au prochain cycle.".into(),
         return_plan_index: 0,
         return_plan_confirmed: true,
