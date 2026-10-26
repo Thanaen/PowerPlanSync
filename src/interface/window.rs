@@ -5,8 +5,8 @@
 
 use gpui::{
     AnyView, App, AppContext as _, Bounds, Context, EventEmitter, FocusHandle, Focusable, Global,
-    Hsla, KeyBinding, Pixels, Role, SharedString, Size, Window, WindowBounds, WindowControlArea,
-    WindowHandle, WindowOptions, actions, div, prelude::*, px, size,
+    Hsla, KeyBinding, MouseButton, Pixels, Role, SharedString, Size, Window, WindowBounds,
+    WindowControlArea, WindowHandle, WindowOptions, actions, div, prelude::*, px, size,
 };
 
 use crate::domain::PowerSource;
@@ -192,19 +192,28 @@ impl MainWindow {
                     // Sur le rouge de Fermer, le glyphe passe en blanc, comme dans Windows.
                     glyph.group_hover(id, move |style| style.text_color(close_text))
                 }))
-                .on_click(move |_, window, _| match area {
-                    WindowControlArea::Min => window.minimize_window(),
-                    WindowControlArea::Max => window.zoom_window(),
-                    WindowControlArea::Close => window.remove_window(),
-                    WindowControlArea::Drag => {}
+                // Sous Windows, le système agit déjà sur ces zones (WM_NCHITTEST).
+                .when(!cfg!(windows), |control| {
+                    control.on_click(move |_, window, _| match area {
+                        WindowControlArea::Min => window.minimize_window(),
+                        WindowControlArea::Max => window.zoom_window(),
+                        WindowControlArea::Close => window.remove_window(),
+                        WindowControlArea::Drag => {}
+                    })
                 })
         };
         let commands = (!narrow).then(|| {
-            Button::new("commands", strings::COMMANDS, ButtonStyle::Subtle)
-                .icon("command")
-                .keys(strings::COMMANDS_KEYS)
-                .backdrop(theme.background)
-                .on_click(cx.listener(|_, _, _, cx| cx.emit(ShellEvent::OpenCommands)))
+            // Dans la zone de déplacement, l'appui doit s'arrêter ici, sinon Windows le prend
+            // pour le début d'un déplacement de la fenêtre et le clic n'arrive jamais.
+            div()
+                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .child(
+                    Button::new("commands", strings::COMMANDS, ButtonStyle::Subtle)
+                        .icon("command")
+                        .keys(strings::COMMANDS_KEYS)
+                        .backdrop(theme.background)
+                        .on_click(cx.listener(|_, _, _, cx| cx.emit(ShellEvent::OpenCommands))),
+                )
         });
         div()
             .h(token::TITLEBAR_HEIGHT)
@@ -298,7 +307,8 @@ impl MainWindow {
             .aria_selected(page == self.page)
             .on_click(cx.listener(move |this, _, _, cx| this.show_page(page, cx)))
         });
-        let padding = if narrow { BASE_06 } else { BASE_08 };
+        // Étroite, les entrées de 32 px sont centrées dans les 43 px laissés par le filet.
+        let padding = if narrow { px(0.) } else { BASE_08 };
         div()
             .w(if narrow {
                 NARROW_SIDEBAR_WIDTH
@@ -324,6 +334,7 @@ impl MainWindow {
                     .flex()
                     .flex_col()
                     .gap(BASE_02)
+                    .when(narrow, |list| list.items_center())
                     .children(pages),
             )
             .child(
@@ -333,6 +344,7 @@ impl MainWindow {
                     .px(padding)
                     .flex()
                     .items_center()
+                    .when(narrow, |area| area.justify_center())
                     .border_t_1()
                     .border_color(theme.border_variant)
                     // Large, le filet s'arrête aux marges des entrées, comme dans les maquettes.
@@ -455,7 +467,10 @@ impl Global for Opened {}
 pub fn open(model: UiDisplayModel, cx: &mut App) -> gpui::Result<WindowHandle<MainWindow>> {
     if let Some(handle) = cx.default_global::<Opened>().0
         && handle
-            .update(cx, |_, window, _| window.activate_window())
+            .update(cx, |main, window, cx| {
+                main.set_model(model.clone(), cx);
+                window.activate_window();
+            })
             .is_ok()
     {
         return Ok(handle);
@@ -542,10 +557,19 @@ mod tests {
                 status_dot(&model(Automation::Suspended), &theme),
                 theme.warning
             );
-            assert_eq!(
-                status_dot(&model(Automation::Paused), &theme),
-                theme.text_placeholder
-            );
+            for quiet in [
+                Automation::Waiting,
+                Automation::Paused,
+                Automation::Disabled,
+                Automation::Stopped,
+            ] {
+                assert_eq!(status_dot(&model(quiet), &theme), theme.text_placeholder);
+            }
+            let blocked = UiDisplayModel {
+                blocked: true,
+                ..model(Automation::Active)
+            };
+            assert_eq!(status_dot(&blocked, &theme), theme.error);
             let refused = UiDisplayModel {
                 error_message: Some("refus".into()),
                 ..model(Automation::Active)
