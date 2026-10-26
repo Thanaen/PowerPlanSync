@@ -26,7 +26,7 @@ Official sources:
 
 ## Embedded resources
 
-The tray icon is generated in `src/runtime.rs`. The official `AboutSlint` component embeds its Slint attribution logo; its source and licensing belong to the Slint package above. PNG files under `specs/001-app-power-profiles/evidence` are test evidence and are not application resources. The Slint interface uses system fonts. The GPUI interface module `src/interface/theme.rs` embeds IBM Plex Sans and IBM Plex Mono from `assets/fonts/`, copyright 2017 IBM Corp., under the SIL Open Font License 1.1, whose text is `assets/fonts/OFL.txt`. The theme tokens and the motion module in `src/interface/` are adapted from Bientôt (Thanaen/Bientot), under the MIT license.
+The tray icon is generated in `src/runtime.rs`. The official `AboutSlint` component embeds its Slint attribution logo; its source and licensing belong to the Slint package above. PNG files under `specs/001-app-power-profiles/evidence` are test evidence and are not application resources. The Slint interface uses system fonts. The GPUI interface module `src/interface/theme.rs` embeds IBM Plex Sans and IBM Plex Mono from `assets/fonts/`, copyright 2017 IBM Corp., under the SIL Open Font License 1.1, whose text is `assets/fonts/OFL.txt`. The theme tokens and the motion module in `src/interface/` are adapted from Bientôt (Thanaen/Bientot), Copyright (c) 2026 Thanaen, under the MIT license. The portable package (T044) must ship `assets/fonts/OFL.txt` with the binary.
 
 ## Locked Windows dependency inventory (246 packages)
 

@@ -44,6 +44,23 @@ pub struct SystemColors {
     pub window_text: u32,
     pub highlight: u32,
     pub highlight_text: u32,
+    pub gray_text: u32,
+}
+
+#[cfg(windows)]
+impl From<crate::windows::preferences::SystemPalette> for SystemColors {
+    fn from(palette: crate::windows::preferences::SystemPalette) -> Self {
+        let hex = |rgb: crate::windows::preferences::Rgb| {
+            u32::from(rgb.red) << 16 | u32::from(rgb.green) << 8 | u32::from(rgb.blue)
+        };
+        Self {
+            window: hex(palette.window),
+            window_text: hex(palette.window_text),
+            highlight: hex(palette.highlight),
+            highlight_text: hex(palette.highlight_text),
+            gray_text: hex(palette.gray_text),
+        }
+    }
 }
 
 /// Une variante du thème. Chaque champ porte le nom du jeton du design system, sauf les
@@ -78,6 +95,8 @@ pub struct Theme {
     pub hint: Hsla,
     pub accent_on_active: Hsla,
     pub text_muted_on_active: Hsla,
+    /// Texte posé sur `element_active` : `text`, sauf en contraste élevé.
+    pub text_on_active: Hsla,
     pub scrim: Hsla,
     /// Écart : texte du bouton Tinted (`accent-on-active` dans le thème clair).
     pub tinted_text: Hsla,
@@ -144,6 +163,7 @@ impl Theme {
             hint: color(0x788ca6ff),
             accent_on_active,
             text_muted_on_active: color(0xb6bbc6ff),
+            text_on_active: color(0xdce0e5ff),
             scrim: color(0x00000052),
             tinted_text: accent,
             badge_accent_text: accent_on_active,
@@ -195,6 +215,7 @@ impl Theme {
             hint: color(0x7274a7ff),
             accent_on_active,
             text_muted_on_active: color(0x545456ff),
+            text_on_active: color(0x242529ff),
             scrim: color(0x0000002e),
             tinted_text: accent_on_active,
             badge_accent_text: accent_on_active,
@@ -211,12 +232,16 @@ impl Theme {
         }
     }
 
-    /// Jetons remplacés par les quatre couleurs système, sans ombre ni voile teinté.
+    /// Jetons remplacés par les couleurs système, sans ombre ni voile teinté. Seules les paires
+    /// garanties par Windows sont utilisées : WindowText, GrayText et Highlight sur Window,
+    /// HighlightText sur Highlight. Le survol reste plat : le focus et la sélection portent
+    /// l'anneau Highlight.
     pub fn contrast(colors: SystemColors) -> Self {
         let window = opaque(colors.window);
         let text = opaque(colors.window_text);
         let highlight = opaque(colors.highlight);
         let highlight_text = opaque(colors.highlight_text);
+        let gray_text = opaque(colors.gray_text);
         Self {
             background: window,
             surface: window,
@@ -230,7 +255,7 @@ impl Theme {
             element_active: highlight,
             text,
             text_muted: text,
-            text_placeholder: text,
+            text_placeholder: gray_text,
             accent: highlight,
             accent_background: window,
             accent_border: highlight,
@@ -246,8 +271,9 @@ impl Theme {
             hint: text,
             accent_on_active: highlight_text,
             text_muted_on_active: highlight_text,
+            text_on_active: highlight_text,
             scrim: hsla(0., 0., 0., 0.),
-            tinted_text: highlight,
+            tinted_text: text,
             badge_accent_text: text,
             badge_error_text: text,
             switch_knob_off: text,
@@ -398,7 +424,8 @@ mod tests {
         window: 0x000000,
         window_text: 0xffffff,
         highlight: 0x1aebff,
-        highlight_text: 0x000000,
+        highlight_text: 0x202020,
+        gray_text: 0x3ff23f,
     };
 
     #[test]
@@ -411,27 +438,64 @@ mod tests {
     }
 
     #[test]
-    fn contrast_theme_uses_only_system_colors_without_shadows() {
-        let theme = Theme::current(WindowAppearance::Light, Some(CONTRAST));
-        assert!(theme.high_contrast);
-        let system = [0x000000, 0xffffff, 0x1aebff].map(opaque);
-        for token in [
-            theme.background,
-            theme.surface,
-            theme.text,
-            theme.text_muted,
-            theme.border,
-            theme.border_focused,
-            theme.accent,
-            theme.error,
-            theme.warning,
-            theme.element_active,
-            theme.accent_on_active,
+    fn contrast_theme_pairs_only_colors_windows_guarantees() {
+        let t = Theme::current(WindowAppearance::Light, Some(CONTRAST));
+        assert!(t.high_contrast);
+        let window = opaque(CONTRAST.window);
+        let highlight = opaque(CONTRAST.highlight);
+        let on_window = [CONTRAST.window_text, CONTRAST.gray_text, CONTRAST.highlight].map(opaque);
+        for background in [
+            t.background,
+            t.surface,
+            t.elevated_surface,
+            t.editor,
+            t.element,
+            t.element_hover,
+            t.accent_background,
+            t.success_background,
+            t.warning_background,
+            t.error_background,
         ] {
-            assert!(system.contains(&token), "{token:?}");
+            assert_eq!(background, window);
         }
-        assert!(theme.shadow_modal().is_empty());
-        assert!(theme.shadow_elevated().is_empty());
+        for foreground in [
+            t.border,
+            t.border_variant,
+            t.border_focused,
+            t.text,
+            t.text_muted,
+            t.text_placeholder,
+            t.accent,
+            t.accent_border,
+            t.success,
+            t.success_border,
+            t.warning,
+            t.warning_border,
+            t.error,
+            t.error_border,
+            t.hint,
+            t.tinted_text,
+            t.badge_accent_text,
+            t.badge_error_text,
+            t.switch_knob_off,
+        ] {
+            assert!(on_window.contains(&foreground), "{foreground:?}");
+        }
+        assert_eq!(t.element_active, highlight);
+        for on_active in [t.text_on_active, t.accent_on_active, t.text_muted_on_active] {
+            assert_eq!(on_active, opaque(CONTRAST.highlight_text));
+        }
+        assert_eq!(t.text_placeholder, opaque(CONTRAST.gray_text));
+        assert_eq!(t.scrim.a, 0.);
+        assert!(t.shadow_modal().is_empty());
+        assert!(t.shadow_elevated().is_empty());
+    }
+
+    #[test]
+    fn text_on_active_is_the_text_token_outside_high_contrast() {
+        for theme in [Theme::light(), Theme::dark()] {
+            assert_eq!(theme.text_on_active, theme.text);
+        }
     }
 
     #[test]
@@ -447,17 +511,41 @@ mod tests {
         assert_eq!(size::FOCUS_RING, px(2.));
     }
 
+    #[cfg(windows)]
     #[test]
-    fn tray_colors_are_distinct() {
-        let colors = [
-            tray::APPLIED,
-            tray::IDLE,
-            tray::SUSPENDED,
-            tray::ACTION_NEEDED,
-        ];
-        for (index, color) in colors.iter().enumerate() {
-            assert!(!colors[index + 1..].contains(color));
-        }
+    fn system_palette_converts_to_theme_colors() {
+        use crate::windows::preferences::{Rgb, SystemPalette};
+        let rgb = |red, green, blue| Rgb { red, green, blue };
+        let palette = SystemPalette {
+            window: rgb(0, 0, 0),
+            window_text: rgb(0xff, 0xff, 0xff),
+            highlight: rgb(0x1a, 0xeb, 0xff),
+            highlight_text: rgb(0x11, 0x22, 0x33),
+            gray_text: rgb(0x3f, 0xf2, 0x3f),
+        };
+        assert_eq!(
+            SystemColors::from(palette),
+            SystemColors {
+                window: 0x000000,
+                window_text: 0xffffff,
+                highlight: 0x1aebff,
+                highlight_text: 0x112233,
+                gray_text: 0x3ff23f,
+            }
+        );
+    }
+
+    #[test]
+    fn tray_colors_match_the_tray_mockup() {
+        assert_eq!(
+            [
+                tray::APPLIED,
+                tray::IDLE,
+                tray::SUSPENDED,
+                tray::ACTION_NEEDED
+            ],
+            [0x1d4ed8, 0x4b5563, 0x9a4815, 0xb91c1c]
+        );
     }
 
     #[test]
