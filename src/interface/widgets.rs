@@ -6,9 +6,9 @@
 
 use gpui::{
     AnyElement, App, BoxShadow, ClickEvent, Context, ElementId, EventEmitter, FocusHandle,
-    Focusable, FontWeight, Hsla, KeyBinding, Pixels, Role, SharedString, StyleRefinement, Svg,
-    Toggled, Window, actions, anchored, deferred, div, point, prelude::*, px, svg,
-    transparent_black,
+    Focusable, FontWeight, Hsla, KeyBinding, MouseDownEvent, Pixels, Point, Role, SharedString,
+    StyleRefinement, Subscription, Svg, Toggled, Window, actions, anchored, deferred, div, point,
+    prelude::*, px, svg, transparent_black,
 };
 
 use crate::interface::motion::{self, Entrance};
@@ -815,6 +815,10 @@ pub struct Select {
     choice: Choice,
     width: Pixels,
     entrance: Entrance,
+    /// Où une pression hors de la liste ouverte l'a fermée : si c'était sur le bouton, le clic
+    /// qui suit ne la rouvre pas.
+    dismissed_at: Option<Point<Pixels>>,
+    _focus_out: Subscription,
     /// Bordure d'erreur et description lue au focus ; le même texte se pose dessous avec
     /// [`field_error`].
     pub error: Option<SharedString>,
@@ -826,14 +830,18 @@ pub struct Select {
 impl EventEmitter<SelectChanged> for Select {}
 
 impl Select {
-    pub fn new(name: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
+    pub fn new(name: impl Into<SharedString>, window: &mut Window, cx: &mut Context<Self>) -> Self {
+        let focus_handle = tab_stop(cx);
+        let focus_out = cx.on_focus_out(&focus_handle, window, |this, _, _, cx| this.dismiss(cx));
         Self {
-            focus_handle: tab_stop(cx),
+            focus_handle,
             name: name.into(),
             options: Vec::new(),
             choice: Choice::default(),
             width: px(280.),
             entrance: Entrance::default(),
+            dismissed_at: None,
+            _focus_out: focus_out,
             error: None,
             backdrop: None,
             disabled: false,
@@ -850,9 +858,27 @@ impl Select {
         selected: Option<usize>,
         cx: &mut Context<Self>,
     ) {
-        self.choice = Choice::new(options.len(), selected);
+        let choice = Choice::new(options.len(), selected);
+        // Les mêmes options, rafraîchies à chaque état reçu, laissent la liste ouverte.
+        if options == self.options && choice.selected() == self.choice.selected() {
+            return;
+        }
+        if self.choice.is_open() {
+            self.entrance.reset();
+        }
+        self.choice = choice;
         self.options = options;
         cx.notify();
+    }
+
+    fn dismiss(&mut self, cx: &mut Context<Self>) {
+        self.update(
+            |choice| {
+                choice.dismiss();
+                None
+            },
+            cx,
+        )
     }
 
     pub fn selected(&self) -> Option<usize> {
@@ -884,6 +910,10 @@ impl Focusable for Select {
 impl Render for Select {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = Theme::of(window, cx);
+        if self.disabled && self.choice.is_open() {
+            self.choice.dismiss();
+            self.entrance.reset();
+        }
         let hover = theme.element_hover;
         let ring = FocusRing::on(&theme, self.backdrop);
         let label = |index: Option<usize>| {
@@ -972,17 +1002,15 @@ impl Render for Select {
             .on_action(
                 cx.listener(|this, _: &SelectConfirm, _, cx| this.update(Choice::confirm, cx)),
             )
-            .on_action(cx.listener(|this, _: &SelectDismiss, _, cx| {
-                this.update(
-                    |choice| {
-                        choice.dismiss();
-                        None
-                    },
-                    cx,
-                )
-            }))
-            .on_click(cx.listener(|this, _, window, cx| {
+            .on_action(cx.listener(|this, _: &SelectDismiss, _, cx| this.dismiss(cx)))
+            .on_click(cx.listener(|this, event: &ClickEvent, window, cx| {
                 window.focus(&this.focus_handle, cx);
+                let dismissed_at = this.dismissed_at.take();
+                if let ClickEvent::Mouse(click) = event
+                    && dismissed_at == Some(click.down.position)
+                {
+                    return;
+                }
                 this.update(
                     |choice| {
                         choice.toggle();
@@ -1055,14 +1083,9 @@ impl Render for Select {
                         .shadow(theme.shadow_elevated())
                         .type_style(text::LABEL_MD)
                         .text_color(theme.text)
-                        .on_mouse_down_out(cx.listener(|this, _, _, cx| {
-                            this.update(
-                                |choice| {
-                                    choice.dismiss();
-                                    None
-                                },
-                                cx,
-                            )
+                        .on_mouse_down_out(cx.listener(|this, event: &MouseDownEvent, _, cx| {
+                            this.dismissed_at = Some(event.position);
+                            this.dismiss(cx)
                         }))
                         .children(options),
                 ),
@@ -1184,15 +1207,14 @@ mod tests {
     }
 
     #[test]
-    fn the_focus_ring_stays_apart_from_every_fill() {
+    fn the_focus_ring_is_parted_from_the_control_by_its_backdrop() {
         for theme in themes() {
             let ring = FocusRing::of(&theme);
             assert_eq!(ring.gap, theme.surface);
+            assert_ne!(ring.color, ring.gap);
             assert_eq!(FocusRing::on(&theme, Some(theme.editor)).gap, theme.editor);
             let tinted = FocusRing::on(&theme, Some(theme.error_background)).gap;
             assert_eq!(tinted.a, 1.);
-            // L'anneau ne touche que l'espace de surface, jamais le remplissage du contrôle.
-            assert_ne!(ring.color, ring.gap);
         }
     }
 

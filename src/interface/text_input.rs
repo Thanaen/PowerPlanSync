@@ -127,6 +127,8 @@ impl TextInput {
     pub fn set_text(&mut self, text: &str, cx: &mut Context<Self>) {
         self.content = self.limited(text, self.content.chars().count()).to_owned();
         self.selected_range = self.content.len()..self.content.len();
+        self.selection_reversed = false;
+        self.marked_range = None;
         cx.notify();
     }
 
@@ -746,6 +748,17 @@ impl Render for TextInput {
                 colors,
             });
         let frameless = self.frameless;
+        let (disabled, invalid) = (self.disabled, self.invalid);
+        // GPUI n'a pas de setter pour ces états, seulement ce crochet sur le nœud.
+        let field = field.a11y_synthetic_children(move |children| {
+            let node = children.parent_node();
+            if disabled {
+                node.set_disabled();
+            }
+            if invalid {
+                node.set_invalid(gpui::accesskit::Invalid::True);
+            }
+        });
         if self.disabled {
             return field.when(!frameless, |field| field.bg(theme.element));
         }
