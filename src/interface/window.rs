@@ -5,8 +5,8 @@
 
 use gpui::{
     AnyView, App, AppContext as _, Bounds, Context, EventEmitter, FocusHandle, Focusable, Global,
-    Hsla, KeyBinding, MouseButton, Pixels, Role, SharedString, Size, Window, WindowBounds,
-    WindowControlArea, WindowHandle, WindowOptions, actions, div, prelude::*, px, size,
+    Hsla, KeyBinding, Pixels, Role, SharedString, Size, Window, WindowBounds, WindowControlArea,
+    WindowHandle, WindowOptions, actions, div, prelude::*, px, size,
 };
 
 use crate::domain::PowerSource;
@@ -140,6 +140,7 @@ impl NavColors {
     }
 }
 
+#[cfg(not(windows))]
 fn act(area: WindowControlArea, window: &mut Window) {
     match area {
         WindowControlArea::Min => window.minimize_window(),
@@ -147,6 +148,40 @@ fn act(area: WindowControlArea, window: &mut Window) {
         WindowControlArea::Close => window.remove_window(),
         WindowControlArea::Drag => {}
     }
+}
+
+/// Envoie la commande que la souris déclencherait : Restaurer quand la fenêtre est agrandie,
+/// et WM_CLOSE pour Fermer, comme un clic.
+#[cfg(windows)]
+fn act(area: WindowControlArea, window: &mut Window) {
+    use raw_window_handle::{HasWindowHandle as _, RawWindowHandle};
+    use windows::Win32::Foundation::{HWND, LPARAM, WPARAM};
+    use windows::Win32::UI::WindowsAndMessaging::{
+        PostMessageW, SC_CLOSE, SC_MAXIMIZE, SC_MINIMIZE, SC_RESTORE, WM_SYSCOMMAND,
+    };
+
+    let command = match area {
+        WindowControlArea::Min => SC_MINIMIZE,
+        WindowControlArea::Max if window.is_maximized() => SC_RESTORE,
+        WindowControlArea::Max => SC_MAXIMIZE,
+        WindowControlArea::Close => SC_CLOSE,
+        WindowControlArea::Drag => return,
+    };
+    let Ok(handle) = window.window_handle() else {
+        return;
+    };
+    let RawWindowHandle::Win32(handle) = handle.as_raw() else {
+        return;
+    };
+    let window = HWND(handle.hwnd.get() as _);
+    let _ = unsafe {
+        PostMessageW(
+            Some(window),
+            WM_SYSCOMMAND,
+            WPARAM(command as usize),
+            LPARAM(0),
+        )
+    };
 }
 
 pub struct MainWindow {
@@ -246,7 +281,7 @@ impl MainWindow {
             // Dans la zone de déplacement, l'appui doit s'arrêter ici, sinon Windows le prend
             // pour le début d'un déplacement de la fenêtre et le clic n'arrive jamais.
             div()
-                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .on_any_mouse_down(|_, _, cx| cx.stop_propagation())
                 .child(
                     Button::new("commands", strings::COMMANDS, ButtonStyle::Subtle)
                         .icon("command")
@@ -396,6 +431,7 @@ impl MainWindow {
                     .when(!narrow, |area| area.mx(BASE_08).px_0())
                     .child(
                         item("quit".into(), strings::QUIT, "log-out", false)
+                            .when(!narrow, |item| item.flex_1())
                             .role(Role::Button)
                             .on_click(cx.listener(|_, _, _, cx| cx.emit(ShellEvent::Quit))),
                     ),
@@ -636,7 +672,13 @@ mod tests {
         let selected = NavColors::of(&theme, true);
         assert_eq!(selected.text, theme.text_on_active);
         assert_eq!(selected.icon, theme.text_on_active);
-        assert_eq!(theme.text_on_active, theme.border_focused_on_active);
+        // L'anneau est tracé hors de l'entrée, sur la barre latérale.
+        let ring = FocusRing::of(&theme);
+        assert_eq!(
+            (ring.color, ring.gap),
+            (theme.border_focused, theme.surface)
+        );
+        assert_eq!(theme.surface, theme.background);
         let other = NavColors::of(&theme, false);
         assert_eq!(other.pressed, theme.background);
         assert_eq!(other.text, theme.text);
