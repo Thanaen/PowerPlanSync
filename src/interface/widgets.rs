@@ -6,9 +6,9 @@
 
 use gpui::{
     AnyElement, App, BoxShadow, ClickEvent, Context, ElementId, EventEmitter, FocusHandle,
-    Focusable, FontWeight, Hsla, KeyBinding, MouseDownEvent, Pixels, Point, Role, SharedString,
-    StyleRefinement, Subscription, Svg, Toggled, Window, actions, anchored, deferred, div, point,
-    prelude::*, px, svg, transparent_black,
+    Focusable, FontWeight, Hsla, KeyBinding, MouseButton, MouseDownEvent, Pixels, Point, Role,
+    SharedString, StyleRefinement, Subscription, Svg, Toggled, Window, actions, anchored, deferred,
+    div, point, prelude::*, px, svg, transparent_black,
 };
 
 use crate::interface::motion::{self, Entrance};
@@ -1002,7 +1002,23 @@ impl Render for Select {
             .on_action(
                 cx.listener(|this, _: &SelectConfirm, _, cx| this.update(Choice::confirm, cx)),
             )
-            .on_action(cx.listener(|this, _: &SelectDismiss, _, cx| this.dismiss(cx)))
+            .on_action(cx.listener(|this, _: &SelectDismiss, _, cx| {
+                if this.choice.is_open() {
+                    this.dismiss(cx)
+                } else {
+                    // Fermée, la liste laisse Échap au dialogue qui la contient.
+                    cx.propagate()
+                }
+            }))
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(|this, event: &MouseDownEvent, _, _| {
+                    // Une pression qui n'a pas fermé la liste oublie la précédente.
+                    if this.dismissed_at != Some(event.position) {
+                        this.dismissed_at = None;
+                    }
+                }),
+            )
             .on_click(cx.listener(|this, event: &ClickEvent, window, cx| {
                 window.focus(&this.focus_handle, cx);
                 let dismissed_at = this.dismissed_at.take();
