@@ -63,3 +63,9 @@ thème, jusqu'à ce que Bientôt les adopte.
 Les couleurs `tray-*` ont un sens propre à PowerPlanSync : bleu pour un plan de logiciel appliqué,
 gris quand aucun ne l'est, orange pour une automatisation suspendue par un choix fait dans Windows, rouge quand une action est
 nécessaire.
+
+L'implémentation de l'icône (`src/interface/tray.rs`) s'écarte de la maquette `Tray.png` sur deux
+points : les pictogrammes sont pleins, plus nets à 16 px que les traits de la maquette, et la seconde
+ligne de l'infobulle reprend la ligne d'état entière (« Automatisation active · Battlefield 6 est
+ouvert »), comme la première ligne du menu, pour nommer l'état de l'automatisation en pause ou
+suspendue.
