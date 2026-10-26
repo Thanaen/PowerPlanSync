@@ -35,10 +35,7 @@ pub fn software_open(label: &str) -> String {
     format!("{label} est ouvert")
 }
 
-pub fn software_closed(label: &str) -> String {
-    format!("{label} est fermé, retour dans quelques secondes")
-}
-
+pub const RETURNING: &str = "retour dans quelques secondes";
 pub const APPLYING: &str = "changement de plan en cours";
 pub const ON_BATTERY: &str = "sur batterie, aucun plan ne sera changé";
 pub const POWER_UNKNOWN: &str = "alimentation inconnue, aucun plan ne sera changé";
@@ -48,7 +45,6 @@ pub const RETURN_PLAN_MISSING: &str = "plan de retour à confirmer";
 pub const NO_CHANGE: &str = "aucun plan ne sera changé";
 pub const CHOSEN_IN_WINDOWS: &str = "plan choisi dans Windows";
 pub const REFUSED: &str = "Windows a refusé le changement de plan";
-pub const UNREADABLE: &str = "les réglages sont illisibles";
 pub const ACTION_NEEDED: &str = "action nécessaire";
 pub const RECOVERING: &str = "récupération en cours";
 pub const SESSION_INACTIVE: &str = "session Windows inactive";

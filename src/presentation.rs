@@ -256,16 +256,13 @@ fn status(view: &ViewState, winner: Option<&AppRule>) -> (Automation, String) {
         (Status::Active, Some(rule)) => {
             return (Automation::Active, strings::software_open(&rule.label));
         }
-        (Status::ExitGrace { .. }, Some(rule)) => {
-            return (Automation::Active, strings::software_closed(&rule.label));
-        }
-        (Status::Active | Status::ExitGrace { .. } | Status::Applying, _) => {
-            (Automation::Active, strings::APPLYING)
-        }
+        (Status::Active | Status::ExitGrace { .. }, _) => (Automation::Active, strings::RETURNING),
+        (Status::Applying, _) => (Automation::Active, strings::APPLYING),
         (Status::ManualOverride, _) => (Automation::Suspended, strings::CHOSEN_IN_WINDOWS),
         (Status::Paused, _) => (Automation::Paused, strings::NO_CHANGE),
-        (Status::Blocked(Error::Power(_)), _) => (Automation::Suspended, strings::REFUSED),
-        (Status::Blocked(Error::Storage(_)), _) => (Automation::Suspended, strings::UNREADABLE),
+        (Status::Blocked(_), Some(rule)) if refused(view, rule) => {
+            (Automation::Suspended, strings::REFUSED)
+        }
         (Status::Blocked(_), _) => (Automation::Suspended, strings::ACTION_NEEDED),
         (Status::Recovering, _) => (Automation::Waiting, strings::RECOVERING),
         (Status::SessionInactive, _) => (Automation::Waiting, strings::SESSION_INACTIVE),
@@ -281,12 +278,22 @@ fn status(view: &ViewState, winner: Option<&AppRule>) -> (Automation, String) {
             PowerSource::Battery => (Automation::Waiting, strings::ON_BATTERY),
             PowerSource::Unknown => (Automation::Waiting, strings::POWER_UNKNOWN),
         },
-        (Status::Unconfigured, _) if !config.rules.iter().any(|r| r.enabled) => {
-            (Automation::Waiting, strings::NOTHING_FOLLOWED)
+        (Status::Unconfigured, _) if config.return_plan.is_none() => {
+            (Automation::Waiting, strings::RETURN_PLAN_MISSING)
         }
-        (Status::Unconfigured, _) => (Automation::Waiting, strings::RETURN_PLAN_MISSING),
+        (Status::Unconfigured, _) => (Automation::Waiting, strings::NOTHING_FOLLOWED),
     };
     (automation, detail.into())
+}
+
+/// Windows n'a pas confirmé le plan du logiciel réservé : une lecture échouée après
+/// l'application ne compte pas comme un refus.
+fn refused(view: &ViewState, rule: &AppRule) -> bool {
+    matches!(view.status, Status::Blocked(Error::Power(_)))
+        && view
+            .cycle
+            .as_ref()
+            .is_some_and(|c| c.winner == rule.id && c.last_confirmed != rule.plan)
 }
 
 fn badge(view: &ViewState, rule: &AppRule) -> Option<Badge> {
@@ -294,18 +301,23 @@ fn badge(view: &ViewState, rule: &AppRule) -> Option<Badge> {
     match &view.status {
         Status::Active | Status::ExitGrace { .. } if reserved => Some(Badge::Applied),
         Status::ManualOverride if reserved => Some(Badge::Suspended),
-        Status::Blocked(Error::Power(_)) if reserved => Some(Badge::Refused),
+        Status::Blocked(_) if refused(view, rule) => Some(Badge::Refused),
         _ if rule.enabled && view.open_rules.contains(&rule.id) => Some(Badge::Open),
         _ => None,
     }
 }
 
-/// Garde le lecteur et les deux derniers éléments : `C:\…\Blender 4.5\blender.exe`.
+/// Garde la racine et les deux derniers éléments : `C:\…\Blender 4.5\blender.exe`,
+/// `\\serveur\partage\…\jeu\jeu.exe`.
 fn short_path(path: &str) -> String {
     let parts: Vec<&str> = path.split('\\').collect();
-    if parts.len() <= 4 {
+    let root = if path.starts_with(r"\\") { 4 } else { 1 };
+    if parts.len() <= root + 3 {
         return path.into();
     }
-    let tail = &parts[parts.len() - 2..];
-    format!("{}\\…\\{}", parts[0], tail.join("\\"))
+    format!(
+        "{}\\…\\{}",
+        parts[..root].join("\\"),
+        parts[parts.len() - 2..].join("\\")
+    )
 }

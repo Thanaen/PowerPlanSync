@@ -145,12 +145,136 @@ fn manual_override_suspends_without_claiming_rule_is_applied() {
 fn refused_change_marks_the_reserved_rule_as_refused() {
     let mut view = active_view();
     view.status = Status::Blocked(Error::Power("refus".into()));
+    view.cycle.as_mut().unwrap().last_confirmed = PlanId(1);
     let model = display(&view, false, false, None);
     assert!(model.blocked);
     assert_eq!(model.rules[0].badge, Some(Badge::Refused));
     assert_eq!(model.rules[0].state, "Refusé");
+    assert_eq!(
+        model.status,
+        "Automatisation suspendue · Windows a refusé le changement de plan"
+    );
     assert!(model.error_message.is_some());
     assert!(!model.reason.contains("pendant Témoin"));
+}
+
+#[test]
+fn failed_read_after_an_applied_plan_is_not_a_refusal() {
+    let mut view = active_view();
+    view.status = Status::Blocked(Error::Power("lecture".into()));
+    let model = display(&view, false, false, None);
+    assert_ne!(model.rules[0].badge, Some(Badge::Refused));
+    assert_eq!(model.status, "Automatisation suspendue · action nécessaire");
+}
+
+#[test]
+fn every_engine_status_has_a_truthful_status_line() {
+    let base = active_view();
+    let cases: Vec<(Box<dyn Fn(&mut ViewState)>, &str)> = vec![
+        (
+            Box::new(|v| v.status = Status::ExitGrace { deadline_ms: 0 }),
+            "Automatisation active · retour dans quelques secondes",
+        ),
+        (
+            Box::new(|v| {
+                v.status = Status::Active;
+                v.configuration.rules.remove(0);
+            }),
+            "Automatisation active · retour dans quelques secondes",
+        ),
+        (
+            Box::new(|v| v.status = Status::Applying),
+            "Automatisation active · changement de plan en cours",
+        ),
+        (
+            Box::new(|v| v.status = Status::Blocked(Error::Storage("journal".into()))),
+            "Automatisation suspendue · action nécessaire",
+        ),
+        (
+            Box::new(|v| v.status = Status::Recovering),
+            "Automatisation en attente · récupération en cours",
+        ),
+        (
+            Box::new(|v| v.status = Status::SessionInactive),
+            "Automatisation en attente · session Windows inactive",
+        ),
+        (
+            Box::new(|v| v.status = Status::Exited),
+            "Automatisation arrêtée · PowerPlanSync s’arrête",
+        ),
+        (
+            Box::new(|v| {
+                v.status = Status::Idle;
+                v.cycle = None;
+            }),
+            "Automatisation en attente · aucun logiciel suivi n’est ouvert",
+        ),
+        (
+            Box::new(|v| {
+                v.status = Status::Idle;
+                v.cycle = None;
+                v.power_source = PowerSource::Unknown;
+            }),
+            "Automatisation en attente · alimentation inconnue, aucun plan ne sera changé",
+        ),
+        (
+            Box::new(|v| {
+                v.status = Status::Idle;
+                v.cycle = None;
+                v.power_source = PowerSource::Battery;
+                v.configuration.allow_on_battery = true;
+            }),
+            "Automatisation en attente · aucun logiciel suivi n’est ouvert",
+        ),
+        (
+            Box::new(|v| {
+                v.status = Status::Unconfigured;
+                v.cycle = None;
+                v.configuration.return_plan = None;
+            }),
+            "Automatisation en attente · plan de retour à confirmer",
+        ),
+        (
+            Box::new(|v| {
+                v.status = Status::Unconfigured;
+                v.cycle = None;
+                v.configuration
+                    .rules
+                    .iter_mut()
+                    .for_each(|r| r.enabled = false);
+            }),
+            "Automatisation en attente · aucun logiciel n’est suivi",
+        ),
+    ];
+    for (change, expected) in cases {
+        let mut view = base.clone();
+        change(&mut view);
+        assert_eq!(display(&view, false, false, None).status, expected);
+    }
+}
+
+#[test]
+fn network_and_verbatim_paths_keep_their_root() {
+    let mut view = active_view();
+    view.configuration.rules[0].executable = ExecutablePath(
+        r"\\serveur\jeux\Studio\Témoin\bin\temoin.exe"
+            .encode_utf16()
+            .collect(),
+    );
+    view.configuration.rules[1].executable = ExecutablePath(
+        r"\\?\C:\Jeux\Studio\Blender\blender.exe"
+            .encode_utf16()
+            .collect(),
+    );
+    view.configuration.rules[2].executable =
+        ExecutablePath(r"C:\Jeux\Bloom\bloom.exe".encode_utf16().collect());
+    let model = display(&view, false, false, None);
+    assert_eq!(
+        model.rules[0].short_path,
+        r"\\serveur\jeux\…\bin\temoin.exe"
+    );
+    assert_eq!(model.rules[1].short_path, r"\\?\C:\…\Blender\blender.exe");
+    assert_eq!(model.rules[2].short_path, r"C:\Jeux\Bloom\bloom.exe");
 }
 
 #[test]

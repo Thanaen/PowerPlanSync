@@ -69,18 +69,22 @@ impl<P: PowerPort, S: Store> Controller<P, S> {
             status: self.state.status.clone(),
             cycle: self.state.cycle.clone(),
             power_source: self.snapshot.power_source,
-            open_rules: self
-                .configuration
-                .rules
-                .iter()
-                .filter(|r| {
-                    self.state
-                        .known
-                        .values()
-                        .any(|(path, _)| *path == r.executable)
-                })
-                .map(|r| r.id)
-                .collect(),
+            // `known` n'est plus mis à jour une fois le moteur arrêté.
+            open_rules: match self.state.status {
+                Status::Blocked(_) | Status::Recovering | Status::Exited => vec![],
+                _ => self
+                    .configuration
+                    .rules
+                    .iter()
+                    .filter(|r| {
+                        self.state
+                            .known
+                            .values()
+                            .any(|(path, _)| *path == r.executable)
+                    })
+                    .map(|r| r.id)
+                    .collect(),
+            },
             poll_processes: self.configuration.automation_enabled
                 && !self.configuration.paused
                 && self.configuration.rules.iter().any(|r| r.enabled)
