@@ -110,6 +110,45 @@ pub fn power_icon(power: PowerSource) -> &'static str {
     }
 }
 
+/// Couleurs d'une entrée de la barre latérale.
+#[derive(Debug, PartialEq)]
+struct NavColors {
+    pressed: Hsla,
+    text: Hsla,
+    icon: Hsla,
+}
+
+impl NavColors {
+    /// En contraste élevé, Highlight n'est garanti que sous HighlightText : l'appui reste plat,
+    /// et l'entrée choisie, sur `element_active`, passe ses textes en `*_on_active`.
+    fn of(theme: &Theme, selected: bool) -> Self {
+        let pressed = if theme.high_contrast {
+            theme.element_hover
+        } else {
+            theme.element_active
+        };
+        let (text, icon) = if selected {
+            (theme.text_on_active, theme.text_muted_on_active)
+        } else {
+            (theme.text, theme.text_muted)
+        };
+        Self {
+            pressed,
+            text,
+            icon,
+        }
+    }
+}
+
+fn act(area: WindowControlArea, window: &mut Window) {
+    match area {
+        WindowControlArea::Min => window.minimize_window(),
+        WindowControlArea::Max => window.zoom_window(),
+        WindowControlArea::Close => window.remove_window(),
+        WindowControlArea::Drag => {}
+    }
+}
+
 pub struct MainWindow {
     focus_handle: FocusHandle,
     model: UiDisplayModel,
@@ -192,14 +231,15 @@ impl MainWindow {
                     // Sur le rouge de Fermer, le glyphe passe en blanc, comme dans Windows.
                     glyph.group_hover(id, move |style| style.text_color(close_text))
                 }))
-                // Sous Windows, le système agit déjà sur ces zones (WM_NCHITTEST).
-                .when(!cfg!(windows), |control| {
-                    control.on_click(move |_, window, _| match area {
-                        WindowControlArea::Min => window.minimize_window(),
-                        WindowControlArea::Max => window.zoom_window(),
-                        WindowControlArea::Close => window.remove_window(),
-                        WindowControlArea::Drag => {}
+                // Sous Windows, le système agit déjà sur un clic dans ces zones (WM_NCHITTEST) :
+                // seuls les lecteurs d'écran passent par l'action d'accessibilité.
+                .when(cfg!(windows), |control| {
+                    control.on_a11y_action(gpui::accesskit::Action::Click, move |_, window, _| {
+                        act(area, window)
                     })
+                })
+                .when(!cfg!(windows), |control| {
+                    control.on_click(move |_, window, _| act(area, window))
                 })
         };
         let commands = (!narrow).then(|| {
@@ -270,7 +310,12 @@ impl MainWindow {
     fn sidebar(&self, narrow: bool, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
         let item = |id: SharedString, label: &'static str, icon: &'static str, selected: bool| {
             let ring = FocusRing::of(theme);
-            let (hover, pressed) = (theme.element_hover, theme.element_active);
+            let hover = theme.element_hover;
+            let NavColors {
+                pressed,
+                text,
+                icon: muted,
+            } = NavColors::of(theme, selected);
             div()
                 .id(id)
                 .aria_label(label)
@@ -292,8 +337,8 @@ impl MainWindow {
                 .cursor_pointer()
                 .focus_visible(move |style| ring.apply(style))
                 .type_style(text::LABEL_MD)
-                .text_color(theme.text)
-                .child(widgets::icon(icon, theme.text_muted))
+                .text_color(text)
+                .child(widgets::icon(icon, muted))
                 .when(!narrow, |item| item.child(label))
         };
         let pages = Page::ALL.map(|page| {
@@ -576,6 +621,25 @@ mod tests {
             };
             assert_eq!(status_dot(&refused, &theme), theme.error);
         }
+    }
+
+    #[test]
+    fn the_selected_page_stays_readable_in_high_contrast() {
+        let colors = SystemColors {
+            window: 0x000000,
+            window_text: 0xffffff,
+            highlight: 0x1aebff,
+            highlight_text: 0x202020,
+            gray_text: 0x3ff23f,
+        };
+        let theme = Theme::contrast(colors);
+        let selected = NavColors::of(&theme, true);
+        assert_eq!(selected.text, theme.text_on_active);
+        assert_eq!(selected.icon, theme.text_on_active);
+        assert_eq!(theme.text_on_active, theme.border_focused_on_active);
+        let other = NavColors::of(&theme, false);
+        assert_eq!(other.pressed, theme.background);
+        assert_eq!(other.text, theme.text);
     }
 
     #[test]
