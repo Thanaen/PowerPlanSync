@@ -52,14 +52,19 @@ impl Render for ControlPage {
             .flex_col()
             .gap(BASE_16)
             .children(unavailable_text(&self.model).map(|text| {
-                Message::new("control-unavailable", MessageKind::Error, text)
-                    .title(strings::CONTROL_UNAVAILABLE)
-                    .action(
-                        Button::new("retry", strings::RETRY, ButtonStyle::Outlined)
-                            .icon("refresh-cw")
-                            .backdrop(theme.error_background)
-                            .on_click(move |_, _, cx| on_retry(cx)),
-                    )
+                // Le titre ne coiffe que le refus du contrôle ; les autres erreurs ont leurs
+                // propres messages avec T062.
+                let held = text == strings::CONTROL_HELD;
+                let mut message = Message::new("control-unavailable", MessageKind::Error, text);
+                if held {
+                    message = message.title(strings::CONTROL_UNAVAILABLE);
+                }
+                message.action(
+                    Button::new("retry", strings::RETRY, ButtonStyle::Outlined)
+                        .icon("refresh-cw")
+                        .backdrop(theme.error_background)
+                        .on_click(move |_, _, cx| on_retry(cx)),
+                )
             }))
     }
 }

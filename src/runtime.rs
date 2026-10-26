@@ -69,6 +69,14 @@ fn slint_command(ui: &UiRuntime, command: UiCommand) {
         UiCommand::PreferencesChanged => apply_preferences(ui),
     }
 }
+fn read_power_source() -> PowerSource {
+    match windows::power::power_source() {
+        Ok(windows::power::PowerSource::Ac) => PowerSource::Ac,
+        Ok(windows::power::PowerSource::Battery) => PowerSource::Battery,
+        _ => PowerSource::Unknown,
+    }
+}
+
 fn empty_view(error: &str) -> ViewState {
     ViewState {
         configuration: Configuration::default(),
@@ -193,7 +201,7 @@ impl Worker {
             );
         }
         if !self.options.demo && !session::is_active_interactive_session(&self.owner) {
-            return Err("Cette session n'est pas active. Le contrôle reste suspendu.".into());
+            return Err("Cette session n’est pas active. Le contrôle reste suspendu.".into());
         }
         let mut lease = None;
         let mut open_listener = None;
@@ -212,7 +220,7 @@ impl Worker {
                     .map_err(|_| "Cette démonstration est déjà ouverte dans ce dossier.")?,
             );
         } else {
-            lease = Some(ControlLease::acquire_controller().map_err(|_| "Une autre session ou instance contrôle déjà les plans. Aucun plan n’a été modifié.")?);
+            lease = Some(ControlLease::acquire_controller().map_err(lease_refusal)?);
             if let Some(sender) = self.sender.clone() {
                 open_listener = Some(OpenListener::start(self.owner.clone(), sender)?);
             }
@@ -303,11 +311,7 @@ impl Worker {
         let mut result = Snapshot {
             now_ms,
             session_active: session::is_active_interactive_session(&self.owner),
-            power_source: match windows::power::power_source() {
-                Ok(windows::power::PowerSource::Ac) => PowerSource::Ac,
-                Ok(windows::power::PowerSource::Battery) => PowerSource::Battery,
-                _ => PowerSource::Unknown,
-            },
+            power_source: read_power_source(),
             complete: true,
             ..Default::default()
         };
@@ -384,6 +388,7 @@ impl Worker {
             view.plans = plans;
         }
         view.observed_plan = power.active_plan().ok();
+        view.power_source = read_power_source();
         self.read_only_view = Some(view);
     }
     fn view(&self) -> ViewState {
@@ -555,14 +560,14 @@ impl Worker {
                 .iter()
                 .find(|p| p.id.to_string() == id)
                 .map(|p| p.id)
-                .ok_or_else(|| "Ce plan n'est plus disponible. Actualisez la fenêtre.".to_string())
+                .ok_or_else(|| "Ce plan n’est plus disponible. Actualisez la fenêtre.".to_string())
         };
         let position = |id: i32| {
             config
                 .rules
                 .iter()
                 .position(|r| r.id.0 == id as u64)
-                .ok_or_else(|| "Cette règle n'existe plus.".to_string())
+                .ok_or_else(|| "Cette règle n’existe plus.".to_string())
         };
         let editing = matches!(
             action,
@@ -643,7 +648,7 @@ impl Worker {
                 let previous = windows::startup::current_executable_state()
                     .map_err(|_| "Le démarrage Windows ne peut pas être vérifié.")?;
                 windows::startup::set_current_executable_enabled(value)
-                    .map_err(|_| "Le réglage de démarrage Windows n'a pas pu être modifié.")?;
+                    .map_err(|_| "Le réglage de démarrage Windows n’a pas pu être modifié.")?;
                 startup_change = Some(previous);
                 config.start_at_login = value;
             }
@@ -715,6 +720,20 @@ impl Drop for OpenListener {
     }
 }
 
+/// Un verrou détenu par un autre compte se lit souvent comme un accès refusé : c'est aussi
+/// une autre session qui contrôle.
+fn lease_refusal(error: session::LeaseError) -> &'static str {
+    let access_denied =
+        ::windows::core::HRESULT::from_win32(::windows::Win32::Foundation::ERROR_ACCESS_DENIED.0);
+    match error {
+        session::LeaseError::AlreadyHeld => crate::interface::strings::CONTROL_HELD,
+        session::LeaseError::Windows(error) if error.code() == access_denied => {
+            crate::interface::strings::CONTROL_HELD
+        }
+        session::LeaseError::Windows(_) => crate::interface::strings::CONTROL_LOCK_UNREADABLE,
+    }
+}
+
 fn request_existing_open(owner: &session::OwnerIdentity) -> bool {
     for _ in 0..20 {
         if session::signal_existing_window(owner).is_ok() {
@@ -730,7 +749,7 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
         Ok(owner) => owner,
         Err(_) => {
             send_ui(UiCommand::QuitFailure(
-                "L'identité de cette session ne peut pas être vérifiée.".into(),
+                "L’identité de cette session ne peut pas être vérifiée.".into(),
             ));
             return;
         }
@@ -778,7 +797,7 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
     }
     if notifications.is_err() {
         worker.error = Some(
-            "Les notifications Windows sont indisponibles. L'automatisation reste suspendue."
+            "Les notifications Windows sont indisponibles. L’automatisation reste suspendue."
                 .into(),
         );
         worker.controller = None;
