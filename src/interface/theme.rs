@@ -123,6 +123,10 @@ pub struct Theme {
     pub switch_knob_off: Hsla,
     /// Pastille d'un interrupteur allumé, sur `accent` (`tl-on-fill` de Bientôt).
     pub switch_knob_on: Hsla,
+    /// Écart : fond du bouton Fermer survolé, rouge de Windows (`#c42b1c`) dans le thème sombre.
+    pub close_hover: Hsla,
+    /// Écart : glyphe du bouton Fermer survolé, posé sur `close_hover`.
+    pub close_hover_text: Hsla,
     /// Thème de contraste Windows : l'état reste porté par l'icône et le mot.
     pub high_contrast: bool,
     pub elevation_palette: [ShadowLayer; 4],
@@ -214,6 +218,8 @@ impl Theme {
             switch_track_off: color(0x454a56ff),
             switch_knob_off: text_muted,
             switch_knob_on: color(0x282c33ff),
+            close_hover: color(0xc42b1cff),
+            close_hover_text: color(0xffffffff),
             high_contrast: false,
             elevation_palette: [
                 layer(2., 3., 0.12),
@@ -276,6 +282,8 @@ impl Theme {
             switch_track_off: color(0xcacacaff),
             switch_knob_off: text_muted,
             switch_knob_on: color(0xfafafaff),
+            close_hover: error,
+            close_hover_text: color(0xffffffff),
             high_contrast: false,
             elevation_palette: [
                 layer(2., 4., 0.12),
@@ -343,6 +351,8 @@ impl Theme {
             switch_track_off: window,
             switch_knob_off: text,
             switch_knob_on: highlight_text,
+            close_hover: highlight,
+            close_hover_text: highlight_text,
             high_contrast: true,
             elevation_palette: [layer(0., 0., 0.); 4],
             elevation_elevated: [layer(0., 0., 0.); 2],
@@ -575,6 +585,7 @@ mod tests {
         pairs.push((t.switch_knob_off, t.switch_track_off));
         pairs.push((t.border, t.switch_track_off));
         pairs.push((t.switch_knob_on, t.accent));
+        pairs.push((t.close_hover_text, t.close_hover));
         for pair in pairs {
             assert!(guaranteed.contains(&pair), "{pair:?}");
         }
@@ -582,6 +593,29 @@ mod tests {
         assert!(t.shadow_modal().is_empty());
         assert!(t.shadow_elevated().is_empty());
         assert!(t.shadow_palette().is_empty());
+    }
+
+    fn contrast_ratio(foreground: Hsla, background: Hsla) -> f32 {
+        let luminance = |color: Hsla| {
+            let rgb = color.to_rgb();
+            let channel = |c: f32| {
+                if c <= 0.04045 {
+                    c / 12.92
+                } else {
+                    ((c + 0.055) / 1.055).powf(2.4)
+                }
+            };
+            0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b)
+        };
+        let (a, b) = (luminance(foreground), luminance(background));
+        (a.max(b) + 0.05) / (a.min(b) + 0.05)
+    }
+
+    #[test]
+    fn close_glyph_stays_visible_on_its_hover_background() {
+        for theme in [Theme::light(), Theme::dark()] {
+            assert!(contrast_ratio(theme.close_hover_text, theme.close_hover) >= 4.5);
+        }
     }
 
     #[test]

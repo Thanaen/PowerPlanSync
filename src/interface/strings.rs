@@ -113,6 +113,19 @@ pub fn error_message(error: &Error) -> String {
     }
 }
 
+pub const APP_NAME: &str = "PowerPlanSync";
+pub const NAVIGATION: &str = "Navigation";
+pub const PAGE_SOFTWARE: &str = "Logiciels";
+pub const PAGE_SETTINGS: &str = "Réglages";
+pub const PAGE_HELP: &str = "Aide et limites";
+pub const QUIT: &str = "Quitter";
+pub const COMMANDS: &str = "Commandes";
+pub const COMMANDS_KEYS: [&str; 3] = ["Ctrl", "Maj", "P"];
+pub const MINIMIZE: &str = "Réduire";
+pub const MAXIMIZE: &str = "Agrandir";
+pub const RESTORE: &str = "Restaurer";
+pub const CLOSE: &str = "Fermer";
+
 pub const SELECT_PLACEHOLDER: &str = "Choisir un plan";
 
 pub const TRAY_OPEN: &str = "Ouvrir PowerPlanSync";
