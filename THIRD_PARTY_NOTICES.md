@@ -26,7 +26,7 @@ Official sources:
 
 ## Embedded resources
 
-The tray icon is generated in `src/runtime.rs`. The official `AboutSlint` component embeds its Slint attribution logo; its source and licensing belong to the Slint package above. PNG files under `specs/001-app-power-profiles/evidence` are test evidence and are not application resources. The Slint interface uses system fonts. The GPUI interface module `src/interface/theme.rs` embeds IBM Plex Sans and IBM Plex Mono from `assets/fonts/`, copyright 2017 IBM Corp., under the SIL Open Font License 1.1, whose text is `assets/fonts/OFL.txt`. The theme tokens and the motion module in `src/interface/` are adapted from Bientôt (Thanaen/Bientot), Copyright (c) 2026 Thanaen, under the MIT license. `scripts/package-portable.ps1` ships that license as `notices/OFL-IBM-Plex.txt`. "Plex" is a Reserved Font Name.
+The tray icon is generated in `src/runtime.rs`. The official `AboutSlint` component embeds its Slint attribution logo; its source and licensing belong to the Slint package above. PNG files under `specs/001-app-power-profiles/evidence` are test evidence and are not application resources. The Slint interface uses system fonts. The GPUI interface module `src/interface/theme.rs` embeds IBM Plex Sans and IBM Plex Mono from `assets/fonts/`, copyright 2017 IBM Corp., under the SIL Open Font License 1.1, whose text is `assets/fonts/OFL.txt`. The theme tokens and the motion module in `src/interface/` are adapted from Bientôt (Thanaen/Bientot), Copyright (c) 2026 Thanaen, under the MIT license. `scripts/package-portable.ps1` ships the OFL text as `notices/OFL-IBM-Plex.txt`. "Plex" is a Reserved Font Name.
 
 ## Locked Windows dependency inventory (246 packages)
 

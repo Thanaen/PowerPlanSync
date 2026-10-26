@@ -12,12 +12,12 @@ use gpui::{
 pub const FONT_FAMILY: &str = "IBM Plex Sans";
 pub const MONO_FONT_FAMILY: &str = "IBM Plex Mono";
 
-const FONTS: [&[u8]; 5] = [
+/// Les graisses que portent les styles de [`text`].
+const FONTS: [&[u8]; 4] = [
     include_bytes!("../../assets/fonts/IBMPlexSans-Regular.ttf"),
     include_bytes!("../../assets/fonts/IBMPlexSans-Medium.ttf"),
     include_bytes!("../../assets/fonts/IBMPlexSans-SemiBold.ttf"),
     include_bytes!("../../assets/fonts/IBMPlexMono-Regular.ttf"),
-    include_bytes!("../../assets/fonts/IBMPlexMono-Medium.ttf"),
 ];
 
 /// Charge les polices embarquées : l'interface ne dépend pas des polices installées.
@@ -75,7 +75,10 @@ pub struct Theme {
     pub border_on_tint: Hsla,
     pub border_variant: Hsla,
     pub border_focused: Hsla,
+    /// Anneau de focus posé sur `element_active` : `border_focused`, sauf en contraste élevé.
+    pub border_focused_on_active: Hsla,
     pub element: Hsla,
+    /// Survol d'un élément au repos : un élément sélectionné garde `element_active`.
     pub element_hover: Hsla,
     pub element_active: Hsla,
     pub text: Hsla,
@@ -137,6 +140,20 @@ impl Theme {
         }
     }
 
+    /// La variante pour les préférences lues dans Windows.
+    #[cfg(windows)]
+    pub fn from_preferences(
+        appearance: WindowAppearance,
+        preferences: &crate::windows::preferences::UiPreferences,
+    ) -> Self {
+        Self::current(
+            appearance,
+            preferences
+                .high_contrast
+                .then(|| preferences.palette.into()),
+        )
+    }
+
     pub fn dark() -> Self {
         let accent = color(0x74ade8ff);
         let accent_on_active = color(0x93bfedff);
@@ -150,6 +167,7 @@ impl Theme {
             border_on_tint: color(0x5c6370ff),
             border_variant: color(0x363c46ff),
             border_focused: color(0x74ade8ff),
+            border_focused_on_active: color(0x74ade8ff),
             element: color(0x2e343eff),
             element_hover: color(0x363c46ff),
             element_active: color(0x454a56ff),
@@ -211,6 +229,7 @@ impl Theme {
             border_variant: color(0xdfdfe0ff),
             // Écart : `#7d82e8` dans le design system.
             border_focused: accent,
+            border_focused_on_active: accent,
             element: color(0xebebecff),
             element_hover: color(0xdfdfe0ff),
             element_active: color(0xcacacaff),
@@ -259,8 +278,8 @@ impl Theme {
 
     /// Jetons remplacés par les couleurs système, sans ombre ni voile teinté. Seules les paires
     /// garanties par Windows sont utilisées : WindowText, GrayText et Highlight sur Window,
-    /// HighlightText sur Highlight. Le survol reste plat : le focus et la sélection portent
-    /// l'anneau Highlight.
+    /// HighlightText sur Highlight. Le survol reste plat. Le focus porte l'anneau Highlight,
+    /// HighlightText sur un élément sélectionné, dont le fond est Highlight.
     pub fn contrast(colors: SystemColors) -> Self {
         let window = opaque(colors.window);
         let text = opaque(colors.window_text);
@@ -276,6 +295,7 @@ impl Theme {
             border_on_tint: text,
             border_variant: text,
             border_focused: highlight,
+            border_focused_on_active: highlight_text,
             element: window,
             element_hover: window,
             element_active: highlight,
@@ -527,7 +547,12 @@ mod tests {
                 pairs.push((foreground, surface));
             }
         }
-        for foreground in [t.text_on_active, t.accent_on_active, t.text_muted_on_active] {
+        for foreground in [
+            t.text_on_active,
+            t.accent_on_active,
+            t.text_muted_on_active,
+            t.border_focused_on_active,
+        ] {
             pairs.push((foreground, t.element_active));
         }
         pairs.push((t.switch_knob_off, t.switch_track_off));
@@ -543,9 +568,10 @@ mod tests {
     }
 
     #[test]
-    fn text_on_active_is_the_text_token_outside_high_contrast() {
+    fn on_active_tokens_are_the_plain_tokens_outside_high_contrast() {
         for theme in [Theme::light(), Theme::dark()] {
             assert_eq!(theme.text_on_active, theme.text);
+            assert_eq!(theme.border_focused_on_active, theme.border_focused);
         }
     }
 
