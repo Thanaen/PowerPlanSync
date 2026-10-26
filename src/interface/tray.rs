@@ -219,7 +219,7 @@ mod native {
             model: TrayModel,
             on_command: impl Fn(TrayCommand) + Send + Sync + 'static,
         ) -> Result<Self, String> {
-            let status = MenuItem::new(&model.status, false, None);
+            let status = MenuItem::new(menu_text(&model.status), false, None);
             let open = MenuItem::new(strings::TRAY_OPEN, true, None);
             let toggle = MenuItem::new(toggle_label(model.paused), true, None);
             let quit = MenuItem::new(strings::TRAY_QUIT, true, None);
@@ -234,6 +234,16 @@ mod native {
             ])
             .map_err(|error| error.to_string())?;
 
+            let icon = TrayIconBuilder::new()
+                .with_tooltip(&model.tooltip)
+                .with_icon(icon(model.icon)?)
+                .with_menu(Box::new(menu))
+                .with_menu_on_left_click(false)
+                .build()
+                .map_err(|error| error.to_string())?;
+
+            // Les gestionnaires sont globaux : une seule icône à la fois, et seulement une fois
+            // construite.
             let paused = Arc::new(AtomicBool::new(model.paused));
             let on_command = Arc::new(on_command);
             let (open_id, toggle_id, quit_id) =
@@ -269,14 +279,6 @@ mod native {
                     on_command(TrayCommand::Open);
                 }
             }));
-
-            let icon = TrayIconBuilder::new()
-                .with_tooltip(&model.tooltip)
-                .with_icon(icon(model.icon)?)
-                .with_menu(Box::new(menu))
-                .with_menu_on_left_click(false)
-                .build()
-                .map_err(|error| error.to_string())?;
             Ok(Self {
                 icon,
                 status,
@@ -300,7 +302,7 @@ mod native {
                     .map_err(|error| error.to_string())?;
             }
             if model.status != self.shown.status {
-                self.status.set_text(&model.status);
+                self.status.set_text(menu_text(&model.status));
             }
             if model.paused != self.shown.paused {
                 self.toggle.set_text(toggle_label(model.paused));
@@ -343,6 +345,11 @@ mod native {
             MenuEvent::set_event_handler(None::<fn(MenuEvent)>);
             TrayIconEvent::set_event_handler(None::<fn(TrayIconEvent)>);
         }
+    }
+
+    /// Win32 lit `&` comme marque de raccourci : « Tom & Jerry » doit rester tel quel.
+    fn menu_text(text: &str) -> String {
+        text.replace('&', "&&")
     }
 
     fn toggle_label(paused: bool) -> &'static str {
