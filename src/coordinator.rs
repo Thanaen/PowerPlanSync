@@ -68,6 +68,19 @@ impl<P: PowerPort, S: Store> Controller<P, S> {
             observed_plan: self.observed,
             status: self.state.status.clone(),
             cycle: self.state.cycle.clone(),
+            power_source: self.snapshot.power_source,
+            open_rules: self
+                .configuration
+                .rules
+                .iter()
+                .filter(|r| {
+                    self.state
+                        .known
+                        .values()
+                        .any(|(path, _)| *path == r.executable)
+                })
+                .map(|r| r.id)
+                .collect(),
             poll_processes: self.configuration.automation_enabled
                 && !self.configuration.paused
                 && self.configuration.rules.iter().any(|r| r.enabled)

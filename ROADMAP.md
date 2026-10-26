@@ -36,7 +36,8 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
 - Interface : chaque décision de design ou de libellé passe par Designer
   (`design:design-critique`), UX Writer (`design:ux-copy`) et Screenshot reviewer
   (un agent qui compare les captures de l'application aux maquettes de
-  `specs/001-app-power-profiles/design/ecrans/`), jusqu'à leur accord. Chaque changement d'UI met à jour les maquettes. Le design system
+  `specs/001-app-power-profiles/design/ecrans/`), jusqu'à leur accord. Chaque changement
+  d'UI met à jour les maquettes. Le design system
   « Bientôt GPUI » n'est pas modifié depuis ce dépôt : les écarts sont listés dans
   `specs/001-app-power-profiles/design/README.md` et leur adoption est demandée au projet Bientôt.
 - Ne jamais lancer Battlefield. Ne jamais toucher aux PR des autres fils.
@@ -76,4 +77,5 @@ Aucun bug ouvert au 25 octobre 2026.
 | 2026-10-25 | [#11](https://github.com/Thanaen/PowerPlanSync/pull/11) | CI Windows ajoutée ; règles de merge et d'autonomie mises à jour. |
 | 2026-10-25 | [#10](https://github.com/Thanaen/PowerPlanSync/pull/10) | Migration GPUI planifiée (fil de la refonte GPUI). |
 | 2026-10-25 | [#12](https://github.com/Thanaen/PowerPlanSync/pull/12) | T046 : dépendances GPUI épinglées. |
-| 2026-10-26 | #13 | T047 : sonde GPUI, compilée ; essais réels en T048. |
+| 2026-10-26 | [#13](https://github.com/Thanaen/PowerPlanSync/pull/13) | T047 : sonde GPUI, compilée ; essais réels en T048. |
+| 2026-10-26 | #14 | T050 : présentation sans type graphique, libellés du contrat, tests. |

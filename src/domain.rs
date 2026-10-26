@@ -197,6 +197,8 @@ pub struct ViewState {
     pub observed_plan: Option<PlanId>,
     pub status: Status,
     pub cycle: Option<Cycle>,
+    pub power_source: PowerSource,
+    pub open_rules: Vec<RuleId>,
     pub poll_processes: bool,
     pub can_exit: bool,
 }

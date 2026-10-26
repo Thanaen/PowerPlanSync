@@ -2,10 +2,11 @@ use crate::{
     app_args::Options,
     coordinator::{Controller, PowerPort},
     domain::*,
-    presentation,
-    runtime_power::{RuntimePower, error_message},
+    interface::strings::error_message,
+    presentation::{self, RunningAppDisplay, UiAction, UiDisplayModel},
+    runtime_power::RuntimePower,
     storage::FileStore,
-    ui::{RunningAppDisplay, UiAction, UiPalette, UiRuntime},
+    ui::{UiPalette, UiRuntime},
     windows::{
         self,
         notifications::{NativeNotification, NativeNotifications},
@@ -55,6 +56,8 @@ fn empty_view(error: &str) -> ViewState {
         observed_plan: None,
         status: Status::Blocked(Error::InvalidConfiguration(error.into())),
         cycle: None,
+        power_source: PowerSource::Unknown,
+        open_rules: vec![],
         poll_processes: false,
         can_exit: true,
     }
@@ -743,9 +746,7 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
             let alert = display.error_message.is_some()
                 && previous
                     .as_ref()
-                    .is_none_or(|old: &crate::ui::UiDisplayModel| {
-                        old.error_message != display.error_message
-                    });
+                    .is_none_or(|old: &UiDisplayModel| old.error_message != display.error_message);
             previous = Some(display.clone());
             on_ui(move |ui| {
                 ui.update(display);

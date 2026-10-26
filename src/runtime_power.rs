@@ -61,15 +61,3 @@ impl PowerPort for RuntimePower {
         }
     }
 }
-
-pub fn error_message(error: &Error) -> String {
-    match error {
-        Error::Power(_) => "Windows n'a pas confirmé le plan demandé. Vérifiez les réglages puis réessayez.".into(),
-        Error::Storage(_) => "La configuration ou le journal ne peut pas être lu ou enregistré. Les fichiers sont conservés. Vérifiez le dossier de données puis réessayez.".into(),
-        Error::MissingPlan(_) => "Le plan demandé n'est plus disponible. Choisissez un plan installé.".into(),
-        Error::InvalidConfiguration(message) => message.clone(),
-        Error::ObservationUncertain => "Ce logiciel ne peut pas être identifié. L'automatisation est suspendue.".into(),
-        Error::ForeignOwner => "Le journal appartient à un autre utilisateur. Aucun plan n'a été modifié.".into(),
-        Error::StaleTransaction => "Le journal a changé. L'automatisation est suspendue pour conserver la récupération.".into(),
-    }
-}
