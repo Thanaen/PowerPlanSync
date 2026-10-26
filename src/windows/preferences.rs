@@ -9,6 +9,8 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{BOOL, PCWSTR};
 
+use crate::interface::theme::SystemColors;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Rgb {
     pub red: u8,
@@ -22,6 +24,23 @@ pub struct SystemPalette {
     pub window_text: Rgb,
     pub highlight: Rgb,
     pub highlight_text: Rgb,
+}
+
+impl Rgb {
+    fn hex(self) -> u32 {
+        (self.red as u32) << 16 | (self.green as u32) << 8 | self.blue as u32
+    }
+}
+
+impl SystemPalette {
+    pub fn colors(self) -> SystemColors {
+        SystemColors {
+            window: self.window.hex(),
+            window_text: self.window_text.hex(),
+            highlight: self.highlight.hex(),
+            highlight_text: self.highlight_text.hex(),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -124,6 +143,26 @@ mod tests {
                 red: 0x11,
                 green: 0x22,
                 blue: 0x33
+            }
+        );
+    }
+
+    #[test]
+    fn system_palette_converts_to_theme_colors() {
+        let rgb = |red, green, blue| Rgb { red, green, blue };
+        let palette = SystemPalette {
+            window: rgb(0, 0, 0),
+            window_text: rgb(0xff, 0xff, 0xff),
+            highlight: rgb(0x1a, 0xeb, 0xff),
+            highlight_text: rgb(0x11, 0x22, 0x33),
+        };
+        assert_eq!(
+            palette.colors(),
+            SystemColors {
+                window: 0x000000,
+                window_text: 0xffffff,
+                highlight: 0x1aebff,
+                highlight_text: 0x112233,
             }
         );
     }
