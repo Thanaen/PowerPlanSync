@@ -1100,7 +1100,8 @@ impl Render for Select {
                         .type_style(text::LABEL_MD)
                         .text_color(theme.text)
                         .on_mouse_down_out(cx.listener(|this, event: &MouseDownEvent, _, cx| {
-                            this.dismissed_at = Some(event.position);
+                            this.dismissed_at =
+                                (event.button == MouseButton::Left).then_some(event.position);
                             this.dismiss(cx)
                         }))
                         .children(options),
