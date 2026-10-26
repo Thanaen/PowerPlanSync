@@ -51,6 +51,7 @@ impl FocusRing {
     /// L'anneau d'un contrôle posé sur `backdrop` : `editor`, un message teinté… Un fond
     /// translucide, comme les teintes de message du thème sombre, est d'abord composé sur
     /// `editor`, où se posent les messages : sinon l'anneau transparaîtrait dans l'espace.
+    /// Pour un message posé ailleurs, passez sa couleur déjà composée.
     pub fn on(theme: &Theme, backdrop: Option<Hsla>) -> Self {
         let gap = match backdrop {
             Some(tint) if tint.a < 1. => theme.editor.blend(tint),
