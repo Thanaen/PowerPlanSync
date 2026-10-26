@@ -48,11 +48,18 @@ impl FocusRing {
         Self::on(theme, None)
     }
 
-    /// L'anneau d'un contrôle posé sur `backdrop` : `editor`, un message teinté…
+    /// L'anneau d'un contrôle posé sur `backdrop` : `editor`, un message teinté… Un fond
+    /// translucide, comme les teintes de message du thème sombre, est d'abord composé sur
+    /// `editor`, où se posent les messages : sinon l'anneau transparaîtrait dans l'espace.
     pub fn on(theme: &Theme, backdrop: Option<Hsla>) -> Self {
+        let gap = match backdrop {
+            Some(tint) if tint.a < 1. => theme.editor.blend(tint),
+            Some(color) => color,
+            None => theme.surface,
+        };
         Self {
             color: theme.border_focused,
-            gap: backdrop.unwrap_or(theme.surface),
+            gap,
         }
     }
 
@@ -1181,8 +1188,22 @@ mod tests {
             let ring = FocusRing::of(&theme);
             assert_eq!(ring.gap, theme.surface);
             assert_eq!(FocusRing::on(&theme, Some(theme.editor)).gap, theme.editor);
+            let tinted = FocusRing::on(&theme, Some(theme.error_background)).gap;
+            assert_eq!(tinted.a, 1.);
             // L'anneau ne touche que l'espace de surface, jamais le remplissage du contrôle.
             assert_ne!(ring.color, ring.gap);
+        }
+    }
+
+    #[test]
+    fn a_translucent_backdrop_is_composed_like_the_mockup() {
+        // Error.png mesure l'espace autour de **Réessayer** à #383339.
+        let gap = gpui::Rgba::from(
+            FocusRing::on(&Theme::dark(), Some(Theme::dark().error_background)).gap,
+        );
+        let expected = [0x38, 0x33, 0x39];
+        for (channel, value) in [gap.r, gap.g, gap.b].into_iter().zip(expected) {
+            assert!((channel * 255. - value as f32).abs() < 1.5, "{gap:?}");
         }
     }
 
