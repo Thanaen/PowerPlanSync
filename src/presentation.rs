@@ -67,6 +67,8 @@ pub struct UiDisplayModel {
     pub demo_mode: bool,
     pub demo_process_running: bool,
     pub show_first_hide_explanation: bool,
+    /// Une autre instance ou session détient le contrôle : rien ne peut être changé ici.
+    pub read_only: bool,
     pub return_plan_note: String,
     pub return_plan_index: i32,
     pub return_plan_confirmed: bool,
@@ -124,6 +126,27 @@ pub enum UiAction {
     QuitAfterFailedRestore,
     OpenWindowsSettings,
     WindowOpened,
+}
+
+/// Ce que le coordinateur demande à l'interface, Slint ou GPUI, depuis son thread.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum UiCommand {
+    /// Nouvel état ; `alert` ouvre la fenêtre pour une nouvelle erreur.
+    Update {
+        model: UiDisplayModel,
+        alert: bool,
+    },
+    Open,
+    Quit,
+    QuitFailure(String),
+    EditorExecutable {
+        text: String,
+        label: String,
+    },
+    EditorError(String),
+    FinishEditorSave,
+    RunningApps(Vec<RunningAppDisplay>),
+    PreferencesChanged,
 }
 
 pub fn display(
@@ -202,6 +225,7 @@ pub fn display(
         demo_mode: demo,
         demo_process_running: running,
         show_first_hide_explanation: true,
+        read_only: false,
         return_plan_note,
         return_plan_index: return_index.map_or(-1, |i| i as i32),
         return_plan_confirmed: config.return_plan.is_some() && return_index.is_some(),

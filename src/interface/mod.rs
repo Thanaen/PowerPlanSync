@@ -1,4 +1,7 @@
+#[cfg(windows)]
+pub mod app;
 pub mod assets;
+pub mod control_page;
 pub mod motion;
 pub mod strings;
 pub mod text_input;

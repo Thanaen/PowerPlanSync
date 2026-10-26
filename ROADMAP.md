@@ -83,4 +83,5 @@ Aucun bug ouvert au 25 octobre 2026.
 | 2026-10-26 | [#16](https://github.com/Thanaen/PowerPlanSync/pull/16) | T051 : thème WorkTime One, écarts, couleurs de l'icône et contraste élevé, polices IBM Plex. |
 | 2026-10-26 | [#17](https://github.com/Thanaen/PowerPlanSync/pull/17) | T055 : icône de notification, infobulle, menu natif et notification du premier masquage. |
 | 2026-10-26 | [#18](https://github.com/Thanaen/PowerPlanSync/pull/18) | T053 : boutons, Switch, badges, liste de plans, messages, touches, champ texte et pictogrammes Lucide. |
-| 2026-10-26 | #19 | T054 : fenêtre GPUI, barre de titre, barre latérale, barre d'état et fenêtre étroite. |
+| 2026-10-26 | [#19](https://github.com/Thanaen/PowerPlanSync/pull/19) | T054 : fenêtre GPUI, barre de titre, barre latérale, barre d'état et fenêtre étroite. |
+| 2026-10-26 | #20 | T056 : interface GPUI derrière `--gpui`, vue « Contrôle indisponible » ; T012 constatée terminée. |

@@ -125,6 +125,8 @@ pub const MINIMIZE: &str = "Réduire";
 pub const MAXIMIZE: &str = "Agrandir";
 pub const RESTORE: &str = "Restaurer";
 pub const CLOSE: &str = "Fermer";
+pub const CONTROL_UNAVAILABLE: &str = "Contrôle indisponible";
+pub const RETRY: &str = "Réessayer";
 
 pub const SELECT_PLACEHOLDER: &str = "Choisir un plan";
 

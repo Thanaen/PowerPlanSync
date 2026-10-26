@@ -3,7 +3,7 @@ use crate::{
     coordinator::{Controller, PowerPort},
     domain::*,
     interface::strings::error_message,
-    presentation::{self, RunningAppDisplay, UiAction, UiDisplayModel},
+    presentation::{self, RunningAppDisplay, UiAction, UiCommand, UiDisplayModel},
     runtime_power::RuntimePower,
     storage::FileStore,
     ui::{UiPalette, UiRuntime},
@@ -22,7 +22,7 @@ use std::{
     path::PathBuf,
     rc::Rc,
     sync::{
-        Arc,
+        Arc, OnceLock,
         atomic::{AtomicBool, Ordering},
         mpsc::{self, Sender},
     },
@@ -40,14 +40,34 @@ enum AppEvent {
 }
 type AppController = Controller<RuntimePower, FileStore>;
 
-fn on_ui(action: impl FnOnce(&UiRuntime) + Send + 'static) {
-    let _ = slint::invoke_from_event_loop(move || {
-        UI.with(|slot| {
-            if let Some(ui) = slot.borrow().as_ref() {
-                action(ui);
+/// L'interface en cours, Slint ou GPUI, vue depuis le thread du coordinateur.
+static UI_SINK: OnceLock<Box<dyn Fn(UiCommand) + Send + Sync>> = OnceLock::new();
+
+fn send_ui(command: UiCommand) {
+    if let Some(sink) = UI_SINK.get() {
+        sink(command);
+    }
+}
+
+fn slint_command(ui: &UiRuntime, command: UiCommand) {
+    match command {
+        UiCommand::Update { model, alert } => {
+            ui.update(model);
+            if alert {
+                let _ = ui.open();
             }
-        })
-    });
+        }
+        UiCommand::Open => {
+            let _ = ui.open();
+        }
+        UiCommand::Quit => ui.quit(),
+        UiCommand::QuitFailure(reason) => ui.show_quit_failure(reason),
+        UiCommand::EditorExecutable { text, label } => ui.set_editor_executable(text, label),
+        UiCommand::EditorError(error) => ui.set_editor_error(error),
+        UiCommand::FinishEditorSave => ui.finish_editor_save(),
+        UiCommand::RunningApps(apps) => ui.show_running_apps(apps),
+        UiCommand::PreferencesChanged => apply_preferences(ui),
+    }
 }
 fn empty_view(error: &str) -> ViewState {
     ViewState {
@@ -64,6 +84,19 @@ fn empty_view(error: &str) -> ViewState {
 }
 
 pub fn run(options: Options) -> Result<(), String> {
+    if options.gpui {
+        run_gpui(options);
+        return Ok(());
+    }
+    let _ = UI_SINK.set(Box::new(|command| {
+        let _ = slint::invoke_from_event_loop(move || {
+            UI.with(|slot| {
+                if let Some(ui) = slot.borrow().as_ref() {
+                    slint_command(ui, command);
+                }
+            })
+        });
+    }));
     let (tx, rx) = mpsc::channel();
     let initial = presentation::display(
         &empty_view("Initialisation en cours"),
@@ -97,6 +130,34 @@ pub fn run(options: Options) -> Result<(), String> {
     let _ = worker.join();
     UI.with(|slot| slot.borrow_mut().take());
     result
+}
+
+/// Interface GPUI : le coordinateur garde son thread, l'interface prend le thread principal.
+fn run_gpui(options: Options) {
+    let (tx, rx) = mpsc::channel();
+    let (commands, receiver) = futures::channel::mpsc::unbounded();
+    let quit = commands.clone();
+    let _ = UI_SINK.set(Box::new(move |command| {
+        let _ = commands.unbounded_send(command);
+    }));
+    let initial = presentation::display(
+        &empty_view("Initialisation en cours"),
+        options.demo,
+        false,
+        None,
+    );
+    let start_minimized = options.start_minimized;
+    let worker_tx = tx.clone();
+    let worker = std::thread::spawn(move || worker(options, worker_tx, rx));
+    let ui_tx = tx.clone();
+    crate::interface::app::run(initial, start_minimized, receiver, move |action| {
+        // Sans coordinateur, plus rien ne peut répondre : l'interface s'arrête.
+        if ui_tx.send(AppEvent::Ui(action)).is_err() {
+            let _ = quit.unbounded_send(UiCommand::Quit);
+        }
+    });
+    let _ = tx.send(AppEvent::Stop);
+    let _ = worker.join();
 }
 
 struct Worker {
@@ -151,7 +212,7 @@ impl Worker {
                     .map_err(|_| "Cette démonstration est déjà ouverte dans ce dossier.")?,
             );
         } else {
-            lease = Some(ControlLease::acquire_controller().map_err(|_| "Une autre session ou instance contrôle déjà les plans. Aucun plan n'a été modifié.")?);
+            lease = Some(ControlLease::acquire_controller().map_err(|_| "Une autre session ou instance contrôle déjà les plans. Aucun plan n’a été modifié.")?);
             if let Some(sender) = self.sender.clone() {
                 open_listener = Some(OpenListener::start(self.owner.clone(), sender)?);
             }
@@ -378,7 +439,7 @@ impl Worker {
             .to_string_lossy()
             .into_owned();
         self.chosen.insert(text.clone(), path);
-        on_ui(move |ui| ui.set_editor_executable(text, label));
+        send_ui(UiCommand::EditorExecutable { text, label });
     }
     fn action(&mut self, action: UiAction) -> Result<(), String> {
         match action {
@@ -400,7 +461,7 @@ impl Worker {
             UiAction::Quit | UiAction::QuitAfterFailedRestore => {
                 self.quit_requested = true;
                 if self.controller.is_none() {
-                    on_ui(|ui| ui.quit());
+                    send_ui(UiCommand::Quit);
                 } else {
                     self.command(if action == UiAction::Quit {
                         Command::Quit
@@ -415,12 +476,19 @@ impl Worker {
             }
             UiAction::BrowseForExecutable { .. } => {
                 if let Some(sender) = self.sender.clone() {
-                    on_ui(move |_| {
+                    let choose = move || {
                         let result = windows::file_dialog::choose_executable(None).map_err(|_| {
                             "Le sélecteur de fichier ne peut pas être ouvert.".to_string()
                         });
                         let _ = sender.send(AppEvent::Chosen(result));
-                    });
+                    };
+                    // Jamais dans un écouteur GPUI (réentrance) ; T059 donne au sélecteur son
+                    // thread STA et la fenêtre propriétaire.
+                    if self.options.gpui {
+                        std::thread::spawn(choose);
+                    } else {
+                        let _ = slint::invoke_from_event_loop(choose);
+                    }
                 }
                 return Ok(());
             }
@@ -433,7 +501,7 @@ impl Worker {
                         label: "Logiciel témoin simulé".into(),
                         path: path.to_string_lossy().into_owned(),
                     }];
-                    on_ui(move |ui| ui.show_running_apps(apps));
+                    send_ui(UiCommand::RunningApps(apps));
                     return Ok(());
                 }
                 let apps = windows::processes::running_apps(self.owner.session_id)
@@ -446,7 +514,7 @@ impl Worker {
                         path: p.executable_path.to_string_lossy().into_owned(),
                     })
                     .collect();
-                on_ui(move |ui| ui.show_running_apps(display));
+                send_ui(UiCommand::RunningApps(display));
                 return Ok(());
             }
             UiAction::SelectRunningApplication { index } => {
@@ -596,7 +664,7 @@ impl Worker {
             );
         }
         if editing && saved {
-            on_ui(|ui| ui.finish_editor_save());
+            send_ui(UiCommand::FinishEditorSave);
         }
         Ok(())
     }
@@ -661,9 +729,9 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
     let owner = match session::current_owner() {
         Ok(owner) => owner,
         Err(_) => {
-            on_ui(|ui| {
-                ui.show_quit_failure("L'identité de cette session ne peut pas être vérifiée.")
-            });
+            send_ui(UiCommand::QuitFailure(
+                "L'identité de cette session ne peut pas être vérifiée.".into(),
+            ));
             return;
         }
     };
@@ -704,7 +772,7 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
     {
         worker.error = Some(error);
         if !worker.options.demo && worker.lease.is_none() && request_existing_open(&worker.owner) {
-            on_ui(|ui| ui.quit());
+            send_ui(UiCommand::Quit);
             return;
         }
     }
@@ -724,15 +792,16 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
     loop {
         let view = worker.view();
         if view.status == Status::Exited {
-            on_ui(|ui| ui.quit());
+            send_ui(UiCommand::Quit);
             break;
         }
-        let display = presentation::display(
+        let mut display = presentation::display(
             &view,
             worker.options.demo,
             worker.demo_running,
             worker.error.clone(),
         );
+        display.read_only = worker.controller.is_none();
         if previous.as_ref() != Some(&display) {
             if let Some(log) = &mut worker.diagnostics {
                 let _ = log.record(
@@ -748,11 +817,9 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
                     .as_ref()
                     .is_none_or(|old: &UiDisplayModel| old.error_message != display.error_message);
             previous = Some(display.clone());
-            on_ui(move |ui| {
-                ui.update(display);
-                if alert {
-                    let _ = ui.open();
-                }
+            send_ui(UiCommand::Update {
+                model: display,
+                alert,
             });
         }
         let event = if view.poll_processes {
@@ -776,7 +843,7 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
             Some(AppEvent::Ui(action)) => {
                 if let Err(error) = worker.action(action) {
                     worker.error = Some(error.clone());
-                    on_ui(move |ui| ui.set_editor_error(error));
+                    send_ui(UiCommand::EditorError(error));
                 }
             }
             Some(AppEvent::Chosen(result)) => match result {
@@ -786,17 +853,15 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
             },
             Some(AppEvent::Open) => {
                 worker.command(Command::Refresh);
-                on_ui(|ui| {
-                    let _ = ui.open();
-                });
+                send_ui(UiCommand::Open);
             }
             Some(AppEvent::Native(NativeNotification::PreferencesChanged)) => {
-                on_ui(apply_preferences)
+                send_ui(UiCommand::PreferencesChanged)
             }
             Some(AppEvent::Shutdown(ack)) => {
                 worker.command(Command::Quit);
                 let _ = ack.send(());
-                on_ui(|ui| ui.quit());
+                send_ui(UiCommand::Quit);
                 break;
             }
             Some(AppEvent::Native(NativeNotification::Shutdown(
@@ -890,6 +955,7 @@ mod tests {
                 demo: true,
                 data_directory: directory,
                 start_minimized: false,
+                gpui: false,
             },
             owner: session::OwnerIdentity {
                 sid: "runtime-tests".into(),
