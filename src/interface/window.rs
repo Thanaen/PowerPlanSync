@@ -27,8 +27,8 @@ pub const MINIMUM_SIZE: Size<Pixels> = size(px(360.), px(420.));
 pub const NARROW_WIDTH: Pixels = px(600.);
 pub const SIDEBAR_WIDTH: Pixels = px(200.);
 pub const NARROW_SIDEBAR_WIDTH: Pixels = px(44.);
-/// La zone de **Quitter**, sous son filet.
-const QUIT_AREA_HEIGHT: Pixels = px(48.);
+/// La zone de **Quitter** : 48 px sous son filet de 1 px, comme dans les maquettes.
+const QUIT_AREA_HEIGHT: Pixels = px(49.);
 /// Les glyphes des boutons de fenêtre, plus fins que les icônes, comme ceux de Windows.
 const CONTROL_GLYPH: Pixels = px(10.);
 
@@ -164,7 +164,11 @@ impl MainWindow {
     ) -> impl IntoElement {
         let maximized = window.is_maximized();
         let control = |id: &'static str, icon: &'static str, name, area: WindowControlArea| {
-            let (hover, close_hover) = (theme.element_hover, theme.error);
+            let (hover, close_hover, close_text) = (
+                theme.element_hover,
+                theme.close_hover,
+                theme.close_hover_text,
+            );
             let glyph = widgets::icon(icon, theme.text_muted).size(CONTROL_GLYPH);
             div()
                 .id(id)
@@ -186,7 +190,7 @@ impl MainWindow {
                 })
                 .child(glyph.when(area == WindowControlArea::Close, |glyph| {
                     // Sur le rouge de Fermer, le glyphe passe en blanc, comme dans Windows.
-                    glyph.group_hover(id, |style| style.text_color(gpui::white()))
+                    glyph.group_hover(id, move |style| style.text_color(close_text))
                 }))
                 .on_click(move |_, window, _| match area {
                     WindowControlArea::Min => window.minimize_window(),
