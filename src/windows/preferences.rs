@@ -4,9 +4,10 @@ use windows::Win32::Graphics::Gdi::{
 use windows::Win32::System::Registry::{HKEY_CURRENT_USER, RRF_RT_REG_DWORD, RegGetValueW};
 use windows::Win32::UI::Accessibility::{HCF_HIGHCONTRASTON, HIGHCONTRASTW};
 use windows::Win32::UI::WindowsAndMessaging::{
-    SPI_GETHIGHCONTRAST, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SystemParametersInfoW,
+    SPI_GETCLIENTAREAANIMATION, SPI_GETHIGHCONTRAST, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
+    SystemParametersInfoW,
 };
-use windows::core::PCWSTR;
+use windows::core::{BOOL, PCWSTR};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Rgb {
@@ -27,6 +28,7 @@ pub struct SystemPalette {
 pub struct UiPreferences {
     pub high_contrast: bool,
     pub text_scale_percent: u32,
+    pub reduce_motion: bool,
     pub palette: SystemPalette,
 }
 
@@ -46,6 +48,7 @@ pub fn ui_preferences() -> Result<UiPreferences, windows::core::Error> {
     Ok(UiPreferences {
         high_contrast: contrast.dwFlags.contains(HCF_HIGHCONTRASTON),
         text_scale_percent: text_scale_percent().unwrap_or(100).clamp(100, 225),
+        reduce_motion: reduces_motion(animation_effects()),
         palette: SystemPalette {
             window: system_color(unsafe { GetSysColor(COLOR_WINDOW) }),
             window_text: system_color(unsafe { GetSysColor(COLOR_WINDOWTEXT) }),
@@ -57,6 +60,25 @@ pub fn ui_preferences() -> Result<UiPreferences, windows::core::Error> {
 
 pub fn is_preferences_change_message(message: u32) -> bool {
     matches!(message, 0x0015 | 0x001A | 0x031A | 0x02E0)
+}
+
+/// Réglage « Effets d'animation ». Seul un réglage lu comme désactivé réduit le mouvement.
+fn reduces_motion(animation_effects: Option<bool>) -> bool {
+    animation_effects == Some(false)
+}
+
+fn animation_effects() -> Option<bool> {
+    let mut enabled = BOOL(1);
+    unsafe {
+        SystemParametersInfoW(
+            SPI_GETCLIENTAREAANIMATION,
+            0,
+            Some((&mut enabled as *mut BOOL).cast()),
+            SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0),
+        )
+    }
+    .ok()
+    .map(|()| enabled.as_bool())
 }
 
 fn text_scale_percent() -> Option<u32> {
@@ -104,6 +126,18 @@ mod tests {
                 blue: 0x33
             }
         );
+    }
+
+    #[test]
+    fn only_animation_effects_read_as_off_reduce_motion() {
+        assert!(reduces_motion(Some(false)));
+        assert!(!reduces_motion(Some(true)));
+        assert!(!reduces_motion(None));
+    }
+
+    #[test]
+    fn animation_effects_setting_reads() {
+        assert!(animation_effects().is_some());
     }
 
     #[test]
