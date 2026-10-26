@@ -78,4 +78,5 @@ Aucun bug ouvert au 25 octobre 2026.
 | 2026-10-25 | [#10](https://github.com/Thanaen/PowerPlanSync/pull/10) | Migration GPUI planifiée (fil de la refonte GPUI). |
 | 2026-10-25 | [#12](https://github.com/Thanaen/PowerPlanSync/pull/12) | T046 : dépendances GPUI épinglées. |
 | 2026-10-26 | [#13](https://github.com/Thanaen/PowerPlanSync/pull/13) | T047 : sonde GPUI, compilée ; essais réels en T048. |
-| 2026-10-26 | #14 | T050 : présentation sans type graphique, libellés du contrat, tests. |
+| 2026-10-26 | [#14](https://github.com/Thanaen/PowerPlanSync/pull/14) | T050 : présentation sans type graphique, libellés du contrat, tests. |
+| 2026-10-26 | #15 | T052 : jetons de mouvement et réglage « Effets d'animation ». |
