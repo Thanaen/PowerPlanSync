@@ -53,11 +53,11 @@ Le design system s'appelle désormais **Bientôt GPUI** et reflète le code de B
 pas modifié depuis PowerPlanSync : les écarts ci-dessous restent propres à PowerPlanSync, dans son
 thème, jusqu'à ce que Bientôt les adopte.
 
-- anneau de focus de 2 px, et `border-focused` à `#4560c4` dans le thème clair ;
+- anneau de focus de 2 px tracé à 1 px du contrôle, et `border-focused` à `#4560c4` dans le thème clair ;
 - texte du bouton Tinted en `accent-on-active` dans le thème clair ;
 - bouton Tinted désactivé : fond transparent, bordure `border`, texte `text-placeholder` ;
 - `g-badge--error` (texte `#e8999c` dans le thème sombre) et badge accent en `accent-on-active` ;
-- pastille de Switch éteint en `text-muted` ;
+- Switch éteint : pastille en `text-muted`, piste en `element-active` et bordure en `text-placeholder` ;
 - glissement de la pastille du Switch en PRESS (140 ms) au lieu de 120 ms.
 
 Les couleurs `tray-*` ont un sens propre à PowerPlanSync : bleu pour un plan de logiciel appliqué,

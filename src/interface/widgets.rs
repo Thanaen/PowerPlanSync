@@ -5,9 +5,10 @@
 //! un état accessibles ; les couleurs sont choisies par des fonctions pures, testées sans GPUI.
 
 use gpui::{
-    App, BoxShadow, ClickEvent, Context, ElementId, EventEmitter, FocusHandle, Focusable,
-    FontWeight, Hsla, KeyBinding, Pixels, Role, SharedString, StyleRefinement, Svg, Toggled,
-    Window, actions, anchored, deferred, div, point, prelude::*, px, svg, transparent_black,
+    AnyElement, App, BoxShadow, ClickEvent, Context, ElementId, EventEmitter, FocusHandle,
+    Focusable, FontWeight, Hsla, KeyBinding, Pixels, Role, SharedString, StyleRefinement, Svg,
+    Toggled, Window, actions, anchored, deferred, div, point, prelude::*, px, svg,
+    transparent_black,
 };
 
 use crate::interface::motion::{self, Entrance};
@@ -33,25 +34,37 @@ pub fn icon(name: &str, color: Hsla) -> Svg {
         .text_color(color)
 }
 
-/// Anneau de focus de 2 px (écart) : la bordure de 1 px, plus 1 px tracé autour.
-pub fn focus_ring(style: StyleRefinement, color: Hsla) -> StyleRefinement {
-    style.border_color(color).shadow(ring(color, px(1.)))
+/// Anneau de focus de 2 px (écart) en `border_focused`, séparé du contrôle par 1 px de
+/// surface, comme dans les maquettes. La bordure garde sa couleur : l'anneau reste visible
+/// autour d'un champ invalide, d'un contrôle rempli d'`accent` et en contraste élevé.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct FocusRing {
+    pub color: Hsla,
+    pub gap: Hsla,
 }
 
-/// Anneau de 2 px tracé autour d'une bordure qui garde sa couleur : champ invalide, ou
-/// contrôle rempli d'`accent`, sur lequel `border_focused` ne se verrait pas.
-pub fn focus_ring_around(style: StyleRefinement, color: Hsla) -> StyleRefinement {
-    style.shadow(ring(color, px(2.)))
+impl FocusRing {
+    pub fn of(theme: &Theme) -> Self {
+        Self {
+            color: theme.border_focused,
+            gap: theme.surface,
+        }
+    }
+
+    pub fn apply(self, style: StyleRefinement) -> StyleRefinement {
+        // GPUI peint les ombres dans l'ordre : l'anneau d'abord, l'espace par-dessus.
+        style.shadow(vec![spread(self.color, px(3.)), spread(self.gap, px(1.))])
+    }
 }
 
-fn ring(color: Hsla, width: Pixels) -> Vec<BoxShadow> {
-    vec![BoxShadow {
+fn spread(color: Hsla, width: Pixels) -> BoxShadow {
+    BoxShadow {
         color,
         offset: point(px(0.), px(0.)),
         blur_radius: px(0.),
         spread_radius: width,
         inset: false,
-    }]
+    }
 }
 
 /// Les styles de bouton de GPUI Kit employés par les maquettes.
@@ -76,6 +89,7 @@ pub struct ButtonColors {
     pub icon: Hsla,
     pub hover_background: Hsla,
     pub hover_border: Hsla,
+    pub pressed_background: Hsla,
 }
 
 pub fn button_colors(style: ButtonStyle, disabled: bool, theme: &Theme) -> ButtonColors {
@@ -93,6 +107,7 @@ pub fn button_colors(style: ButtonStyle, disabled: bool, theme: &Theme) -> Butto
             icon: theme.text_placeholder,
             hover_background: clear,
             hover_border: border,
+            pressed_background: clear,
         };
     }
     match style {
@@ -103,6 +118,7 @@ pub fn button_colors(style: ButtonStyle, disabled: bool, theme: &Theme) -> Butto
             icon: theme.text_on_active,
             hover_background: theme.element_active,
             hover_border: theme.border_on_tint,
+            pressed_background: theme.element_active,
         },
         ButtonStyle::Tinted => ButtonColors {
             background: theme.accent_background,
@@ -111,6 +127,7 @@ pub fn button_colors(style: ButtonStyle, disabled: bool, theme: &Theme) -> Butto
             icon: theme.tinted_text,
             hover_background: theme.accent_background,
             hover_border: theme.accent,
+            pressed_background: theme.accent_background,
         },
         ButtonStyle::Outlined => ButtonColors {
             background: clear,
@@ -119,14 +136,17 @@ pub fn button_colors(style: ButtonStyle, disabled: bool, theme: &Theme) -> Butto
             icon: theme.text_muted,
             hover_background: theme.element_hover,
             hover_border: theme.border,
+            pressed_background: theme.element_active,
         },
         ButtonStyle::Subtle => ButtonColors {
             background: clear,
             border: clear,
             text: theme.text,
-            icon: theme.text_muted,
+            // Un bouton d'icône seule passe son icône en `text_muted`.
+            icon: theme.text,
             hover_background: theme.element_hover,
             hover_border: clear,
+            pressed_background: theme.element_active,
         },
     }
 }
@@ -141,6 +161,7 @@ pub struct Button {
     icon: Option<&'static str>,
     icon_only: bool,
     keys: Vec<SharedString>,
+    toggled: Option<bool>,
     disabled: bool,
     on_click: Option<OnClick>,
 }
@@ -158,6 +179,7 @@ impl Button {
             icon: None,
             icon_only: false,
             keys: Vec::new(),
+            toggled: None,
             disabled: false,
             on_click: None,
         }
@@ -187,6 +209,12 @@ impl Button {
         self
     }
 
+    /// Un bouton à bascule, annoncé enfoncé ou non : **Application ouverte**.
+    pub fn toggled(mut self, on: bool) -> Self {
+        self.toggled = Some(on);
+        self
+    }
+
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
@@ -204,12 +232,26 @@ impl Button {
 impl RenderOnce for Button {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = Theme::of(window, cx);
-        let colors = button_colors(self.style, self.disabled, &theme);
-        let focused = theme.border_focused;
+        let mut colors = button_colors(self.style, self.disabled, &theme);
+        if self.icon_only && !self.disabled {
+            colors.icon = theme.text_muted;
+        }
+        let ring = FocusRing::of(&theme);
+        let shortcut = (!self.keys.is_empty()).then(|| {
+            self.keys
+                .iter()
+                .map(|key| key.as_ref())
+                .collect::<Vec<_>>()
+                .join("+")
+        });
         let base = div()
             .id(self.id)
             .role(Role::Button)
             .aria_label(self.label.clone())
+            .when_some(shortcut, |button, keys| button.aria_keyshortcuts(keys))
+            .when_some(self.toggled, |button, on| {
+                button.aria_toggled(if on { Toggled::True } else { Toggled::False })
+            })
             .h(token::BUTTON_MEDIUM)
             .when(self.icon_only, |button| {
                 button.w(token::BUTTON_MEDIUM).justify_center()
@@ -245,15 +287,17 @@ impl RenderOnce for Button {
                 .tab_stop(false)
                 // GPUI n'a pas de setter pour cet état, seulement ce crochet sur le nœud.
                 .a11y_synthetic_children(|children| children.parent_node().set_disabled())
-                .focus_visible(move |style| focus_ring(style, focused))
+                .focus_visible(move |style| ring.apply(style))
                 // Sans cela, GPUI donne le focus à un nœud cliqué qui a un index de tabulation.
                 .on_any_mouse_down(|_, window, _| window.prevent_default());
         }
         let (hover_background, hover_border) = (colors.hover_background, colors.hover_border);
+        let pressed = colors.pressed_background;
         base.tab_index(0)
             .cursor_pointer()
             .hover(move |style| style.bg(hover_background).border_color(hover_border))
-            .focus_visible(move |style| focus_ring(style, focused))
+            .active(move |style| style.bg(pressed))
+            .focus_visible(move |style| ring.apply(style))
             .when_some(self.on_click, |button, on_click| button.on_click(on_click))
     }
 }
@@ -278,7 +322,7 @@ pub fn switch_colors(on: bool, enabled: bool, theme: &Theme) -> SwitchColors {
         },
         (true, false) => SwitchColors {
             track: theme.switch_track_off,
-            border: theme.border,
+            border: theme.text_placeholder,
             knob: theme.switch_knob_off,
         },
         (false, true) => SwitchColors {
@@ -331,7 +375,7 @@ impl RenderOnce for Switch {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = Theme::of(window, cx);
         let colors = switch_colors(self.on, !self.disabled, &theme);
-        let focused = theme.border_focused;
+        let ring = FocusRing::of(&theme);
         let on = self.on;
         let control = div()
             .id(self.id)
@@ -357,40 +401,51 @@ impl RenderOnce for Switch {
         control
             .tab_index(0)
             .cursor_pointer()
-            .focus_visible(move |style| {
-                // Allumé, la piste est `accent` : l'anneau passe autour.
-                if on {
-                    focus_ring_around(style, focused)
-                } else {
-                    focus_ring(style, focused)
-                }
-            })
+            .focus_visible(move |style| ring.apply(style))
             .when_some(self.on_toggle, |control, on_toggle| {
                 control.on_click(move |_, window, cx| on_toggle(!on, window, cx))
             })
     }
 }
 
-/// Couleurs d'un badge ; la bordure n'est tracée qu'en contraste élevé, où le fond se confond
-/// avec la surface.
+pub const BADGE_HEIGHT: Pixels = px(18.);
+
+/// Couleurs d'un badge : fond teinté et bord de 1 px de la même teinte.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct BadgeColors {
     pub background: Hsla,
     pub text: Hsla,
-    pub border: Option<Hsla>,
+    pub border: Hsla,
 }
 
 pub fn badge_colors(badge: Badge, theme: &Theme) -> BadgeColors {
-    let (background, text) = match badge {
-        Badge::Applied => (theme.accent_background, theme.badge_accent_text),
-        Badge::Open => (theme.element_active, theme.text_on_active),
-        Badge::Suspended => (theme.warning_background, theme.warning),
-        Badge::Refused => (theme.error_background, theme.badge_error_text),
+    let (background, text, border) = match badge {
+        Badge::Applied => (
+            theme.accent_background,
+            theme.badge_accent_text,
+            theme.accent_border,
+        ),
+        Badge::Open => (theme.element_active, theme.text_on_active, theme.border),
+        Badge::Suspended => (
+            theme.warning_background,
+            theme.warning,
+            theme.warning_border,
+        ),
+        Badge::Refused => (
+            theme.error_background,
+            theme.badge_error_text,
+            theme.error_border,
+        ),
     };
     BadgeColors {
         background,
         text,
-        border: theme.high_contrast.then_some(theme.border),
+        // En contraste élevé, le fond se confond avec la surface : le bord dessine le badge.
+        border: if theme.high_contrast {
+            theme.border
+        } else {
+            border
+        },
     }
 }
 
@@ -399,12 +454,14 @@ pub fn badge(badge: Badge, theme: &Theme) -> impl IntoElement {
     let colors = badge_colors(badge, theme);
     div()
         .flex_none()
+        .h(BADGE_HEIGHT)
         .px(BASE_06)
+        .flex()
+        .items_center()
         .rounded(radius::SM)
+        .border_1()
+        .border_color(colors.border)
         .bg(colors.background)
-        .when_some(colors.border, |badge, border| {
-            badge.border_1().border_color(border)
-        })
         .type_style(text::LABEL_SM)
         .font_weight(FontWeight::MEDIUM)
         .text_color(colors.text)
@@ -494,41 +551,97 @@ fn message_icon(kind: MessageKind) -> &'static str {
 }
 
 /// Un message dans la page, annoncé sans déplacer le focus : `Alert` pour une erreur,
-/// `Status` sinon. Les actions du message s'ajoutent comme enfants.
-pub fn message(
-    id: impl Into<ElementId>,
+/// `Status` sinon. Un titre en gras peut précéder le texte ; les actions se rangent dessous.
+#[derive(IntoElement)]
+pub struct Message {
+    id: ElementId,
     kind: MessageKind,
-    text: impl Into<SharedString>,
-    theme: &Theme,
-) -> gpui::Stateful<gpui::Div> {
-    let colors = message_colors(kind, theme);
-    let text = text.into();
-    div()
-        .id(id)
-        .role(if kind == MessageKind::Error {
-            Role::Alert
-        } else {
-            Role::Status
-        })
-        .aria_label(text.clone())
-        .flex()
-        .items_start()
-        .gap(BASE_08)
-        .p(BASE_12)
-        .rounded(radius::MD)
-        .border_1()
-        .border_color(colors.border)
-        .bg(colors.background)
-        .type_style(text::LABEL_MD)
-        .text_color(colors.text)
-        .child(
-            div()
-                .h(text::LABEL_MD.line_height)
-                .flex()
-                .items_center()
-                .child(icon(message_icon(kind), colors.icon)),
-        )
-        .child(div().flex_1().min_w_0().child(text))
+    title: Option<SharedString>,
+    text: SharedString,
+    actions: Vec<AnyElement>,
+}
+
+impl Message {
+    pub fn new(id: impl Into<ElementId>, kind: MessageKind, text: impl Into<SharedString>) -> Self {
+        Self {
+            id: id.into(),
+            kind,
+            title: None,
+            text: text.into(),
+            actions: Vec::new(),
+        }
+    }
+
+    /// **Windows a refusé le changement de plan**, au-dessus du texte.
+    pub fn title(mut self, title: impl Into<SharedString>) -> Self {
+        self.title = Some(title.into());
+        self
+    }
+
+    pub fn action(mut self, action: impl IntoElement) -> Self {
+        self.actions.push(action.into_any_element());
+        self
+    }
+}
+
+impl RenderOnce for Message {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let theme = Theme::of(window, cx);
+        let colors = message_colors(self.kind, &theme);
+        let name = match &self.title {
+            Some(title) => SharedString::from(format!("{title}. {}", self.text)),
+            None => self.text.clone(),
+        };
+        div()
+            .id(self.id)
+            .role(if self.kind == MessageKind::Error {
+                Role::Alert
+            } else {
+                Role::Status
+            })
+            .aria_label(name)
+            .flex()
+            .items_start()
+            .gap(BASE_08)
+            .py(BASE_08)
+            .px(BASE_12)
+            .rounded(radius::MD)
+            .border_1()
+            .border_color(colors.border)
+            .bg(colors.background)
+            .type_style(text::LABEL_MD)
+            .text_color(colors.text)
+            .child(
+                div()
+                    .h(text::LABEL_MD.line_height)
+                    .flex()
+                    .items_center()
+                    .child(icon(message_icon(self.kind), colors.icon)),
+            )
+            .child(
+                div()
+                    .flex_1()
+                    .min_w_0()
+                    .flex()
+                    .flex_col()
+                    .gap(BASE_02)
+                    .children(
+                        self.title
+                            .map(|title| div().font_weight(FontWeight::SEMIBOLD).child(title)),
+                    )
+                    .child(self.text)
+                    .when(!self.actions.is_empty(), |content| {
+                        content.child(
+                            div()
+                                .mt(BASE_06)
+                                .flex()
+                                .flex_wrap()
+                                .gap(BASE_08)
+                                .children(self.actions),
+                        )
+                    }),
+            )
+    }
 }
 
 /// L'erreur d'un champ, sous lui : **Ce plan n'existe plus dans Windows…**.
@@ -664,7 +777,8 @@ pub struct SelectChanged(pub usize);
 
 /// Liste déroulante de plans : un bouton `ComboBox` et, ouverte, la liste dessous, qui entre
 /// en `slide_over(MENU, 4 px)`. Le focus reste sur le bouton ; les flèches parcourent la
-/// liste, Entrée ou Espace choisit, Échap ferme.
+/// liste, Entrée ou Espace choisit, Échap ferme. La liste est peinte hors de l'arbre du
+/// bouton : la valeur annoncée suit donc l'option survolée tant qu'elle est ouverte.
 pub struct Select {
     focus_handle: FocusHandle,
     name: SharedString,
@@ -672,8 +786,9 @@ pub struct Select {
     choice: Choice,
     width: Pixels,
     entrance: Entrance,
-    /// Bordure d'erreur ; le message se pose dessous avec [`field_error`].
-    pub invalid: bool,
+    /// Bordure d'erreur et description lue au focus ; le même texte se pose dessous avec
+    /// [`field_error`].
+    pub error: Option<SharedString>,
     pub disabled: bool,
 }
 
@@ -688,7 +803,7 @@ impl Select {
             choice: Choice::default(),
             width: px(280.),
             entrance: Entrance::default(),
-            invalid: false,
+            error: None,
             disabled: false,
         }
     }
@@ -737,23 +852,33 @@ impl Focusable for Select {
 impl Render for Select {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = Theme::of(window, cx);
-        let (hover, focused) = (theme.element_hover, theme.border_focused);
-        let value = self
-            .choice
-            .selected()
-            .and_then(|index| self.options.get(index))
-            .map(|option| option.label.clone());
-        let border = if self.invalid {
+        let hover = theme.element_hover;
+        let ring = FocusRing::of(&theme);
+        let label = |index: Option<usize>| {
+            index
+                .and_then(|index| self.options.get(index))
+                .map(|option| option.label.clone())
+        };
+        let value = label(self.choice.selected());
+        let announced = if self.choice.is_open() {
+            label(Some(self.choice.highlighted()))
+        } else {
+            value.clone()
+        };
+        let border = if self.error.is_some() {
             theme.error
         } else {
-            theme.border
+            theme.border_variant
         };
-        let invalid = self.invalid;
         let button = div()
             .id("select")
             .role(Role::ComboBox)
             .aria_label(self.name.clone())
-            .aria_value(value.clone().unwrap_or_default())
+            .aria_value(announced.unwrap_or_default())
+            .aria_placeholder(strings::SELECT_PLACEHOLDER)
+            .when_some(self.error.clone(), |button, error| {
+                button.aria_description(error)
+            })
             .aria_expanded(self.choice.is_open())
             .w(self.width)
             .h(token::BUTTON_MEDIUM)
@@ -772,10 +897,10 @@ impl Render for Select {
                     .min_w_0()
                     .overflow_hidden()
                     .whitespace_nowrap()
-                    .text_color(if value.is_some() && !self.disabled {
-                        theme.text
-                    } else {
-                        theme.text_placeholder
+                    .text_color(match (&value, self.disabled) {
+                        (_, true) => theme.text_placeholder,
+                        (Some(_), false) => theme.text,
+                        (None, false) => theme.text_muted,
                     })
                     .child(value.unwrap_or_else(|| strings::SELECT_PLACEHOLDER.into())),
             )
@@ -793,13 +918,7 @@ impl Render for Select {
             .bg(theme.element)
             .cursor_pointer()
             .hover(move |style| style.bg(hover))
-            .focus_visible(move |style| {
-                if invalid {
-                    focus_ring_around(style, focused)
-                } else {
-                    focus_ring(style, focused)
-                }
-            })
+            .focus_visible(move |style| ring.apply(style))
             .on_action(cx.listener(|this, _: &SelectPrevious, _, cx| {
                 this.update(
                     |choice| {
@@ -843,6 +962,13 @@ impl Render for Select {
         let menu = self.choice.is_open().then(|| {
             let time = self.entrance.time(motion::MENU, window, cx);
             let (selected, highlighted) = (self.choice.selected(), self.choice.highlighted());
+            // En contraste élevé, `element_hover` est la fenêtre : l'option survolée prend la
+            // paire Highlight et HighlightText.
+            let (highlight, highlight_text) = if theme.high_contrast {
+                (theme.element_active, theme.text_on_active)
+            } else {
+                (theme.element_hover, theme.text)
+            };
             let options = self.options.iter().enumerate().map(|(index, option)| {
                 let chosen = selected == Some(index);
                 div()
@@ -858,12 +984,19 @@ impl Render for Select {
                     .rounded(radius::SM)
                     .cursor_pointer()
                     .when(index == highlighted, |option| {
-                        option.bg(theme.element_hover)
+                        option.bg(highlight).text_color(highlight_text)
                     })
-                    .hover(move |style| style.bg(hover))
+                    .when(index != highlighted, |option| {
+                        option.hover(move |style| style.bg(hover))
+                    })
                     .child(div().flex_1().child(option.label.clone()))
                     .when(chosen, |option| {
-                        option.child(icon("check", theme.accent).size(token::ICON_SM))
+                        let check = if index == highlighted {
+                            highlight_text
+                        } else {
+                            theme.accent
+                        };
+                        option.child(icon("check", check).size(token::ICON_SM))
                     })
                     .on_click(cx.listener(move |this, _, _, cx| {
                         this.update(|choice| choice.choose(index), cx)
@@ -989,7 +1122,7 @@ mod tests {
         let off = switch_colors(false, true, &t);
         assert_eq!(
             (off.knob, off.track, off.border),
-            (t.switch_knob_off, t.switch_track_off, t.border)
+            (t.switch_knob_off, t.switch_track_off, t.text_placeholder)
         );
         for badge in [
             Badge::Applied,
@@ -998,7 +1131,7 @@ mod tests {
             Badge::Refused,
         ] {
             let colors = badge_colors(badge, &t);
-            assert_eq!(colors.border, Some(t.border), "{badge:?}");
+            assert_eq!(colors.border, t.border, "{badge:?}");
             let readable = (colors.text == t.text && colors.background == t.surface)
                 || (colors.text == t.text_on_active && colors.background == t.element_active);
             assert!(readable, "{badge:?}");
@@ -1019,12 +1152,26 @@ mod tests {
     }
 
     #[test]
+    fn the_focus_ring_stays_apart_from_every_fill() {
+        for theme in themes() {
+            let ring = FocusRing::of(&theme);
+            assert_eq!(ring.gap, theme.surface);
+            // L'anneau ne touche que l'espace de surface, jamais le remplissage du contrôle.
+            assert_ne!(ring.color, ring.gap);
+        }
+    }
+
+    #[test]
     fn badges_follow_the_mockup_outside_high_contrast() {
         let dark = Theme::dark();
         let applied = badge_colors(Badge::Applied, &dark);
         assert_eq!(
             (applied.background, applied.text, applied.border),
-            (dark.accent_background, dark.badge_accent_text, None)
+            (
+                dark.accent_background,
+                dark.badge_accent_text,
+                dark.accent_border
+            )
         );
         assert_eq!(
             badge_colors(Badge::Refused, &dark).text,
@@ -1036,7 +1183,10 @@ mod tests {
     fn switch_off_uses_the_deviation_knob() {
         for theme in [Theme::light(), Theme::dark()] {
             let off = switch_colors(false, true, &theme);
-            assert_eq!(off.knob, theme.text_muted);
+            assert_eq!(
+                (off.knob, off.border),
+                (theme.text_muted, theme.text_placeholder)
+            );
             let disabled = switch_colors(true, false, &theme);
             assert_eq!(disabled.knob, theme.text_placeholder);
         }

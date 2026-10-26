@@ -719,7 +719,7 @@ impl Render for TextInput {
         } else {
             theme.border
         };
-        let focused = theme.border_focused;
+        let ring = widgets::FocusRing::of(&theme);
         let field = div()
             .id("text-input")
             .role(Role::TextInput)
@@ -743,7 +743,6 @@ impl Render for TextInput {
                 colors,
             });
         let frameless = self.frameless;
-        let invalid = self.invalid;
         if self.disabled {
             return field.when(!frameless, |field| field.bg(theme.element));
         }
@@ -753,13 +752,7 @@ impl Render for TextInput {
             .when(!frameless, |field| field.bg(theme.editor))
             .cursor(CursorStyle::IBeam)
             .when(!frameless, |field| {
-                field.focus(move |style| {
-                    if invalid {
-                        widgets::focus_ring_around(style, focused)
-                    } else {
-                        widgets::focus_ring(style, focused)
-                    }
-                })
+                field.focus(move |style| ring.apply(style))
             })
             .on_action(cx.listener(Self::backspace))
             .on_action(cx.listener(Self::delete))
