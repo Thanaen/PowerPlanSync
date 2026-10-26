@@ -6,7 +6,8 @@
 use std::borrow::Cow;
 
 use gpui::{
-    App, BoxShadow, FontWeight, Hsla, Pixels, Styled, WindowAppearance, hsla, point, px, rgba,
+    App, BoxShadow, FontWeight, Global, Hsla, Pixels, Styled, Window, WindowAppearance, hsla,
+    point, px, rgba,
 };
 
 pub const FONT_FAMILY: &str = "IBM Plex Sans";
@@ -46,6 +47,13 @@ pub struct SystemColors {
     pub highlight_text: u32,
     pub gray_text: u32,
 }
+
+/// Les couleurs du thème de contraste Windows actif, posées par l'application à chaque
+/// changement des préférences ; `None` hors contraste élevé.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct HighContrast(pub Option<SystemColors>);
+
+impl Global for HighContrast {}
 
 #[cfg(windows)]
 impl From<crate::windows::preferences::SystemPalette> for SystemColors {
@@ -138,6 +146,15 @@ impl Theme {
             (None, WindowAppearance::Dark | WindowAppearance::VibrantDark) => Self::dark(),
             (None, WindowAppearance::Light | WindowAppearance::VibrantLight) => Self::light(),
         }
+    }
+
+    /// La variante de `window`, avec les couleurs de [`HighContrast`].
+    pub fn of(window: &Window, cx: &App) -> Self {
+        Self::current(
+            window.appearance(),
+            cx.try_global::<HighContrast>()
+                .and_then(|contrast| contrast.0),
+        )
     }
 
     /// La variante pour les préférences lues dans Windows.

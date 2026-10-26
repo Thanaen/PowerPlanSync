@@ -26,7 +26,8 @@ $sources = @(
     [pscustomobject]@{ Source = Join-Path $repo 'docs/guide-utilisateur.md'; Destination = 'README.md' },
     [pscustomobject]@{ Source = [IO.Path]::GetFullPath($NoticesPath); Destination = 'THIRD_PARTY_NOTICES.md' },
     [pscustomobject]@{ Source = [IO.Path]::GetFullPath($LicenseTextsPath); Destination = 'notices/THIRD_PARTY_LICENSES.txt' },
-    [pscustomobject]@{ Source = Join-Path $repo 'assets/fonts/OFL.txt'; Destination = 'notices/OFL-IBM-Plex.txt' }
+    [pscustomobject]@{ Source = Join-Path $repo 'assets/fonts/OFL.txt'; Destination = 'notices/OFL-IBM-Plex.txt' },
+    [pscustomobject]@{ Source = Join-Path $repo 'assets/icons/LICENSE'; Destination = 'notices/LICENSE-Lucide.txt' }
 )
 foreach ($item in $sources) {
     if (-not (Test-Path -LiteralPath $item.Source -PathType Leaf)) { throw "Fichier requis absent : $($item.Source)" }
