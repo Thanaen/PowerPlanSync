@@ -112,3 +112,17 @@ pub fn error_message(error: &Error) -> String {
         Error::StaleTransaction => "Le journal a changé. L’automatisation est suspendue pour conserver la récupération.".into(),
     }
 }
+
+pub const TRAY_OPEN: &str = "Ouvrir PowerPlanSync";
+pub const TRAY_PAUSE: &str = "Mettre en pause";
+pub const TRAY_RESUME: &str = "Reprendre";
+pub const TRAY_QUIT: &str = "Quitter PowerPlanSync";
+pub const HIDDEN_TITLE: &str = "PowerPlanSync reste ouvert";
+pub const HIDDEN_BODY: &str = "Il continue de fonctionner dans la zone de notification, parfois \
+     parmi les icônes masquées (^). Pour l’arrêter, faites un clic droit sur son icône, puis \
+     choisissez Quitter PowerPlanSync.";
+
+/// Infobulle de l'icône : le plan actif, puis la ligne d'état.
+pub fn tray_tooltip(plan: &str, status: &str) -> String {
+    format!("PowerPlanSync · {plan}\n{status}")
+}
