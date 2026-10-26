@@ -113,6 +113,8 @@ pub fn error_message(error: &Error) -> String {
     }
 }
 
+pub const SELECT_PLACEHOLDER: &str = "Choisir un plan";
+
 pub const TRAY_OPEN: &str = "Ouvrir PowerPlanSync";
 pub const TRAY_PAUSE: &str = "Mettre en pause";
 pub const TRAY_RESUME: &str = "Reprendre";
