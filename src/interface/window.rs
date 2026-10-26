@@ -127,8 +127,11 @@ impl NavColors {
         } else {
             theme.element_active
         };
-        let (text, icon) = if selected {
+        // Hors contraste élevé, l'icône garde `text_muted`, comme dans les maquettes.
+        let (text, icon) = if selected && theme.high_contrast {
             (theme.text_on_active, theme.text_muted_on_active)
+        } else if selected {
+            (theme.text_on_active, theme.text_muted)
         } else {
             (theme.text, theme.text_muted)
         };
@@ -362,7 +365,7 @@ impl MainWindow {
                 .items_center()
                 .gap(BASE_08)
                 .rounded(radius::SM)
-                .when(narrow, |item| item.w(token::BUTTON_LARGE).justify_center())
+                .when(narrow, |item| item.w(token::BUTTON_MEDIUM).justify_center())
                 .when(!narrow, |item| item.px(BASE_08))
                 .when(selected, |item| item.bg(theme.element_active))
                 .when(!selected, |item| {
@@ -387,7 +390,7 @@ impl MainWindow {
             .aria_selected(page == self.page)
             .on_click(cx.listener(move |this, _, _, cx| this.show_page(page, cx)))
         });
-        // Étroite, les entrées de 32 px sont centrées dans les 43 px laissés par le filet.
+        // Étroite, les entrées de 28 px sont centrées dans les 43 px laissés par le filet.
         let padding = if narrow { px(0.) } else { BASE_08 };
         div()
             .w(if narrow {
@@ -524,7 +527,7 @@ impl Render for MainWindow {
                     .child(self.sidebar(narrow, &theme, cx))
                     .child(
                         div()
-                            .id("page")
+                            .id(("page", self.page.index()))
                             .role(Role::TabPanel)
                             .aria_label(self.page.label())
                             .flex_1()
