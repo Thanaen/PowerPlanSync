@@ -3,6 +3,8 @@ use power_plan_sync::{
     presentation::{Automation, Badge, display},
 };
 
+type Change = fn(&mut ViewState);
+
 const BALANCED: PlanId = PlanId(0x381b4222_f694_41f0_9685_ff5bb260df2e);
 
 fn rule(id: u64, label: &str, path: &str, plan: u128) -> AppRule {
@@ -170,79 +172,79 @@ fn failed_read_after_an_applied_plan_is_not_a_refusal() {
 #[test]
 fn every_engine_status_has_a_truthful_status_line() {
     let base = active_view();
-    let cases: Vec<(Box<dyn Fn(&mut ViewState)>, &str)> = vec![
+    let cases: [(Change, &str); 12] = [
         (
-            Box::new(|v| v.status = Status::ExitGrace { deadline_ms: 0 }),
+            |v| v.status = Status::ExitGrace { deadline_ms: 0 },
             "Automatisation active · retour dans quelques secondes",
         ),
         (
-            Box::new(|v| {
+            |v| {
                 v.status = Status::Active;
                 v.configuration.rules.remove(0);
-            }),
+            },
             "Automatisation active · retour dans quelques secondes",
         ),
         (
-            Box::new(|v| v.status = Status::Applying),
+            |v| v.status = Status::Applying,
             "Automatisation active · changement de plan en cours",
         ),
         (
-            Box::new(|v| v.status = Status::Blocked(Error::Storage("journal".into()))),
+            |v| v.status = Status::Blocked(Error::Storage("journal".into())),
             "Automatisation suspendue · action nécessaire",
         ),
         (
-            Box::new(|v| v.status = Status::Recovering),
+            |v| v.status = Status::Recovering,
             "Automatisation en attente · récupération en cours",
         ),
         (
-            Box::new(|v| v.status = Status::SessionInactive),
+            |v| v.status = Status::SessionInactive,
             "Automatisation en attente · session Windows inactive",
         ),
         (
-            Box::new(|v| v.status = Status::Exited),
+            |v| v.status = Status::Exited,
             "Automatisation arrêtée · PowerPlanSync s’arrête",
         ),
         (
-            Box::new(|v| {
+            |v| {
                 v.status = Status::Idle;
                 v.cycle = None;
-            }),
+            },
             "Automatisation en attente · aucun logiciel suivi n’est ouvert",
         ),
         (
-            Box::new(|v| {
+            |v| {
                 v.status = Status::Idle;
                 v.cycle = None;
                 v.power_source = PowerSource::Unknown;
-            }),
+            },
             "Automatisation en attente · alimentation inconnue, aucun plan ne sera changé",
         ),
         (
-            Box::new(|v| {
+            |v| {
                 v.status = Status::Idle;
                 v.cycle = None;
                 v.power_source = PowerSource::Battery;
                 v.configuration.allow_on_battery = true;
-            }),
+            },
             "Automatisation en attente · aucun logiciel suivi n’est ouvert",
         ),
         (
-            Box::new(|v| {
+            |v| {
                 v.status = Status::Unconfigured;
                 v.cycle = None;
                 v.configuration.return_plan = None;
-            }),
+            },
             "Automatisation en attente · plan de retour à confirmer",
         ),
         (
-            Box::new(|v| {
+            |v| {
                 v.status = Status::Unconfigured;
                 v.cycle = None;
                 v.configuration
                     .rules
                     .iter_mut()
                     .for_each(|r| r.enabled = false);
-            }),
+            },
             "Automatisation en attente · aucun logiciel n’est suivi",
         ),
     ];
