@@ -187,10 +187,10 @@ pub use native::Tray;
 
 #[cfg(windows)]
 mod native {
-    use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::{Arc, Mutex, Once, PoisonError};
 
-    use tray_icon::menu::{Menu, MenuEvent, MenuItem, PredefinedMenuItem};
+    use tray_icon::menu::{Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem};
     use tray_icon::{
         Icon, MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent,
     };
@@ -207,6 +207,8 @@ mod native {
     /// arrivent par `on_command`, appelé depuis ce thread.
     pub struct Tray {
         icon: TrayIcon,
+        /// Identifie la route de cette icône.
+        open: MenuId,
         status: MenuItem,
         toggle: MenuItem,
         paused: Arc<AtomicBool>,
@@ -242,45 +244,17 @@ mod native {
                 .build()
                 .map_err(|error| error.to_string())?;
 
-            // Les gestionnaires sont globaux : une seule icône à la fois, et seulement une fois
-            // construite.
             let paused = Arc::new(AtomicBool::new(model.paused));
-            let on_command = Arc::new(on_command);
-            let (open_id, toggle_id, quit_id) =
-                (open.id().clone(), toggle.id().clone(), quit.id().clone());
-            let menu_paused = Arc::clone(&paused);
-            let menu_command = Arc::clone(&on_command);
-            MenuEvent::set_event_handler(Some(move |event: MenuEvent| {
-                let command = if event.id == open_id {
-                    TrayCommand::Open
-                } else if event.id == toggle_id {
-                    // Le libellé affiché décide : il suit `paused`.
-                    if menu_paused.load(Ordering::Relaxed) {
-                        TrayCommand::Resume
-                    } else {
-                        TrayCommand::Pause
-                    }
-                } else if event.id == quit_id {
-                    TrayCommand::Quit
-                } else {
-                    return;
-                };
-                menu_command(command);
-            }));
-            TrayIconEvent::set_event_handler(Some(move |event| {
-                if matches!(
-                    event,
-                    TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        button_state: MouseButtonState::Up,
-                        ..
-                    }
-                ) {
-                    on_command(TrayCommand::Open);
-                }
-            }));
+            route_events(Route {
+                open: open.id().clone(),
+                toggle: toggle.id().clone(),
+                quit: quit.id().clone(),
+                paused: Arc::clone(&paused),
+                on_command: Arc::new(on_command),
+            });
             Ok(Self {
                 icon,
+                open: open.id().clone(),
                 status,
                 toggle,
                 paused,
@@ -342,9 +316,74 @@ mod native {
 
     impl Drop for Tray {
         fn drop(&mut self) {
-            MenuEvent::set_event_handler(None::<fn(MenuEvent)>);
-            TrayIconEvent::set_event_handler(None::<fn(TrayIconEvent)>);
+            let mut route = ROUTE.lock().unwrap_or_else(PoisonError::into_inner);
+            if route.as_ref().is_some_and(|route| route.open == self.open) {
+                *route = None;
+            }
         }
+    }
+
+    /// Destination des événements de l'icône vivante.
+    struct Route {
+        open: MenuId,
+        toggle: MenuId,
+        quit: MenuId,
+        /// Suit le libellé affiché : **Reprendre** quand il est vrai.
+        paused: Arc<AtomicBool>,
+        on_command: Arc<dyn Fn(TrayCommand) + Send + Sync>,
+    }
+
+    static ROUTE: Mutex<Option<Route>> = Mutex::new(None);
+
+    /// `muda` et `tray-icon` n'acceptent qu'un gestionnaire par processus, posé une fois pour
+    /// toutes : il relaie à la dernière icône créée, et plus à rien après son `Drop`.
+    fn route_events(route: Route) {
+        static INSTALL: Once = Once::new();
+        INSTALL.call_once(|| {
+            MenuEvent::set_event_handler(Some(|event: MenuEvent| {
+                let command = {
+                    let route = ROUTE.lock().unwrap_or_else(PoisonError::into_inner);
+                    let Some(route) = route.as_ref() else { return };
+                    let command = if event.id == route.open {
+                        TrayCommand::Open
+                    } else if event.id == route.toggle {
+                        if route.paused.load(Ordering::Relaxed) {
+                            TrayCommand::Resume
+                        } else {
+                            TrayCommand::Pause
+                        }
+                    } else if event.id == route.quit {
+                        TrayCommand::Quit
+                    } else {
+                        return;
+                    };
+                    (Arc::clone(&route.on_command), command)
+                };
+                // Hors du verrou : la commande peut détruire l'icône.
+                (command.0)(command.1);
+            }));
+            TrayIconEvent::set_event_handler(Some(|event| {
+                if !matches!(
+                    event,
+                    TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    }
+                ) {
+                    return;
+                }
+                let on_command = ROUTE
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .as_ref()
+                    .map(|route| Arc::clone(&route.on_command));
+                if let Some(on_command) = on_command {
+                    on_command(TrayCommand::Open);
+                }
+            }));
+        });
+        *ROUTE.lock().unwrap_or_else(PoisonError::into_inner) = Some(route);
     }
 
     /// Win32 lit `&` comme marque de raccourci : « Tom & Jerry » doit rester tel quel.
@@ -427,6 +466,11 @@ mod tests {
         let cut = truncate_utf16(&long, TOOLTIP_UNITS);
         assert_eq!(cut.encode_utf16().count(), TOOLTIP_UNITS);
         assert!(cut.ends_with('…'));
+        let exact = "a".repeat(TOOLTIP_UNITS);
+        assert_eq!(truncate_utf16(&exact, TOOLTIP_UNITS), exact);
+        let over = truncate_utf16(&"a".repeat(TOOLTIP_UNITS + 1), TOOLTIP_UNITS);
+        assert_eq!(over.encode_utf16().count(), TOOLTIP_UNITS);
+        assert!(over.ends_with('…'));
         let emoji = "🎮".repeat(100);
         assert!(truncate_utf16(&emoji, TOOLTIP_UNITS).encode_utf16().count() <= TOOLTIP_UNITS);
     }
