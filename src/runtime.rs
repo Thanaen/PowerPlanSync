@@ -973,6 +973,23 @@ fn tray_icon() -> slint::Image {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_lock_held_or_denied_reads_as_another_session_in_control() {
+        use ::windows::Win32::Foundation::{ERROR_ACCESS_DENIED, ERROR_INVALID_HANDLE};
+        use ::windows::core::{Error, HRESULT};
+        let windows = |code: u32| {
+            session::LeaseError::Windows(Error::from_hresult(HRESULT::from_win32(code)))
+        };
+        let held = crate::interface::strings::CONTROL_HELD;
+        assert_eq!(lease_refusal(session::LeaseError::AlreadyHeld), held);
+        assert_eq!(lease_refusal(windows(ERROR_ACCESS_DENIED.0)), held);
+        assert_eq!(
+            lease_refusal(windows(ERROR_INVALID_HANDLE.0)),
+            crate::interface::strings::CONTROL_LOCK_UNREADABLE
+        );
+    }
+
     fn demo() -> Worker {
         let directory = std::env::temp_dir().join(format!(
             "pps-runtime-{}-{}",

@@ -7,7 +7,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use futures::StreamExt as _;
-use futures::channel::mpsc::{UnboundedReceiver, unbounded};
+use futures::channel::mpsc::{UnboundedReceiver, UnboundedSender, unbounded};
 use gpui::{App, AppContext as _, Entity, QuitMode};
 
 use crate::interface::control_page::ControlPage;
@@ -26,6 +26,11 @@ enum Event {
 
 struct Shell {
     model: UiDisplayModel,
+    /// Vrai dès le premier état du coordinateur : avant lui, rien ne s'affiche, pour qu'une
+    /// seconde instance de la même session s'arrête sans fenêtre ni icône.
+    started: bool,
+    start_minimized: bool,
+    tray_sender: UnboundedSender<TrayCommand>,
     tray: Option<Tray>,
     page: Option<Entity<ControlPage>>,
     on_action: OnAction,
@@ -59,14 +64,12 @@ pub fn run(
 
             let on_action: OnAction = Arc::new(on_action);
             let (tray_sender, tray_commands) = unbounded();
-            // L'icône appelle depuis la boucle de messages : la commande est postée, jamais
-            // traitée dans le rappel.
-            let tray = Tray::new(tray::model(&initial), move |command| {
-                let _ = tray_sender.unbounded_send(command);
-            });
             let shell = Rc::new(RefCell::new(Shell {
                 model: initial,
-                tray: tray.ok(),
+                started: false,
+                start_minimized,
+                tray_sender,
+                tray: None,
                 page: None,
                 on_action: Arc::clone(&on_action),
             }));
@@ -84,10 +87,6 @@ pub fn run(
             })
             .detach();
 
-            let has_tray = shell.borrow().tray.is_some();
-            if !start_minimized || !has_tray {
-                show(&shell, cx);
-            }
             let mut events = futures::stream::select(
                 commands.map(|command| Event::Ui(Box::new(command))),
                 tray_commands.map(Event::Tray),
@@ -109,7 +108,7 @@ pub fn run(
 fn handle(shell: &Rc<RefCell<Shell>>, event: Event, cx: &mut App) -> bool {
     let command = match event {
         Event::Tray(TrayCommand::Open) => {
-            show(shell, cx);
+            show(shell, cx, true);
             return false;
         }
         Event::Tray(TrayCommand::Pause) => return act(shell, UiAction::Pause),
@@ -118,7 +117,12 @@ fn handle(shell: &Rc<RefCell<Shell>>, event: Event, cx: &mut App) -> bool {
         Event::Tray(TrayCommand::Quit) => return act(shell, UiAction::Quit),
         Event::Ui(command) => *command,
     };
+    let started = shell.borrow().started;
     match command {
+        UiCommand::Update { model, alert } if !started => {
+            shell.borrow_mut().model = model;
+            start(shell, alert, true, cx);
+        }
         UiCommand::Update { model, alert } => {
             let page = {
                 let mut state = shell.borrow_mut();
@@ -135,23 +139,32 @@ fn handle(shell: &Rc<RefCell<Shell>>, event: Event, cx: &mut App) -> bool {
             }
             // Une nouvelle erreur ramène la fenêtre, ouverte ou non, au premier plan.
             if alert {
-                show(shell, cx);
+                show(shell, cx, true);
             }
         }
-        UiCommand::Open => show(shell, cx),
+        // Avant le premier état, la demande attend que la fenêtre puisse s'ouvrir.
+        UiCommand::Open if !started => shell.borrow_mut().start_minimized = false,
+        UiCommand::Open => {
+            show(shell, cx, true);
+        }
         UiCommand::Quit => return true,
         UiCommand::PreferencesChanged => {
             apply_preferences(cx);
             cx.refresh_windows();
         }
-        // Le coordinateur n'a pas pu démarrer : la raison s'affiche, sans contrôle.
+        // Le coordinateur n'a pas pu démarrer : la raison s'affiche, sans contrôle. Il est
+        // arrêté : la fenêtre ne lui signale pas son ouverture.
         UiCommand::QuitFailure(reason) => {
             {
                 let mut state = shell.borrow_mut();
                 state.model.error_message = Some(reason);
                 state.model.read_only = true;
             }
-            show(shell, cx);
+            if started {
+                show(shell, cx, false);
+            } else {
+                start(shell, true, false, cx);
+            }
         }
         // Les dialogues et l'éditeur arrivent avec leurs pages (T059).
         UiCommand::EditorExecutable { .. }
@@ -162,25 +175,67 @@ fn handle(shell: &Rc<RefCell<Shell>>, event: Event, cx: &mut App) -> bool {
     false
 }
 
+/// Crée l'icône, puis ouvre la fenêtre si on la demande ou si l'icône manque. Sans aucune
+/// des deux, le processus serait invisible : il s'arrête.
+fn start(shell: &Rc<RefCell<Shell>>, force_show: bool, notify: bool, cx: &mut App) {
+    let (model, sender, start_minimized) = {
+        let mut state = shell.borrow_mut();
+        state.started = true;
+        (
+            state.model.clone(),
+            state.tray_sender.clone(),
+            state.start_minimized,
+        )
+    };
+    // L'icône appelle depuis la boucle de messages : la commande est postée, jamais traitée
+    // dans le rappel.
+    let tray = Tray::new(tray::model(&model), move |command| {
+        let _ = sender.unbounded_send(command);
+    })
+    .ok();
+    let has_tray = tray.is_some();
+    shell.borrow_mut().tray = tray;
+    if (force_show || !start_minimized || !has_tray) && !show(shell, cx, notify) && !has_tray {
+        let on_action = Arc::clone(&shell.borrow().on_action);
+        on_action(UiAction::Quit);
+    }
+}
+
 fn act(shell: &Rc<RefCell<Shell>>, action: UiAction) -> bool {
-    (shell.borrow().on_action)(action);
+    let state = shell.borrow();
+    // Sans contrôle, suspendre ou reprendre remplacerait le refus par une autre erreur.
+    let refused = matches!(action, UiAction::Pause | UiAction::Resume) && state.model.read_only;
+    if !refused {
+        (state.on_action)(action);
+    }
     false
 }
 
 /// Ouvre la fenêtre, ou ramène au premier plan celle qui est ouverte : un double clic sur
-/// l'icône n'en crée pas une seconde.
-fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App) {
-    let (model, on_action) = {
+/// l'icône n'en crée pas une seconde. `notify` signale l'ouverture au coordinateur. Rend
+/// faux si la fenêtre n'a pas pu s'ouvrir.
+fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App, notify: bool) -> bool {
+    let (model, on_action, page) = {
         let state = shell.borrow();
-        (state.model.clone(), Arc::clone(&state.on_action))
+        (
+            state.model.clone(),
+            Arc::clone(&state.on_action),
+            state.page.clone(),
+        )
     };
     let existed = window::update(model.clone(), cx);
+    if existed && let Some(page) = page {
+        let model = model.clone();
+        page.update(cx, |page, cx| page.set_model(model, cx));
+    }
     let Ok(handle) = window::open(model.clone(), cx) else {
-        return;
+        return false;
     };
-    on_action(UiAction::WindowOpened);
+    if notify {
+        on_action(UiAction::WindowOpened);
+    }
     if existed {
-        return;
+        return true;
     }
     let retry = Arc::clone(&on_action);
     let page = cx.new(|_| ControlPage::new(model, move |_| retry(UiAction::Retry)));
@@ -188,7 +243,7 @@ fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App) {
         main.set_page_view(Page::Software, page.clone().into(), cx);
         cx.entity()
     }) else {
-        return;
+        return true;
     };
     shell.borrow_mut().page = Some(page);
     cx.subscribe(&main, move |_, event, _| match event {
@@ -197,6 +252,7 @@ fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App) {
         ShellEvent::OpenCommands => {}
     })
     .detach();
+    true
 }
 
 /// Contraste élevé et « Effets d'animation » lus dans Windows.

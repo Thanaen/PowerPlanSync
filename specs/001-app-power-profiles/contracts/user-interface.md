@@ -83,8 +83,8 @@ dans une boîte de dialogue bloquante :
   « Contrôle indisponible », texte « PowerPlanSync gère déjà les plans depuis une autre session
   Windows. Aucun plan n’a été modifié. Quittez-le dans cette autre session, puis réessayez. »,
   action **Réessayer**. La barre d'état n'affiche pas le compte des logiciels, que cette
-  instance ne lit pas. Si le verrou ne peut pas être lu, le message, sans titre, dit « Le verrou
-  qui réserve les plans à une seule session ne peut pas être lu. Aucun plan n’a été modifié.
+  instance ne lit pas. Si le verrou ne peut pas être lu, le message, sans titre, dit « PowerPlanSync
+  ne peut pas vérifier si une autre session gère déjà les plans. Aucun plan n’a été modifié.
   Réessayez dans un instant. ». Une seconde instance de la même session ne montre rien : elle
   ramène la fenêtre de la première et s'arrête.
 - **Les réglages sont illisibles** : l'automatisation reste arrêtée. Actions **Ouvrir le dossier
