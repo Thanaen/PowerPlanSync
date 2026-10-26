@@ -34,8 +34,8 @@ pub fn icon(name: &str, color: Hsla) -> Svg {
         .text_color(color)
 }
 
-/// Anneau de focus de 2 px (écart) en `border_focused`, séparé du contrôle par 1 px de
-/// surface, comme dans les maquettes. La bordure garde sa couleur : l'anneau reste visible
+/// Anneau de focus de 2 px (écart) en `border_focused`, séparé du contrôle par 1 px du fond
+/// sur lequel il est posé (`surface` par défaut, sinon `backdrop`), comme dans les maquettes. La bordure garde sa couleur : l'anneau reste visible
 /// autour d'un champ invalide, d'un contrôle rempli d'`accent` et en contraste élevé.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct FocusRing {
@@ -45,9 +45,14 @@ pub struct FocusRing {
 
 impl FocusRing {
     pub fn of(theme: &Theme) -> Self {
+        Self::on(theme, None)
+    }
+
+    /// L'anneau d'un contrôle posé sur `backdrop` : `editor`, un message teinté…
+    pub fn on(theme: &Theme, backdrop: Option<Hsla>) -> Self {
         Self {
             color: theme.border_focused,
-            gap: theme.surface,
+            gap: backdrop.unwrap_or(theme.surface),
         }
     }
 
@@ -162,6 +167,7 @@ pub struct Button {
     icon_only: bool,
     keys: Vec<SharedString>,
     toggled: Option<bool>,
+    backdrop: Option<Hsla>,
     disabled: bool,
     on_click: Option<OnClick>,
 }
@@ -180,6 +186,7 @@ impl Button {
             icon_only: false,
             keys: Vec::new(),
             toggled: None,
+            backdrop: None,
             disabled: false,
             on_click: None,
         }
@@ -215,6 +222,12 @@ impl Button {
         self
     }
 
+    /// Le fond sous le bouton, quand ce n'est pas `surface` : l'anneau de focus s'en écarte.
+    pub fn backdrop(mut self, backdrop: Hsla) -> Self {
+        self.backdrop = Some(backdrop);
+        self
+    }
+
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
@@ -236,7 +249,7 @@ impl RenderOnce for Button {
         if self.icon_only && !self.disabled {
             colors.icon = theme.text_muted;
         }
-        let ring = FocusRing::of(&theme);
+        let ring = FocusRing::on(&theme, self.backdrop);
         let shortcut = (!self.keys.is_empty()).then(|| {
             self.keys
                 .iter()
@@ -344,6 +357,7 @@ pub struct Switch {
     id: ElementId,
     name: SharedString,
     on: bool,
+    backdrop: Option<Hsla>,
     disabled: bool,
     on_toggle: Option<OnToggle>,
 }
@@ -354,9 +368,16 @@ impl Switch {
             id: id.into(),
             name: name.into(),
             on,
+            backdrop: None,
             disabled: false,
             on_toggle: None,
         }
+    }
+
+    /// Voir [`Button::backdrop`].
+    pub fn backdrop(mut self, backdrop: Hsla) -> Self {
+        self.backdrop = Some(backdrop);
+        self
     }
 
     pub fn disabled(mut self, disabled: bool) -> Self {
@@ -375,7 +396,7 @@ impl RenderOnce for Switch {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = Theme::of(window, cx);
         let colors = switch_colors(self.on, !self.disabled, &theme);
-        let ring = FocusRing::of(&theme);
+        let ring = FocusRing::on(&theme, self.backdrop);
         let on = self.on;
         let control = div()
             .id(self.id)
@@ -789,6 +810,8 @@ pub struct Select {
     /// Bordure d'erreur et description lue au focus ; le même texte se pose dessous avec
     /// [`field_error`].
     pub error: Option<SharedString>,
+    /// Voir [`Button::backdrop`].
+    pub backdrop: Option<Hsla>,
     pub disabled: bool,
 }
 
@@ -804,6 +827,7 @@ impl Select {
             width: px(280.),
             entrance: Entrance::default(),
             error: None,
+            backdrop: None,
             disabled: false,
         }
     }
@@ -853,7 +877,7 @@ impl Render for Select {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = Theme::of(window, cx);
         let hover = theme.element_hover;
-        let ring = FocusRing::of(&theme);
+        let ring = FocusRing::on(&theme, self.backdrop);
         let label = |index: Option<usize>| {
             index
                 .and_then(|index| self.options.get(index))
@@ -1156,6 +1180,7 @@ mod tests {
         for theme in themes() {
             let ring = FocusRing::of(&theme);
             assert_eq!(ring.gap, theme.surface);
+            assert_eq!(FocusRing::on(&theme, Some(theme.editor)).gap, theme.editor);
             // L'anneau ne touche que l'espace de surface, jamais le remplissage du contrôle.
             assert_ne!(ring.color, ring.gap);
         }

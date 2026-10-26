@@ -66,6 +66,8 @@ pub struct TextInput {
     pub disabled: bool,
     /// Drawn with the error border.
     pub invalid: bool,
+    /// Le fond sous le champ, quand ce n'est pas `surface` : l'anneau de focus s'en écarte.
+    pub backdrop: Option<Hsla>,
     /// Drawn with the variant border while disabled, as a setting switched off.
     pub dim_border_when_disabled: bool,
     /// Drawn without its border, padding and fill, inside a box that draws them.
@@ -96,6 +98,7 @@ impl TextInput {
             max_length,
             disabled: false,
             invalid: false,
+            backdrop: None,
             dim_border_when_disabled: false,
             frameless: false,
             selected_range: 0..0,
@@ -719,7 +722,7 @@ impl Render for TextInput {
         } else {
             theme.border
         };
-        let ring = widgets::FocusRing::of(&theme);
+        let ring = widgets::FocusRing::on(&theme, self.backdrop);
         let field = div()
             .id("text-input")
             .role(Role::TextInput)
