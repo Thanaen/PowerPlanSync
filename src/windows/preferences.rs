@@ -1,5 +1,6 @@
 use windows::Win32::Graphics::Gdi::{
-    COLOR_HIGHLIGHT, COLOR_HIGHLIGHTTEXT, COLOR_WINDOW, COLOR_WINDOWTEXT, GetSysColor,
+    COLOR_GRAYTEXT, COLOR_HIGHLIGHT, COLOR_HIGHLIGHTTEXT, COLOR_WINDOW, COLOR_WINDOWTEXT,
+    GetSysColor,
 };
 use windows::Win32::System::Registry::{HKEY_CURRENT_USER, RRF_RT_REG_DWORD, RegGetValueW};
 use windows::Win32::UI::Accessibility::{HCF_HIGHCONTRASTON, HIGHCONTRASTW};
@@ -22,6 +23,7 @@ pub struct SystemPalette {
     pub window_text: Rgb,
     pub highlight: Rgb,
     pub highlight_text: Rgb,
+    pub gray_text: Rgb,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -54,6 +56,7 @@ pub fn ui_preferences() -> Result<UiPreferences, windows::core::Error> {
             window_text: system_color(unsafe { GetSysColor(COLOR_WINDOWTEXT) }),
             highlight: system_color(unsafe { GetSysColor(COLOR_HIGHLIGHT) }),
             highlight_text: system_color(unsafe { GetSysColor(COLOR_HIGHLIGHTTEXT) }),
+            gray_text: system_color(unsafe { GetSysColor(COLOR_GRAYTEXT) }),
         },
     })
 }
