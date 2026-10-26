@@ -414,3 +414,26 @@ fn quit_after_failed_initial_write_leaves_the_original_plan() {
     assert_eq!(power.0.borrow().active, PlanId(1));
     assert!(store.0.borrow().record.is_none());
 }
+#[test]
+fn view_reports_power_source_open_software_and_a_refused_apply() {
+    let (p, s) = fixture();
+    let mut c = Controller::open(p.clone(), s, owner()).unwrap();
+    c.handle(sample(0, true)).unwrap();
+    let view = c.view();
+    assert_eq!(view.power_source, PowerSource::Ac);
+    assert_eq!(view.open_rules, vec![RuleId(1)]);
+    c.handle(sample(1000, false)).unwrap();
+    c.handle(sample(4000, false)).unwrap();
+    assert!(c.view().open_rules.is_empty());
+
+    p.0.borrow_mut().fail_set = true;
+    assert!(c.handle(sample(5000, true)).is_err());
+    let view = c.view();
+    assert!(matches!(view.status, Status::Blocked(Error::Power(_))));
+    assert!(view.open_rules.is_empty());
+    let model = power_plan_sync::presentation::display(&view, false, false, None);
+    assert_eq!(
+        model.rules[0].badge,
+        Some(power_plan_sync::presentation::Badge::Refused)
+    );
+}

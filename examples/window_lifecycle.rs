@@ -4,10 +4,11 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use power_plan_sync::domain::{
-    AppRule, Configuration, ExecutablePath, PlanId, PowerPlan, RuleId, Status, ViewState,
+    AppRule, Configuration, ExecutablePath, PlanId, PowerPlan, PowerSource, RuleId, Status,
+    ViewState,
 };
-use power_plan_sync::presentation;
-use power_plan_sync::ui::{UiAction, UiRuntime};
+use power_plan_sync::presentation::{self, UiAction};
+use power_plan_sync::ui::UiRuntime;
 use slint::{Image, Rgba8Pixel, SharedPixelBuffer, Timer, TimerMode};
 
 const CYCLES: u32 = 100;
@@ -222,6 +223,8 @@ fn probe_view() -> ViewState {
         plans,
         status: Status::Idle,
         cycle: None,
+        power_source: PowerSource::Ac,
+        open_rules: vec![],
         poll_processes: false,
         can_exit: true,
     }

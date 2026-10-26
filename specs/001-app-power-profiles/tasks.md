@@ -139,7 +139,7 @@ Voir D12 à D16 dans `research.md`. Ces tâches remplacent T003, T004 et T006 po
 **Purpose**: poser la couche `src/interface/` sur le coordinateur existant, sans changer le moteur.
 L'interface GPUI s'ouvre avec l'option de développement `--gpui` jusqu'à T071.
 
-- [ ] T050 Écrire d'abord `tests/presentation.rs`, puis déplacer `UiDisplayModel`, `UiAction` et leurs types de `src/ui.rs` vers `src/presentation.rs` sans type graphique. Aligner statuts, badges, compteur « 2 logiciels suivis sur 3 », source d'alimentation et retour réservé sur `contracts/user-interface.md`, et créer `src/interface/mod.rs` avec la table de libellés `src/interface/strings.rs`. Couvre FR-018, FR-024.
+- [x] T050 Écrire d'abord `tests/presentation.rs`, puis déplacer `UiDisplayModel`, `UiAction` et leurs types de `src/ui.rs` vers `src/presentation.rs` sans type graphique. Aligner statuts, badges, compteur « 2 logiciels suivis sur 3 », source d'alimentation et retour réservé sur `contracts/user-interface.md`, et créer `src/interface/mod.rs` avec la table de libellés `src/interface/strings.rs`. Couvre FR-018, FR-024.
 - [ ] T051 [P] Créer `src/interface/theme.rs` avec les jetons Bientôt GPUI (WorkTime One clair et sombre, IBM Plex Sans et Mono dans `assets/fonts/`), les écarts listés dans `design/README.md` « Écarts avec le design system », les couleurs `tray-*` et le remplacement par les couleurs système en contraste élevé, lu par `src/windows/preferences.rs`. Ne pas modifier le design system. Couvre FR-019.
 - [ ] T052 [P] Porter `theme::motion` de Bientôt dans `src/interface/motion.rs` (PRESS 140 ms, TOOLTIP 150 ms, MENU 200 ms, DIALOG 250 ms, `ease_out`, `ease_in_out`, `slide_in`, `slide_over`, `Entrance`, `OPAQUE_AT`, `POWERPLANSYNC_MOTION_SLOWDOWN` en debug). Lire « Effets d'animation » par `SPI_GETCLIENTAREAANIMATION` dans `src/windows/preferences.rs` et le relire à chaque `WM_SETTINGCHANGE` reçu par `src/windows/notifications.rs`. Une lecture échouée garde le mouvement. Couvre FR-019.
 - [ ] T053 Créer `src/interface/widgets.rs` et `src/interface/text_input.rs` : boutons principal, Tinted et désactivé, interrupteur, badge, liste déroulante de plans, message intégré, touches et anneau de focus de 2 px, chacun avec rôle, nom et état accessibles. Couvre FR-019.
@@ -231,7 +231,7 @@ Les tests T020 et la récupération T021 accompagnent la transaction de T016,
 avant son intégration UI. T008 précède T009. T010 à T012 partagent les types de T007, mais leurs
 fichiers sont disjoints. T013 les assemble. Toute modification de Cargo reste sérialisée.
 
-Migration GPUI : T046 précède T047. T048 dépend de T047, T049 de T048. T049 autorise T050 à T057.
+Migration GPUI : T046 précède T047. T048 dépend de T047, T049 de T048. T049 autorise T051 à T057. T050 ne dépend pas du cadre graphique et a précédé T048.
 T050 précède les pages. T051, T052 et T055 sont disjoints. T053 attend T051, T054 attend T053,
 T056 attend T054, T055 et T012, encore ouverte, qui fournit l'ouverture de la fenêtre dans la même session. T057 attend T056. Les phases 9 à 12 attendent T056. T061 précède T062.
 T064 précède T069, qui anime aussi l'échange de lignes. T070 attend T058 à T069. T071 attend T070.

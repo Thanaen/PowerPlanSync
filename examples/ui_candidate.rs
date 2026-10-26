@@ -1,7 +1,10 @@
 use std::sync::mpsc;
 use std::time::Duration;
 
-use power_plan_sync::ui::{PlanDisplay, RuleDisplay, UiAction, UiDisplayModel, UiRuntime};
+use power_plan_sync::presentation::{
+    Automation, PlanDisplay, RuleDisplay, UiAction, UiDisplayModel,
+};
+use power_plan_sync::ui::UiRuntime;
 use slint::{Image, Rgba8Pixel, SharedPixelBuffer};
 
 fn main() -> Result<(), slint::PlatformError> {
@@ -59,7 +62,10 @@ fn fake_model() -> UiDisplayModel {
     UiDisplayModel {
         observed_plan: "Équilibré (simulation)".into(),
         reason: "Aucun logiciel simulé n'est ouvert.".into(),
+        automation: Automation::Disabled,
         status: "Automatisation prête, sans écriture Windows".into(),
+        followed: "2 logiciels suivis sur 2".into(),
+        power_source: "Sur secteur".into(),
         error_message: None,
         blocked: false,
         paused: false,
@@ -74,8 +80,8 @@ fn fake_model() -> UiDisplayModel {
         return_plan_index: 0,
         return_plan_confirmed: true,
         rules: vec![
-            RuleDisplay { id: 1, plan_index: 1, label: "Jeu témoin".into(), path: r"C:\Démo\demo_target.exe".into(), plan: "Performances élevées (simulation)".into(), enabled: true, state: "En attente".into() },
-            RuleDisplay { id: 2, plan_index: 0, label: "Outil de création".into(), path: r"C:\Démo\creator.exe".into(), plan: "Équilibré (simulation)".into(), enabled: true, state: "En attente".into() },
+            RuleDisplay { id: 1, rank: 1, plan_index: 1, label: "Jeu témoin".into(), path: r"C:\Démo\demo_target.exe".into(), short_path: r"C:\Démo\demo_target.exe".into(), plan: "Performances élevées (simulation)".into(), enabled: true, badge: None, state: "Suivi".into(), accessible_name: "1. Jeu témoin, plan Performances élevées (simulation), suivi".into() },
+            RuleDisplay { id: 2, rank: 2, plan_index: 0, label: "Outil de création".into(), path: r"C:\Démo\creator.exe".into(), short_path: r"C:\Démo\creator.exe".into(), plan: "Équilibré (simulation)".into(), enabled: true, badge: None, state: "Suivi".into(), accessible_name: "2. Outil de création, plan Équilibré (simulation), suivi".into() },
         ],
         plans: vec![
             PlanDisplay { id: "demo-balanced".into(), name: "Équilibré (simulation)".into() },

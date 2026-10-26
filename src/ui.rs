@@ -5,30 +5,9 @@ use slint::{
     CloseRequestResponse, Color, ComponentHandle, Image, Model, ModelRc, SharedString, VecModel,
 };
 
+use crate::presentation::{RunningAppDisplay, UiAction, UiDisplayModel};
+
 slint::include_modules!();
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RuleDisplay {
-    pub id: i32,
-    pub label: String,
-    pub path: String,
-    pub plan: String,
-    pub plan_index: i32,
-    pub enabled: bool,
-    pub state: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct PlanDisplay {
-    pub id: String,
-    pub name: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RunningAppDisplay {
-    pub label: String,
-    pub path: String,
-}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct UiPalette {
@@ -37,80 +16,6 @@ pub struct UiPalette {
     pub foreground: Color,
     pub accent: Color,
     pub high_contrast: bool,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct UiDisplayModel {
-    pub observed_plan: String,
-    pub reason: String,
-    pub status: String,
-    pub error_message: Option<String>,
-    pub blocked: bool,
-    pub paused: bool,
-    pub automation_enabled: bool,
-    pub automation_can_enable: bool,
-    pub allow_on_battery: bool,
-    pub start_at_login: bool,
-    pub demo_mode: bool,
-    pub demo_process_running: bool,
-    pub show_first_hide_explanation: bool,
-    pub return_plan_note: String,
-    pub return_plan_index: i32,
-    pub return_plan_confirmed: bool,
-    pub rules: Vec<RuleDisplay>,
-    pub plans: Vec<PlanDisplay>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum UiAction {
-    AddRule {
-        label: String,
-        path: String,
-        plan_id: String,
-    },
-    UpdateRule {
-        rule_id: i32,
-        label: String,
-        path: String,
-        plan_id: String,
-    },
-    DeleteRule {
-        rule_id: i32,
-    },
-    SetRuleEnabled {
-        rule_id: i32,
-        enabled: bool,
-    },
-    MoveRuleUp {
-        rule_id: i32,
-    },
-    MoveRuleDown {
-        rule_id: i32,
-    },
-    BrowseForExecutable {
-        editing_rule_id: Option<i32>,
-    },
-    ChooseRunningApplication {
-        editing_rule_id: Option<i32>,
-    },
-    SelectRunningApplication {
-        index: usize,
-    },
-    SetReturnPlan {
-        plan_id: String,
-    },
-    SetAutomation(bool),
-    SetAllowOnBattery(bool),
-    SetStartAtLogin(bool),
-    Pause,
-    Resume,
-    Retry,
-    DemoStart,
-    DemoStop,
-    Quit,
-    QuitAfterFailedRestore,
-    OpenWindowsSettings,
-    WindowOpened,
 }
 
 type ActionSink = Rc<dyn Fn(UiAction)>;
