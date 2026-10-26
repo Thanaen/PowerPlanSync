@@ -14,8 +14,12 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
 
 - Ne jamais pousser sur `main`. Une seule PR de la routine à la fois, sur la branche
   `claude/project-thread-rmf7v6`, repartie de `main` après chaque merge.
-- Commits et titres de PR en Conventional Commits avec un scope. Descriptions sobres,
-  sans attribution. Chaque PR porte `Closes #N` et est assignée à Clément.
+- Dépôt public (consigne du 26 octobre 2026) : titres de commits et de PR en Conventional
+  Commits avec un scope (`app`, `interface`, `windows`, `docs`, `ci`, `site`…). La description
+  d'une PR décrit directement le changement, sobrement, sans raconter ce que Clément a fait.
+  Aucune attribution : ni ligne « Requested by », ni marqueur, ni lien vers le projet Claude
+  dans les PR, ni trailer dans les commits. Les notes de version excluent les commits du site.
+  Chaque PR porte `Closes #N` (ou `Refs #N` pour un epic) et est assignée à Clément.
 - Valider en local avant chaque push : `cargo fmt --check`, puis
   `cargo clippy --locked --all-targets --target x86_64-pc-windows-msvc -- -D warnings`.
   Les tests dépendent de Windows et ne tournent pas dans le conteneur Linux ; la CI
@@ -42,8 +46,8 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
   `specs/001-app-power-profiles/design/README.md` et leur adoption est demandée au projet Bientôt.
 - Ne jamais lancer Battlefield. Ne jamais toucher aux PR des autres fils.
 - Issues : labels `bug`, `enhancement` ou `documentation`, jalon v1, cases des epics à jour.
-- Rythme : toutes les 2 h (heure de Paris) tant qu'il reste du travail faisable seul ;
-  une fois par jour quand il ne reste que des tâches qui attendent Clément.
+- Rythme : un passage par jour à 8 h 47, heure de Paris (décision du 26 octobre 2026, pour
+  ménager le quota). Pas de rythme plus serré sans demande de Clément.
 
 ## Priorités
 

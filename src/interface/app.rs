@@ -31,12 +31,15 @@ struct Shell {
     on_action: OnAction,
 }
 
-/// Rend la main quand le coordinateur demande [`UiCommand::Quit`].
+/// Rend la main quand le coordinateur demande [`UiCommand::Quit`]. `before_exit` attend que
+/// le coordinateur ait rendu le plan de retour : à la fin de session, GPUI arrête le
+/// processus juste après ses observateurs de sortie.
 pub fn run(
     initial: UiDisplayModel,
     start_minimized: bool,
     commands: UnboundedReceiver<UiCommand>,
     on_action: impl Fn(UiAction) + Send + Sync + 'static,
+    before_exit: impl Fn() + 'static,
 ) {
     gpui_platform::application()
         .with_assets(crate::interface::assets::Assets)
@@ -48,6 +51,11 @@ pub fn run(
             window::bind_keys(cx);
             text_input::bind_keys(cx);
             apply_preferences(cx);
+            cx.on_app_quit(move |_| {
+                before_exit();
+                async {}
+            })
+            .detach();
 
             let on_action: OnAction = Arc::new(on_action);
             let (tray_sender, tray_commands) = unbounded();
@@ -65,13 +73,19 @@ pub fn run(
 
             let hidden = Rc::clone(&shell);
             cx.on_window_closed(move |_, _| {
-                if let Some(tray) = &mut hidden.borrow_mut().tray {
-                    let _ = tray.explain_hidden();
+                let mut state = hidden.borrow_mut();
+                match &mut state.tray {
+                    Some(tray) => {
+                        let _ = tray.explain_hidden();
+                    }
+                    // Sans icône, une fenêtre fermée laisserait un processus invisible.
+                    None => (state.on_action)(UiAction::Quit),
                 }
             })
             .detach();
 
-            if !start_minimized {
+            let has_tray = shell.borrow().tray.is_some();
+            if !start_minimized || !has_tray {
                 show(&shell, cx);
             }
             let mut events = futures::stream::select(
@@ -114,11 +128,13 @@ fn handle(shell: &Rc<RefCell<Shell>>, event: Event, cx: &mut App) -> bool {
                 state.model = model.clone();
                 state.page.clone()
             };
-            if window::update(model.clone(), cx) {
-                if let Some(page) = page {
-                    page.update(cx, |page, cx| page.set_model(model, cx));
-                }
-            } else if alert {
+            if window::update(model.clone(), cx)
+                && let Some(page) = page
+            {
+                page.update(cx, |page, cx| page.set_model(model, cx));
+            }
+            // Une nouvelle erreur ramène la fenêtre, ouverte ou non, au premier plan.
+            if alert {
                 show(shell, cx);
             }
         }
@@ -128,9 +144,17 @@ fn handle(shell: &Rc<RefCell<Shell>>, event: Event, cx: &mut App) -> bool {
             apply_preferences(cx);
             cx.refresh_windows();
         }
-        // Les dialogues, l'éditeur et l'échec de sortie arrivent avec leurs pages (T059, T063).
-        UiCommand::QuitFailure(_)
-        | UiCommand::EditorExecutable { .. }
+        // Le coordinateur n'a pas pu démarrer : la raison s'affiche, sans contrôle.
+        UiCommand::QuitFailure(reason) => {
+            {
+                let mut state = shell.borrow_mut();
+                state.model.error_message = Some(reason);
+                state.model.read_only = true;
+            }
+            show(shell, cx);
+        }
+        // Les dialogues et l'éditeur arrivent avec leurs pages (T059).
+        UiCommand::EditorExecutable { .. }
         | UiCommand::EditorError(_)
         | UiCommand::FinishEditorSave
         | UiCommand::RunningApps(_) => {}

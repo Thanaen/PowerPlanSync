@@ -158,12 +158,25 @@ fn run_gpui(options: Options) {
     let worker_tx = tx.clone();
     let worker = std::thread::spawn(move || worker(options, worker_tx, rx));
     let ui_tx = tx.clone();
-    crate::interface::app::run(initial, start_minimized, receiver, move |action| {
-        // Sans coordinateur, plus rien ne peut répondre : l'interface s'arrête.
-        if ui_tx.send(AppEvent::Ui(action)).is_err() {
-            let _ = quit.unbounded_send(UiCommand::Quit);
-        }
-    });
+    let exit_tx = tx.clone();
+    crate::interface::app::run(
+        initial,
+        start_minimized,
+        receiver,
+        move |action| {
+            // Sans coordinateur, plus rien ne peut répondre : l'interface s'arrête.
+            if ui_tx.send(AppEvent::Ui(action)).is_err() {
+                let _ = quit.unbounded_send(UiCommand::Quit);
+            }
+        },
+        // Même délai que pour la fin de session vue par les notifications Windows.
+        move || {
+            let (ack, done) = mpsc::sync_channel(1);
+            if exit_tx.send(AppEvent::Shutdown(ack)).is_ok() {
+                let _ = done.recv_timeout(Duration::from_millis(1500));
+            }
+        },
+    );
     let _ = tx.send(AppEvent::Stop);
     let _ = worker.join();
 }
