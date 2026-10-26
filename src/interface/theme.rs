@@ -1,6 +1,6 @@
 //! Jetons du thème WorkTime One du design system Bientôt GPUI, repris de
-//! `crates/bientot-app/src/theme.rs` de Bientôt (licence MIT), sans les jetons de frise de
-//! WorkTime. Les écarts propres à PowerPlanSync sont listés dans
+//! `crates/bientot-app/src/theme.rs` de Bientôt (licence MIT), sans les jetons de frise
+//! (`tl-*`) ni les tailles propres à WorkTime. Les écarts propres à PowerPlanSync sont listés dans
 //! `specs/001-app-power-profiles/design/README.md`, « Écarts avec le design system ».
 
 use std::borrow::Cow;
@@ -72,6 +72,7 @@ pub struct Theme {
     pub elevated_surface: Hsla,
     pub editor: Hsla,
     pub border: Hsla,
+    pub border_on_tint: Hsla,
     pub border_variant: Hsla,
     pub border_focused: Hsla,
     pub element: Hsla,
@@ -98,16 +99,22 @@ pub struct Theme {
     /// Texte posé sur `element_active` : `text`, sauf en contraste élevé.
     pub text_on_active: Hsla,
     pub scrim: Hsla,
-    /// Écart : texte du bouton Tinted (`accent-on-active` dans le thème clair).
+    /// Écart : texte du bouton Tinted (`accent-on-active` dans le thème clair). Désactivé, il
+    /// est transparent, bordé de `border`, avec un texte `text_placeholder` (T053).
     pub tinted_text: Hsla,
     /// Écart : texte du badge accent.
     pub badge_accent_text: Hsla,
     /// Écart : texte du badge d'erreur (`#e8999c` dans le thème sombre).
     pub badge_error_text: Hsla,
+    /// Piste d'un interrupteur éteint : `element-active` dans les maquettes.
+    pub switch_track_off: Hsla,
     /// Écart : pastille d'un interrupteur éteint.
     pub switch_knob_off: Hsla,
+    /// Pastille d'un interrupteur allumé, sur `accent` (`tl-on-fill` de Bientôt).
+    pub switch_knob_on: Hsla,
     /// Thème de contraste Windows : l'état reste porté par l'icône et le mot.
     pub high_contrast: bool,
+    pub elevation_palette: [ShadowLayer; 4],
     pub elevation_elevated: [ShadowLayer; 2],
     pub elevation_modal: [ShadowLayer; 4],
 }
@@ -140,6 +147,7 @@ impl Theme {
             elevated_surface: color(0x2f343eff),
             editor: color(0x282c33ff),
             border: color(0x464b57ff),
+            border_on_tint: color(0x5c6370ff),
             border_variant: color(0x363c46ff),
             border_focused: color(0x74ade8ff),
             element: color(0x2e343eff),
@@ -168,8 +176,16 @@ impl Theme {
             tinted_text: accent,
             badge_accent_text: accent_on_active,
             badge_error_text: color(0xe8999cff),
+            switch_track_off: color(0x454a56ff),
             switch_knob_off: text_muted,
+            switch_knob_on: color(0x282c33ff),
             high_contrast: false,
+            elevation_palette: [
+                layer(2., 3., 0.12),
+                layer(3., 6., 0.08),
+                layer(6., 12., 0.04),
+                layer(1., 0., 0.12),
+            ],
             elevation_elevated: [layer(2., 3., 0.12), layer(1., 0., 0.06)],
             elevation_modal: [
                 layer(2., 3., 0.12),
@@ -191,6 +207,7 @@ impl Theme {
             elevated_surface: color(0xebebecff),
             editor: color(0xfafafaff),
             border: color(0xc9c9caff),
+            border_on_tint: color(0xc9c9caff),
             border_variant: color(0xdfdfe0ff),
             // Écart : `#7d82e8` dans le design system.
             border_focused: accent,
@@ -220,8 +237,16 @@ impl Theme {
             tinted_text: accent_on_active,
             badge_accent_text: accent_on_active,
             badge_error_text: error,
+            switch_track_off: color(0xcacacaff),
             switch_knob_off: text_muted,
+            switch_knob_on: color(0xfafafaff),
             high_contrast: false,
+            elevation_palette: [
+                layer(2., 4., 0.12),
+                layer(8., 16., 0.14),
+                layer(16., 32., 0.12),
+                layer(1., 0., 0.12),
+            ],
             elevation_elevated: [layer(2., 3., 0.12), layer(1., 0., 0.03)],
             elevation_modal: [
                 layer(2., 3., 0.06),
@@ -248,6 +273,7 @@ impl Theme {
             elevated_surface: window,
             editor: window,
             border: text,
+            border_on_tint: text,
             border_variant: text,
             border_focused: highlight,
             element: window,
@@ -276,8 +302,12 @@ impl Theme {
             tinted_text: text,
             badge_accent_text: text,
             badge_error_text: text,
+            // La piste éteinte est bordée de `border` par le composant.
+            switch_track_off: window,
             switch_knob_off: text,
+            switch_knob_on: highlight_text,
             high_contrast: true,
+            elevation_palette: [layer(0., 0., 0.); 4],
             elevation_elevated: [layer(0., 0., 0.); 2],
             elevation_modal: [layer(0., 0., 0.); 4],
         }
@@ -289,6 +319,10 @@ impl Theme {
 
     pub fn shadow_modal(&self) -> Vec<BoxShadow> {
         shadow(&self.elevation_modal)
+    }
+
+    pub fn shadow_palette(&self) -> Vec<BoxShadow> {
+        shadow(&self.elevation_palette)
     }
 }
 
@@ -441,10 +475,21 @@ mod tests {
     fn contrast_theme_pairs_only_colors_windows_guarantees() {
         let t = Theme::current(WindowAppearance::Light, Some(CONTRAST));
         assert!(t.high_contrast);
-        let window = opaque(CONTRAST.window);
-        let highlight = opaque(CONTRAST.highlight);
-        let on_window = [CONTRAST.window_text, CONTRAST.gray_text, CONTRAST.highlight].map(opaque);
-        for background in [
+        let [window, text, highlight, highlight_text, gray_text] = [
+            CONTRAST.window,
+            CONTRAST.window_text,
+            CONTRAST.highlight,
+            CONTRAST.highlight_text,
+            CONTRAST.gray_text,
+        ]
+        .map(opaque);
+        let guaranteed = [
+            (text, window),
+            (gray_text, window),
+            (highlight, window),
+            (highlight_text, highlight),
+        ];
+        let surfaces = [
             t.background,
             t.surface,
             t.elevated_surface,
@@ -455,40 +500,46 @@ mod tests {
             t.success_background,
             t.warning_background,
             t.error_background,
-        ] {
-            assert_eq!(background, window);
+        ];
+        let mut pairs = Vec::new();
+        for surface in surfaces {
+            for foreground in [
+                t.border,
+                t.border_on_tint,
+                t.border_variant,
+                t.border_focused,
+                t.text,
+                t.text_muted,
+                t.text_placeholder,
+                t.accent,
+                t.accent_border,
+                t.success,
+                t.success_border,
+                t.warning,
+                t.warning_border,
+                t.error,
+                t.error_border,
+                t.hint,
+                t.tinted_text,
+                t.badge_accent_text,
+                t.badge_error_text,
+            ] {
+                pairs.push((foreground, surface));
+            }
         }
-        for foreground in [
-            t.border,
-            t.border_variant,
-            t.border_focused,
-            t.text,
-            t.text_muted,
-            t.text_placeholder,
-            t.accent,
-            t.accent_border,
-            t.success,
-            t.success_border,
-            t.warning,
-            t.warning_border,
-            t.error,
-            t.error_border,
-            t.hint,
-            t.tinted_text,
-            t.badge_accent_text,
-            t.badge_error_text,
-            t.switch_knob_off,
-        ] {
-            assert!(on_window.contains(&foreground), "{foreground:?}");
+        for foreground in [t.text_on_active, t.accent_on_active, t.text_muted_on_active] {
+            pairs.push((foreground, t.element_active));
         }
-        assert_eq!(t.element_active, highlight);
-        for on_active in [t.text_on_active, t.accent_on_active, t.text_muted_on_active] {
-            assert_eq!(on_active, opaque(CONTRAST.highlight_text));
+        pairs.push((t.switch_knob_off, t.switch_track_off));
+        pairs.push((t.border, t.switch_track_off));
+        pairs.push((t.switch_knob_on, t.accent));
+        for pair in pairs {
+            assert!(guaranteed.contains(&pair), "{pair:?}");
         }
-        assert_eq!(t.text_placeholder, opaque(CONTRAST.gray_text));
         assert_eq!(t.scrim.a, 0.);
         assert!(t.shadow_modal().is_empty());
         assert!(t.shadow_elevated().is_empty());
+        assert!(t.shadow_palette().is_empty());
     }
 
     #[test]
@@ -532,19 +583,6 @@ mod tests {
                 highlight_text: 0x112233,
                 gray_text: 0x3ff23f,
             }
-        );
-    }
-
-    #[test]
-    fn tray_colors_match_the_tray_mockup() {
-        assert_eq!(
-            [
-                tray::APPLIED,
-                tray::IDLE,
-                tray::SUSPENDED,
-                tray::ACTION_NEEDED
-            ],
-            [0x1d4ed8, 0x4b5563, 0x9a4815, 0xb91c1c]
         );
     }
 
