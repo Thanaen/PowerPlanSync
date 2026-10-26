@@ -27,6 +27,10 @@ pub const MINIMUM_SIZE: Size<Pixels> = size(px(360.), px(420.));
 pub const NARROW_WIDTH: Pixels = px(600.);
 pub const SIDEBAR_WIDTH: Pixels = px(200.);
 pub const NARROW_SIDEBAR_WIDTH: Pixels = px(44.);
+/// La zone de **Quitter**, sous son filet.
+const QUIT_AREA_HEIGHT: Pixels = px(48.);
+/// Les glyphes des boutons de fenêtre, plus fins que les icônes, comme ceux de Windows.
+const CONTROL_GLYPH: Pixels = px(10.);
 
 pub fn bind_keys(cx: &mut App) {
     let context = Some(KEY_CONTEXT);
@@ -161,6 +165,7 @@ impl MainWindow {
         let maximized = window.is_maximized();
         let control = |id: &'static str, icon: &'static str, name, area: WindowControlArea| {
             let (hover, close_hover) = (theme.element_hover, theme.error);
+            let glyph = widgets::icon(icon, theme.text_muted).size(CONTROL_GLYPH);
             div()
                 .id(id)
                 .role(Role::Button)
@@ -171,6 +176,7 @@ impl MainWindow {
                 .flex()
                 .items_center()
                 .justify_center()
+                .group(id)
                 .hover(move |style| {
                     style.bg(if area == WindowControlArea::Close {
                         close_hover
@@ -178,7 +184,10 @@ impl MainWindow {
                         hover
                     })
                 })
-                .child(widgets::icon(icon, theme.text_muted).size(token::ICON_XS))
+                .child(glyph.when(area == WindowControlArea::Close, |glyph| {
+                    // Sur le rouge de Fermer, le glyphe passe en blanc, comme dans Windows.
+                    glyph.group_hover(id, |style| style.text_color(gpui::white()))
+                }))
                 .on_click(move |_, window, _| match area {
                     WindowControlArea::Min => window.minimize_window(),
                     WindowControlArea::Max => window.zoom_window(),
@@ -229,7 +238,7 @@ impl MainWindow {
             ))
             .child(control(
                 "maximize",
-                "square",
+                if maximized { "copy" } else { "square" },
                 if maximized {
                     strings::RESTORE
                 } else {
@@ -248,10 +257,11 @@ impl MainWindow {
     fn sidebar(&self, narrow: bool, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
         let item = |id: SharedString, label: &'static str, icon: &'static str, selected: bool| {
             let ring = FocusRing::of(theme);
-            let hover = theme.element_hover;
+            let (hover, pressed) = (theme.element_hover, theme.element_active);
             div()
                 .id(id)
                 .aria_label(label)
+                .when(narrow, |item| item.tooltip(widgets::Tooltip::text(label)))
                 .tab_index(0)
                 .h(token::BUTTON_MEDIUM)
                 .flex_none()
@@ -259,10 +269,13 @@ impl MainWindow {
                 .items_center()
                 .gap(BASE_08)
                 .rounded(radius::SM)
-                .when(narrow, |item| item.w(px(32.)).justify_center())
+                .when(narrow, |item| item.w(token::BUTTON_LARGE).justify_center())
                 .when(!narrow, |item| item.px(BASE_08))
                 .when(selected, |item| item.bg(theme.element_active))
-                .when(!selected, |item| item.hover(move |style| style.bg(hover)))
+                .when(!selected, |item| {
+                    item.hover(move |style| style.bg(hover))
+                        .active(move |style| style.bg(pressed))
+                })
                 .cursor_pointer()
                 .focus_visible(move |style| ring.apply(style))
                 .type_style(text::LABEL_MD)
@@ -312,10 +325,14 @@ impl MainWindow {
             .child(
                 div()
                     .flex_none()
-                    .py(px(10.))
+                    .h(QUIT_AREA_HEIGHT)
                     .px(padding)
+                    .flex()
+                    .items_center()
                     .border_t_1()
                     .border_color(theme.border_variant)
+                    // Large, le filet s'arrête aux marges des entrées, comme dans les maquettes.
+                    .when(!narrow, |area| area.mx(BASE_08).px_0())
                     .child(
                         item("quit".into(), strings::QUIT, "log-out", false)
                             .role(Role::Button)
@@ -411,7 +428,7 @@ impl Render for MainWindow {
                     .child(
                         div()
                             .id("page")
-                            .role(Role::Main)
+                            .role(Role::TabPanel)
                             .aria_label(self.page.label())
                             .flex_1()
                             .min_w_0()

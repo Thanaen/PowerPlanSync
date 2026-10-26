@@ -58,7 +58,8 @@ thème, jusqu'à ce que Bientôt les adopte.
 - bouton Tinted désactivé : fond transparent, bordure `border`, texte `text-placeholder` ;
 - `g-badge--error` (texte `#e8999c` dans le thème sombre) et badge accent en `accent-on-active` ;
 - Switch éteint : pastille en `text-muted`, piste en `element-active` et bordure en `text-placeholder` ;
-- glissement de la pastille du Switch en PRESS (140 ms) au lieu de 120 ms.
+- glissement de la pastille du Switch en PRESS (140 ms) au lieu de 120 ms ;
+- boutons de fenêtre comme ceux de Windows : glyphes de 10 px, glyphe blanc sur **Fermer** survolé et glyphe de restauration quand la fenêtre est agrandie.
 
 Les couleurs `tray-*` ont un sens propre à PowerPlanSync : bleu pour un plan de logiciel appliqué,
 gris quand aucun ne l'est, orange pour une automatisation suspendue par un choix fait dans Windows, rouge quand une action est

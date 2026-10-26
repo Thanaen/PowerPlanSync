@@ -80,6 +80,37 @@ fn spread(color: Hsla, width: Pixels) -> BoxShadow {
     }
 }
 
+/// L'infobulle du design system : une ligne courte sur une surface élevée.
+pub struct Tooltip(SharedString);
+
+impl Tooltip {
+    /// Pour `.tooltip(...)` d'un élément.
+    pub fn text(
+        text: impl Into<SharedString>,
+    ) -> impl Fn(&mut Window, &mut App) -> gpui::AnyView + 'static {
+        let text = text.into();
+        move |_, cx| cx.new(|_| Tooltip(text.clone())).into()
+    }
+}
+
+impl Render for Tooltip {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let theme = Theme::of(window, cx);
+        div()
+            .whitespace_nowrap()
+            .px(BASE_08)
+            .py(BASE_04)
+            .rounded(radius::LG)
+            .border_1()
+            .border_color(theme.border)
+            .bg(theme.elevated_surface)
+            .shadow(theme.shadow_elevated())
+            .type_style(text::LABEL_SM)
+            .text_color(theme.text)
+            .child(self.0.clone())
+    }
+}
+
 /// Les styles de bouton de GPUI Kit employés par les maquettes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ButtonStyle {
