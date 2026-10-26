@@ -66,6 +66,7 @@ fn fake_model() -> UiDisplayModel {
         status: "Automatisation prête, sans écriture Windows".into(),
         followed: "2 logiciels suivis sur 2".into(),
         power_source: "Sur secteur".into(),
+        power: power_plan_sync::domain::PowerSource::Ac,
         error_message: None,
         blocked: false,
         paused: false,

@@ -2,12 +2,13 @@ use crate::{domain::*, interface::strings};
 
 const BALANCED: PlanId = PlanId(0x381b4222_f694_41f0_9685_ff5bb260df2e);
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Automation {
     Active,
     Waiting,
     Paused,
     Suspended,
+    #[default]
     Disabled,
     Stopped,
 }
@@ -47,7 +48,7 @@ pub struct RunningAppDisplay {
     pub path: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct UiDisplayModel {
     pub observed_plan: String,
     pub reason: String,
@@ -55,6 +56,7 @@ pub struct UiDisplayModel {
     pub status: String,
     pub followed: String,
     pub power_source: String,
+    pub power: PowerSource,
     pub error_message: Option<String>,
     pub blocked: bool,
     pub paused: bool,
@@ -182,6 +184,7 @@ pub fn display(
             config.rules.len(),
         ),
         power_source: strings::power_source(view.power_source).into(),
+        power: view.power_source,
         error_message: error.or_else(|| match &view.status {
             Status::Blocked(error) => Some(strings::error_message(error)),
             _ => None,
