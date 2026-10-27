@@ -1,9 +1,10 @@
 # Captures GPUI hors écran
 
-Rendues sous Linux par `src/bin/screenshots.rs` (T057), à l'échelle 2, avec lavapipe
-(`mesa-vulkan-drivers`) :
+Rendues sous Linux par `src/bin/screenshots.rs` (T057), à l'échelle 2, avec lavapipe. Sous
+Debian ou Ubuntu, le build demande les en-têtes de fontconfig et le rendu un pilote Vulkan :
 
 ```sh
+sudo apt-get install libfontconfig-dev mesa-vulkan-drivers
 cargo run --features screenshots --bin screenshots -- specs/001-app-power-profiles/evidence/gpui-screenshots
 ```
 

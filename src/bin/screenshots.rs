@@ -28,6 +28,7 @@ mod shots {
     use power_plan_sync::domain::PowerSource;
     use power_plan_sync::interface::assets::Assets;
     use power_plan_sync::interface::control_page::ControlPage;
+    use power_plan_sync::interface::strings;
     use power_plan_sync::interface::text_input::TextInput;
     use power_plan_sync::interface::theme::{self, ForcedAppearance, Theme};
     use power_plan_sync::interface::widgets::{
@@ -39,13 +40,8 @@ mod shots {
     fn model(automation: Automation, power: PowerSource) -> UiDisplayModel {
         UiDisplayModel {
             automation,
-            followed: "2 logiciels suivis sur 3".into(),
-            power_source: match power {
-                PowerSource::Ac => "Sur secteur",
-                PowerSource::Battery => "Sur batterie",
-                PowerSource::Unknown => "Alimentation inconnue",
-            }
-            .into(),
+            followed: strings::followed(2, 3),
+            power_source: strings::power_source(power).into(),
             power,
             ..UiDisplayModel::default()
         }

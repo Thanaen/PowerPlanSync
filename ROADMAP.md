@@ -21,8 +21,10 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
   dans les PR, ni trailer dans les commits. Les notes de version excluent les commits du site.
   Chaque PR porte `Closes #N` (ou `Refs #N` pour un epic) et est assignée à Clément.
 - Valider en local avant chaque push : `cargo fmt --check`,
-  `cargo clippy --locked --all-targets --target x86_64-pc-windows-msvc -- -D warnings` et, sous
-  Linux, `cargo test --lib`. Les tests propres à Windows tournent dans la CI Windows (#7). Les
+  `cargo clippy --locked --all-targets --target x86_64-pc-windows-msvc -- -D warnings`, puis
+  sous Linux (`libfontconfig-dev`, `mesa-vulkan-drivers`)
+  `cargo clippy --locked --all-targets --features screenshots -- -D warnings` et
+  `cargo test --locked --lib`. Les tests propres à Windows tournent dans la CI Windows (#7). Les
   captures se rendent sous Linux avec `cargo run --features screenshots --bin screenshots`.
 - Merger soi-même (squash, titre Conventional Commits) seulement si les trois conditions
   sont réunies : la dernière revue de `pullfrog[bot]` sur le SHA de tête est APPROVED,
