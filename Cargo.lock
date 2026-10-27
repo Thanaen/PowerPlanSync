@@ -5125,6 +5125,7 @@ dependencies = [
 name = "power-plan-sync"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "futures",
  "gpui-pre",
  "gpui-pre-platform",
