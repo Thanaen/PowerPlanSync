@@ -20,20 +20,17 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
   Aucune attribution : ni ligne « Requested by », ni marqueur, ni lien vers le projet Claude
   dans les PR, ni trailer dans les commits. Les notes de version excluent les commits du site.
   Chaque PR porte `Closes #N` (ou `Refs #N` pour un epic) et est assignée à Clément.
-- Valider en local avant chaque push : `cargo fmt --check`, puis
-  `cargo clippy --locked --all-targets --target x86_64-pc-windows-msvc -- -D warnings`.
-  Les tests dépendent de Windows et ne tournent pas dans le conteneur Linux ; la CI
-  Windows (#7) les exécutera.
+- Valider en local avant chaque push : `cargo fmt --check`,
+  `cargo clippy --locked --all-targets --target x86_64-pc-windows-msvc -- -D warnings` et, sous
+  Linux, `cargo test --lib`. Les tests propres à Windows tournent dans la CI Windows (#7). Les
+  captures se rendent sous Linux avec `cargo run --features screenshots --bin screenshots`.
 - Merger soi-même (squash, titre Conventional Commits) seulement si les trois conditions
   sont réunies : la dernière revue de `pullfrog[bot]` sur le SHA de tête est APPROVED,
   ou COMMENTED avec « No new issues found » (Pullfrog n'approuve jamais), toute la CI
   est verte, aucun conflit. Jamais si Clément a demandé des changements ou écrit d'attendre.
-- Jusqu'au 1er novembre 2026, Pullfrog et la CI sont indisponibles. Ils sont remplacés par
-  une revue d'un agent relecteur dédié, lancé à neuf sur le diff du SHA de tête, et par la
-  validation locale. Le merge exige alors son verdict APPROVED sur ce SHA, la validation
-  locale verte et aucun conflit. Le verdict est publié en commentaire sur la PR, et le
-  check `pullfrog` en échec pour budget ne bloque pas. À partir du 1er novembre, la règle
-  Pullfrog et CI reprend.
+- Si le budget GitHub Actions est épuisé, Pullfrog et la CI sont remplacés par une revue d'un
+  agent relecteur dédié, lancé à neuf sur le diff du SHA de tête, et par la validation locale.
+  Le merge exige alors son verdict APPROVED sur ce SHA, publié en commentaire sur la PR.
 - Autonomie : Clément a demandé le 25 octobre que la routine décide seule. Elle tranche
   les choix réversibles (design, libellés, priorités, règles de la routine) et ne lui laisse
   que ce qui exige son PC ou son compte, et le choix de la licence.
@@ -62,12 +59,11 @@ Aucun bug ouvert au 25 octobre 2026.
       ([#10](https://github.com/Thanaen/PowerPlanSync/pull/10)). La routine enchaîne les tâches
       T046 à T072 dans l'ordre de `tasks.md`. T048 et T070 se font sur un Windows réel.
 - [x] Ajouter une CI Windows : formatage, Clippy, tests ([#11](https://github.com/Thanaen/PowerPlanSync/pull/11)).
-      Elle tournera à partir du 1er novembre.
 
 ### 3. Tâches qui attendent Clément
 
 - [x] Relire et merger la synchronisation de la conception GPUI ([#4](https://github.com/Thanaen/PowerPlanSync/pull/4)).
-- [ ] Budget GitHub Actions épuisé : Pullfrog et la CI reviennent le 1er novembre 2026.
+- [x] Budget GitHub Actions rétabli le 26 octobre 2026 : Pullfrog et la CI tournent de nouveau.
 - [ ] Créer le jalon v1 : l'outil GitHub de la routine ne crée pas de jalon.
 - [ ] Valider la v1 sur un Windows réel (#6).
 - [ ] Choisir la licence et préparer la livraison (#8).
@@ -88,4 +84,5 @@ Aucun bug ouvert au 25 octobre 2026.
 | 2026-10-26 | [#17](https://github.com/Thanaen/PowerPlanSync/pull/17) | T055 : icône de notification, infobulle, menu natif et notification du premier masquage. |
 | 2026-10-26 | [#18](https://github.com/Thanaen/PowerPlanSync/pull/18) | T053 : boutons, Switch, badges, liste de plans, messages, touches, champ texte et pictogrammes Lucide. |
 | 2026-10-26 | [#19](https://github.com/Thanaen/PowerPlanSync/pull/19) | T054 : fenêtre GPUI, barre de titre, barre latérale, barre d'état et fenêtre étroite. |
-| 2026-10-26 | #20 | T056 : interface GPUI derrière `--gpui`, vue « Contrôle indisponible » ; T012 constatée terminée. |
+| 2026-10-26 | [#20](https://github.com/Thanaen/PowerPlanSync/pull/20) | T056 : interface GPUI derrière `--gpui`, vue « Contrôle indisponible » ; T012 constatée terminée. |
+| 2026-10-27 | #21 | T057 : crate compilable sous Linux, binaire `screenshots` et captures comparées aux maquettes. |

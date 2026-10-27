@@ -55,6 +55,12 @@ pub struct HighContrast(pub Option<SystemColors>);
 
 impl Global for HighContrast {}
 
+/// Apparence imposée à toutes les fenêtres au lieu de celle de Windows : sert aux captures
+/// hors écran, où le système n'en fournit pas.
+pub struct ForcedAppearance(pub WindowAppearance);
+
+impl Global for ForcedAppearance {}
+
 #[cfg(windows)]
 impl From<crate::windows::preferences::SystemPalette> for SystemColors {
     fn from(palette: crate::windows::preferences::SystemPalette) -> Self {
@@ -155,7 +161,8 @@ impl Theme {
     /// La variante de `window`, avec les couleurs de [`HighContrast`].
     pub fn of(window: &Window, cx: &App) -> Self {
         Self::current(
-            window.appearance(),
+            cx.try_global::<ForcedAppearance>()
+                .map_or(window.appearance(), |forced| forced.0),
             cx.try_global::<HighContrast>()
                 .and_then(|contrast| contrast.0),
         )
