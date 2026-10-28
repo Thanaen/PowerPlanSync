@@ -61,6 +61,8 @@ thème, jusqu'à ce que Bientôt les adopte.
 - glissement de la pastille du Switch en PRESS (140 ms) au lieu de 120 ms ;
 - boutons de fenêtre comme ceux de Windows : glyphes de 10 px, glyphe blanc sur le rouge de **Fermer** survolé (`#c42b1c` dans le thème sombre, HighlightText sur Highlight en contraste élevé) et glyphe de restauration quand la fenêtre est agrandie ;
 - infobulles de la barre latérale étroite affichées sans le fondu `tooltip` de 150 ms : GPUI les montre au survol sans animation d'entrée.
+- liste **Application ouverte** sans barre de défilement visible, que GPUI ne dessine pas : la troisième ligne coupée signale le défilement ;
+- voile du dialogue posé sous la barre de titre, qui garde ses boutons de fenêtre utilisables.
 
 Les couleurs `tray-*` ont un sens propre à PowerPlanSync : bleu pour un plan de logiciel appliqué,
 gris quand aucun ne l'est, orange pour une automatisation suspendue par un choix fait dans Windows, rouge quand une action est

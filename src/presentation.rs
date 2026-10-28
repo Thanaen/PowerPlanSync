@@ -45,7 +45,10 @@ pub struct PlanDisplay {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RunningAppDisplay {
     pub label: String,
+    /// Vide quand le chemin ne peut pas être vérifié.
     pub path: String,
+    /// Faux pour un processus dont le chemin est illisible : montré, jamais proposé.
+    pub accessible: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -375,7 +378,7 @@ fn badge(view: &ViewState, rule: &AppRule) -> Option<Badge> {
 
 /// Garde la racine et les deux derniers éléments : `C:\…\Blender 4.5\blender.exe`,
 /// `\\serveur\partage\…\jeu\jeu.exe`.
-fn short_path(path: &str) -> String {
+pub fn short_path(path: &str) -> String {
     let parts: Vec<&str> = path.split('\\').collect();
     let root = if path.starts_with(r"\\") { 4 } else { 1 };
     if parts.len() <= root + 3 {

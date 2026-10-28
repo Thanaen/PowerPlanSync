@@ -88,5 +88,6 @@ Aucun bug ouvert au 25 octobre 2026.
 | 2026-10-26 | [#18](https://github.com/Thanaen/PowerPlanSync/pull/18) | T053 : boutons, Switch, badges, liste de plans, messages, touches, champ texte et pictogrammes Lucide. |
 | 2026-10-26 | [#19](https://github.com/Thanaen/PowerPlanSync/pull/19) | T054 : fenêtre GPUI, barre de titre, barre latérale, barre d'état et fenêtre étroite. |
 | 2026-10-26 | [#20](https://github.com/Thanaen/PowerPlanSync/pull/20) | T056 : interface GPUI derrière `--gpui`, vue « Contrôle indisponible » ; T012 constatée terminée. |
-| 2026-10-27 | #21 | T057 : crate compilable sous Linux, binaire `screenshots` et captures comparées aux maquettes. |
-| 2026-10-28 | #22 | T058 : page **Logiciels** (en-tête, actions, liste) et maquette `Unavailable.png`. |
+| 2026-10-27 | [#21](https://github.com/Thanaen/PowerPlanSync/pull/21) | T057 : crate compilable sous Linux, binaire `screenshots` et captures comparées aux maquettes. |
+| 2026-10-28 | [#22](https://github.com/Thanaen/PowerPlanSync/pull/22) | T058 : page **Logiciels** (en-tête, actions, liste) et maquette `Unavailable.png`. |
+| 2026-10-28 | #23 | T059 : dialogues **Ajouter un logiciel** et **Modifier**, Ctrl+N, sélecteur de fichier sur thread STA. |

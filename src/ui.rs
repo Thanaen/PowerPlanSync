@@ -139,8 +139,10 @@ impl UiRuntime {
 
     pub fn show_running_apps(&self, apps: Vec<RunningAppDisplay>) {
         if let Some(window) = self.window.borrow().as_ref() {
+            // Le sélecteur Slint ne propose que les chemins vérifiables, rangés en premier.
             let labels = apps
                 .into_iter()
+                .filter(|app| app.accessible)
                 .map(|app| format!("{}, {}", app.label, app.path).into())
                 .collect::<Vec<SharedString>>();
             window.set_running_apps(ModelRc::new(VecModel::from(labels)));

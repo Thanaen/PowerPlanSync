@@ -52,6 +52,11 @@ pub struct RunningApp {
     pub executable_path: PathBuf,
 }
 
+pub struct RunningApps {
+    pub verified: Vec<RunningApp>,
+    pub inaccessible: Vec<OsString>,
+}
+
 #[derive(Debug)]
 pub struct SnapshotError(windows::core::Error);
 
@@ -145,17 +150,28 @@ pub fn observe_paths(paths: &[PathBuf], session_id: u32) -> Result<ProcessSnapsh
     Ok(snapshot)
 }
 
-pub fn running_apps(session_id: u32) -> Result<Vec<RunningApp>, SnapshotError> {
+/// Les applications de la session dont le chemin est vérifiable, puis les noms de celles qui
+/// ne le sont pas : le sélecteur les montre sans jamais les proposer.
+pub fn running_apps(session_id: u32) -> Result<RunningApps, SnapshotError> {
     let snapshot = snapshot_named_in_session(&[], Some(session_id))?;
-    Ok(snapshot
-        .verified
-        .into_iter()
-        .map(|process| RunningApp {
-            pid: process.key.pid,
-            image_name: process.image_name,
-            executable_path: process.executable_path,
-        })
-        .collect())
+    let mut inaccessible: Vec<OsString> = Vec::new();
+    for issue in snapshot.uncertain {
+        if !inaccessible.contains(&issue.image_name) {
+            inaccessible.push(issue.image_name);
+        }
+    }
+    Ok(RunningApps {
+        verified: snapshot
+            .verified
+            .into_iter()
+            .map(|process| RunningApp {
+                pid: process.key.pid,
+                image_name: process.image_name,
+                executable_path: process.executable_path,
+            })
+            .collect(),
+        inaccessible,
+    })
 }
 
 fn inspect_process(
@@ -357,7 +373,7 @@ mod tests {
     fn running_app_chooser_includes_this_accessible_process() {
         let pid = std::process::id();
         let session = process_session_id(pid).unwrap();
-        let apps = running_apps(session).unwrap();
+        let apps = running_apps(session).unwrap().verified;
         assert!(apps.iter().any(|app| app.pid == pid));
         assert!(
             apps.iter()

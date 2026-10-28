@@ -2,6 +2,7 @@
 pub mod app;
 pub mod assets;
 pub mod motion;
+pub mod rule_dialog;
 pub mod software_page;
 pub mod strings;
 pub mod text_input;

@@ -16,7 +16,10 @@ use crate::interface::theme::{Theme, TypeStyled as _, radius, size as token, tex
 use crate::interface::widgets::{self, Button, ButtonStyle, FocusRing};
 use crate::presentation::{Automation, UiDisplayModel};
 
-actions!(main_window, [OpenCommands, FocusNext, FocusPrevious]);
+actions!(
+    main_window,
+    [OpenCommands, AddSoftware, FocusNext, FocusPrevious]
+);
 
 const KEY_CONTEXT: &str = "MainWindow";
 
@@ -36,6 +39,7 @@ pub fn bind_keys(cx: &mut App) {
     let context = Some(KEY_CONTEXT);
     cx.bind_keys([
         KeyBinding::new("ctrl-shift-p", OpenCommands, context),
+        KeyBinding::new("ctrl-n", AddSoftware, context),
         KeyBinding::new("tab", FocusNext, context),
         KeyBinding::new("shift-tab", FocusPrevious, context),
     ]);
@@ -81,6 +85,8 @@ pub enum ShellEvent {
     OpenCommands,
     /// **Quitter**, qui tente la restauration protégée avant l'arrêt.
     Quit,
+    /// Ctrl+N : le dialogue **Ajouter un logiciel**, sans animation.
+    AddSoftware,
 }
 
 pub fn is_narrow(width: Pixels) -> bool {
@@ -193,6 +199,8 @@ pub struct MainWindow {
     model: UiDisplayModel,
     page: Page,
     pages: [Option<AnyView>; 3],
+    /// Le dialogue ouvert, sous son voile, au-dessus de la fenêtre.
+    dialog: Option<AnyView>,
 }
 
 impl EventEmitter<ShellEvent> for MainWindow {}
@@ -206,6 +214,7 @@ impl MainWindow {
             model,
             page: Page::default(),
             pages: [None, None, None],
+            dialog: None,
         }
     }
 
@@ -224,6 +233,15 @@ impl MainWindow {
     pub fn set_page_view(&mut self, page: Page, view: AnyView, cx: &mut Context<Self>) {
         self.pages[page.index()] = Some(view);
         cx.notify();
+    }
+
+    pub fn set_dialog(&mut self, dialog: Option<AnyView>, cx: &mut Context<Self>) {
+        self.dialog = dialog;
+        cx.notify();
+    }
+
+    pub fn has_dialog(&self) -> bool {
+        self.dialog.is_some()
     }
 
     pub fn set_model(&mut self, model: UiDisplayModel, cx: &mut Context<Self>) {
@@ -512,8 +530,10 @@ impl Render for MainWindow {
             .key_context(KEY_CONTEXT)
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(|_, _: &OpenCommands, _, cx| cx.emit(ShellEvent::OpenCommands)))
+            .on_action(cx.listener(|_, _: &AddSoftware, _, cx| cx.emit(ShellEvent::AddSoftware)))
             .on_action(|_: &FocusNext, window, cx| window.focus_next(cx))
             .on_action(|_: &FocusPrevious, window, cx| window.focus_prev(cx))
+            .relative()
             .size_full()
             .flex()
             .flex_col()
@@ -540,6 +560,7 @@ impl Render for MainWindow {
                     ),
             )
             .child(self.status_bar(narrow, &theme))
+            .children(self.dialog.clone())
     }
 }
 
@@ -582,6 +603,11 @@ pub fn open(model: UiDisplayModel, cx: &mut App) -> gpui::Result<WindowHandle<Ma
     })?;
     cx.default_global::<Opened>().0 = Some(handle);
     Ok(handle)
+}
+
+/// La fenêtre ouverte, s'il y en a une.
+pub fn handle(cx: &mut App) -> Option<WindowHandle<MainWindow>> {
+    cx.default_global::<Opened>().0
 }
 
 /// Montre `model` dans la fenêtre ouverte. Rend faux quand elle est fermée.

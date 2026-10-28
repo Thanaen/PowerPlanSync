@@ -916,6 +916,10 @@ impl Select {
         self.choice.selected()
     }
 
+    pub fn options(&self) -> &[SelectOption] {
+        &self.options
+    }
+
     fn update(
         &mut self,
         change: impl FnOnce(&mut Choice) -> Option<usize>,

@@ -8,12 +8,13 @@ use std::sync::Arc;
 
 use futures::StreamExt as _;
 use futures::channel::mpsc::{UnboundedReceiver, UnboundedSender, unbounded};
-use gpui::{App, AppContext as _, Entity, QuitMode};
+use gpui::{App, AppContext as _, Context, Entity, FocusHandle, Focusable as _, QuitMode, Window};
 
+use crate::interface::rule_dialog::{self, RuleDialog, RuleDialogEvent, RuleDialogMode};
 use crate::interface::software_page::{SoftwareEvent, SoftwarePage};
 use crate::interface::theme::{self, HighContrast};
 use crate::interface::tray::{self, Tray, TrayCommand};
-use crate::interface::window::{self, Page, ShellEvent};
+use crate::interface::window::{self, MainWindow, Page, ShellEvent};
 use crate::interface::{text_input, widgets};
 use crate::presentation::{UiAction, UiCommand, UiDisplayModel};
 
@@ -33,6 +34,9 @@ struct Shell {
     tray_sender: UnboundedSender<TrayCommand>,
     tray: Option<Tray>,
     page: Option<Entity<SoftwarePage>>,
+    dialog: Option<Entity<RuleDialog>>,
+    /// Ce qui avait le focus avant le dialogue : il le retrouve à la fermeture.
+    opener: Option<FocusHandle>,
     on_action: OnAction,
 }
 
@@ -55,6 +59,7 @@ pub fn run(
             widgets::bind_keys(cx);
             window::bind_keys(cx);
             text_input::bind_keys(cx);
+            rule_dialog::bind_keys(cx);
             apply_preferences(cx);
             cx.on_app_quit(move |_| {
                 before_exit();
@@ -71,12 +76,16 @@ pub fn run(
                 tray_sender,
                 tray: None,
                 page: None,
+                dialog: None,
+                opener: None,
                 on_action: Arc::clone(&on_action),
             }));
 
             let hidden = Rc::clone(&shell);
             cx.on_window_closed(move |_, _| {
                 let mut state = hidden.borrow_mut();
+                state.dialog = None;
+                state.opener = None;
                 match &mut state.tray {
                     Some(tray) => {
                         let _ = tray.explain_hidden();
@@ -125,18 +134,21 @@ fn handle(shell: &Rc<RefCell<Shell>>, event: Event, cx: &mut App) -> bool {
         }
         UiCommand::Update { model, alert } => {
             let model = *model;
-            let page = {
+            let (page, dialog) = {
                 let mut state = shell.borrow_mut();
                 if let Some(tray) = &mut state.tray {
                     let _ = tray.update(tray::model(&model));
                 }
                 state.model = model.clone();
-                state.page.clone()
+                (state.page.clone(), state.dialog.clone())
             };
-            if window::update(model.clone(), cx)
-                && let Some(page) = page
-            {
-                page.update(cx, |page, cx| page.set_model(model, cx));
+            if window::update(model.clone(), cx) {
+                if let Some(dialog) = dialog {
+                    dialog.update(cx, |dialog, cx| dialog.set_model(&model, cx));
+                }
+                if let Some(page) = page {
+                    page.update(cx, |page, cx| page.set_model(model, cx));
+                }
             }
             // Une nouvelle erreur ramène la fenêtre, ouverte ou non, au premier plan.
             if alert {
@@ -167,11 +179,21 @@ fn handle(shell: &Rc<RefCell<Shell>>, event: Event, cx: &mut App) -> bool {
                 start(shell, true, false, cx);
             }
         }
-        // Les dialogues et l'éditeur arrivent avec leurs pages (T059).
-        UiCommand::EditorExecutable { .. }
-        | UiCommand::EditorError(_)
-        | UiCommand::FinishEditorSave
-        | UiCommand::RunningApps(_) => {}
+        UiCommand::EditorExecutable { text, label } => with_dialog(shell, cx, |dialog, cx| {
+            dialog.set_executable(text, label, cx)
+        }),
+        // Sans dialogue, l'erreur attend ses messages dans la page (T062).
+        UiCommand::EditorError(error) => {
+            with_dialog(shell, cx, |dialog, cx| dialog.set_error(error, cx))
+        }
+        UiCommand::RunningApps(apps) => {
+            with_dialog(shell, cx, |dialog, cx| dialog.set_running_apps(apps, cx))
+        }
+        UiCommand::FinishEditorSave => {
+            if let Some(handle) = window::handle(cx) {
+                let _ = handle.update(cx, |main, window, cx| close_dialog(shell, main, window, cx));
+            }
+        }
     }
     false
 }
@@ -240,9 +262,13 @@ fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App, notify: bool) -> bool {
     }
     let send = Arc::clone(&on_action);
     let page = cx.new(|_| SoftwarePage::new(model, move |action, _| send(action)));
-    // Les dialogues et le retrait annulable arrivent avec T059 et T064.
-    cx.subscribe(&page, |_, event: &SoftwareEvent, _| match event {
-        SoftwareEvent::Add | SoftwareEvent::Edit(_) | SoftwareEvent::Delete(_) => {}
+    let opened = Rc::clone(shell);
+    // Le retrait annulable arrive avec T064.
+    cx.subscribe(&page, move |_, event: &SoftwareEvent, cx| match *event {
+        SoftwareEvent::Add { keyboard } => open_dialog(&opened, None, !keyboard, cx),
+        // Seule l'ouverture d'**Ajouter un logiciel** au clic est animée.
+        SoftwareEvent::Edit(rule_id) => open_dialog(&opened, Some(rule_id), false, cx),
+        SoftwareEvent::Delete(_) => {}
     })
     .detach();
     let Ok(main) = handle.update(cx, |main, _, cx| {
@@ -252,13 +278,95 @@ fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App, notify: bool) -> bool {
         return true;
     };
     shell.borrow_mut().page = Some(page);
-    cx.subscribe(&main, move |_, event, _| match event {
+    let opened = Rc::clone(shell);
+    cx.subscribe(&main, move |_, event, cx| match event {
         ShellEvent::Quit => on_action(UiAction::Quit),
+        ShellEvent::AddSoftware => open_dialog(&opened, None, false, cx),
         // La palette de commandes arrive avec T067.
         ShellEvent::OpenCommands => {}
     })
     .detach();
     true
+}
+
+/// Ouvre **Ajouter un logiciel**, ou **Modifier** la règle `edit`, sauf sans contrôle ou par-dessus
+/// un dialogue déjà ouvert. `animate` joue l'entrée, qu'un raccourci clavier saute.
+fn open_dialog(shell: &Rc<RefCell<Shell>>, edit: Option<i32>, animate: bool, cx: &mut App) {
+    let Some(handle) = window::handle(cx) else {
+        return;
+    };
+    let (model, on_action) = {
+        let state = shell.borrow();
+        if state.model.read_only || state.dialog.is_some() {
+            return;
+        }
+        (state.model.clone(), Arc::clone(&state.on_action))
+    };
+    let mode = match edit {
+        None => RuleDialogMode::Add,
+        Some(rule_id) => {
+            let Some(rule) = model.rules.iter().find(|rule| rule.id == rule_id).cloned() else {
+                return;
+            };
+            let missing = !std::path::Path::new(&rule.path).is_file();
+            RuleDialogMode::Edit { rule, missing }
+        }
+    };
+    let opened = Rc::clone(shell);
+    let _ = handle.update(cx, |main, window, cx| {
+        let opener = window.focused(cx);
+        let dialog = cx.new(|cx| {
+            RuleDialog::new(
+                mode,
+                &model,
+                animate,
+                move |action, _| on_action(action),
+                window,
+                cx,
+            )
+        });
+        let closed = Rc::clone(&opened);
+        cx.subscribe_in(
+            &dialog,
+            window,
+            move |main, _, RuleDialogEvent::Closed, window, cx| {
+                close_dialog(&closed, main, window, cx)
+            },
+        )
+        .detach();
+        main.set_dialog(Some(dialog.clone().into()), cx);
+        let mut state = opened.borrow_mut();
+        state.dialog = Some(dialog);
+        state.opener = opener;
+    });
+}
+
+/// Ferme le dialogue et rend le focus à ce qui l'avait ouvert.
+fn close_dialog(
+    shell: &Rc<RefCell<Shell>>,
+    main: &mut MainWindow,
+    window: &mut Window,
+    cx: &mut Context<MainWindow>,
+) {
+    let opener = {
+        let mut state = shell.borrow_mut();
+        state.dialog = None;
+        state.opener.take()
+    };
+    main.set_dialog(None, cx);
+    let focus = opener.unwrap_or_else(|| main.focus_handle(cx));
+    window.focus(&focus, cx);
+}
+
+fn with_dialog(
+    shell: &Rc<RefCell<Shell>>,
+    cx: &mut App,
+    change: impl FnOnce(&mut RuleDialog, &mut Context<RuleDialog>),
+) {
+    let dialog = shell.borrow().dialog.clone();
+    if let Some(dialog) = dialog {
+        dialog.update(cx, change);
+    }
 }
 
 /// Contraste élevé et « Effets d'animation » lus dans Windows.
