@@ -1,6 +1,6 @@
 use power_plan_sync::{
     domain::*,
-    presentation::{Automation, Badge, display},
+    presentation::{Automation, Badge, display, without_control},
 };
 
 type Change = fn(&mut ViewState);
@@ -320,4 +320,60 @@ fn suggestion_requires_confirmation_before_enabling_automation() {
     assert!(!model.automation_can_enable);
     view.configuration.return_plan = Some(BALANCED);
     assert!(display(&view, false, false, None).return_plan_confirmed);
+}
+
+#[test]
+fn return_line_says_when_and_whether_the_return_plan_applies() {
+    let model = display(&active_view(), false, false, None);
+    assert_eq!(model.status_detail, "Témoin est ouvert");
+    assert_eq!(
+        model.return_line,
+        "Plan de retour\u{a0}: Utilisation\u{a0}normale, quand le dernier logiciel suivi se fermera."
+    );
+
+    let mut paused = active_view();
+    paused.configuration.paused = true;
+    paused.status = Status::Paused;
+    paused.cycle = None;
+    assert_eq!(
+        display(&paused, false, false, None).return_line,
+        "Plan de retour\u{a0}: Utilisation\u{a0}normale, appliqué si un logiciel suivi tourne à la mise en pause."
+    );
+
+    let mut overridden = active_view();
+    overridden.status = Status::ManualOverride;
+    assert_eq!(
+        display(&overridden, false, false, None).return_line,
+        "Aucun retour prévu pour ce cycle."
+    );
+
+    let mut unset = active_view();
+    unset.cycle = None;
+    unset.status = Status::Unconfigured;
+    unset.configuration.return_plan = None;
+    assert_eq!(display(&unset, false, false, None).return_line, "");
+}
+
+#[test]
+fn paused_rows_drop_the_stale_open_badge() {
+    let mut paused = active_view();
+    paused.configuration.paused = true;
+    paused.status = Status::Paused;
+    paused.cycle = None;
+    let model = display(&paused, false, false, None);
+    assert!(model.rules.iter().all(|rule| rule.badge.is_none()));
+}
+
+#[test]
+fn without_control_waits_instead_of_reporting_a_suspension() {
+    let mut view = active_view();
+    view.status = Status::Blocked(Error::InvalidConfiguration("refus".into()));
+    let model = without_control(display(&view, false, false, None));
+    assert!(model.read_only && model.blocked);
+    assert_eq!(model.automation, Automation::Waiting);
+    assert_eq!(
+        model.status,
+        "Automatisation en attente · une autre session gère les plans"
+    );
+    assert_eq!(model.error_message.as_deref(), Some("refus"));
 }

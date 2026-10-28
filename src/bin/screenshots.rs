@@ -26,8 +26,12 @@ mod shots {
         ParentElement, Render, Styled, Window, WindowAppearance, div, px, size,
     };
     use power_plan_sync::domain::PowerSource;
+    use power_plan_sync::domain::{
+        AppRule, Configuration, Cycle, Error, ExecutablePath, PlanId, PowerPlan, RuleId, Status,
+        ViewState,
+    };
     use power_plan_sync::interface::assets::Assets;
-    use power_plan_sync::interface::control_page::ControlPage;
+    use power_plan_sync::interface::software_page::SoftwarePage;
     use power_plan_sync::interface::strings;
     use power_plan_sync::interface::text_input::TextInput;
     use power_plan_sync::interface::theme::{self, ForcedAppearance, Theme};
@@ -35,19 +39,112 @@ mod shots {
         self, Button, ButtonStyle, Message, MessageKind, Select, SelectOption, Switch,
     };
     use power_plan_sync::interface::window::{MainWindow, Page};
-    use power_plan_sync::presentation::{Automation, Badge, UiDisplayModel};
+    use power_plan_sync::presentation::{Badge, UiDisplayModel, display, without_control};
 
-    fn model(automation: Automation, power: PowerSource) -> UiDisplayModel {
-        UiDisplayModel {
-            automation,
-            followed: strings::followed(2, 3),
-            power_source: strings::power_source(power).into(),
-            power,
-            ..UiDisplayModel::default()
+    fn rule(id: u64, label: &str, path: &str, plan: u128, enabled: bool) -> AppRule {
+        AppRule {
+            id: RuleId(id),
+            label: label.into(),
+            executable: ExecutablePath(path.encode_utf16().collect()),
+            plan: PlanId(plan),
+            enabled,
         }
     }
 
-    /// Les composants de T053, à la place de la page Logiciels qui arrive avec T058.
+    /// L'état des maquettes : trois logiciels, Battlefield 6 ouvert sur secteur.
+    fn active() -> ViewState {
+        ViewState {
+            configuration: Configuration {
+                rules: vec![
+                    rule(
+                        1,
+                        "Battlefield 6",
+                        r"C:\Jeux\EA\Battlefield 6\bf6.exe",
+                        2,
+                        true,
+                    ),
+                    rule(
+                        2,
+                        "Blender",
+                        r"C:\Program Files\Blender Foundation\Blender 4.5\blender.exe",
+                        3,
+                        true,
+                    ),
+                    rule(
+                        3,
+                        "Hollow Bloom",
+                        r"D:\Jeux\Steam\Hollow Bloom\HollowBloom.exe",
+                        2,
+                        false,
+                    ),
+                ],
+                return_plan: Some(PlanId(1)),
+                automation_enabled: true,
+                ..Default::default()
+            },
+            plans: [
+                (1, "Utilisation normale"),
+                (2, "Haute performance"),
+                (3, "Performances optimales"),
+            ]
+            .map(|(id, name)| PowerPlan {
+                id: PlanId(id),
+                name: name.into(),
+            })
+            .to_vec(),
+            observed_plan: Some(PlanId(2)),
+            status: Status::Active,
+            cycle: Some(Cycle {
+                id: 1,
+                initial: PlanId(1),
+                return_plan: PlanId(1),
+                last_confirmed: PlanId(2),
+                winner: RuleId(1),
+                acquired: true,
+            }),
+            power_source: PowerSource::Ac,
+            open_rules: vec![RuleId(1), RuleId(2)],
+            poll_processes: true,
+            can_exit: false,
+        }
+    }
+
+    fn paused() -> ViewState {
+        let mut view = active();
+        view.configuration.paused = true;
+        view.status = Status::Paused;
+        view.cycle = None;
+        view.observed_plan = Some(PlanId(1));
+        view
+    }
+
+    fn battery() -> ViewState {
+        let mut view = active();
+        view.status = Status::Idle;
+        view.cycle = None;
+        view.observed_plan = Some(PlanId(1));
+        view.power_source = PowerSource::Battery;
+        view.open_rules = vec![RuleId(1)];
+        view
+    }
+
+    /// Comme le coordinateur sans contrôle : configuration non lue, plan actif lu, refus en
+    /// erreur.
+    fn unavailable() -> UiDisplayModel {
+        let view = ViewState {
+            configuration: Default::default(),
+            observed_plan: Some(PlanId(2)),
+            status: Status::Blocked(Error::InvalidConfiguration(strings::CONTROL_HELD.into())),
+            cycle: None,
+            open_rules: vec![],
+            poll_processes: false,
+            can_exit: true,
+            ..active()
+        };
+        without_control(display(&view, false, false, None))
+    }
+
+    /// Les composants de T053, rendus seuls.
     struct Gallery {
         select: Entity<Select>,
         invalid: Entity<Select>,
@@ -96,6 +193,10 @@ mod shots {
             let theme = Theme::of(window, cx);
             let row = || div().flex().flex_wrap().items_center().gap(px(12.));
             div()
+                .size_full()
+                .bg(theme.editor)
+                .font_family(theme::FONT_FAMILY)
+                .text_color(theme.text)
                 .p(px(24.))
                 .flex()
                 .flex_col()
@@ -193,95 +294,76 @@ mod shots {
         })?;
         let cases = [
             (
-                "dark",
+                "main-dark",
                 WindowAppearance::Dark,
                 880.,
                 620.,
-                Automation::Active,
-                PowerSource::Ac,
-                Page::Software,
+                display(&active(), false, false, None),
             ),
             (
-                "light",
+                "main-light",
                 WindowAppearance::Light,
                 880.,
                 620.,
-                Automation::Active,
-                PowerSource::Ac,
-                Page::Software,
+                display(&active(), false, false, None),
             ),
             (
-                "narrow",
+                "main-narrow",
                 WindowAppearance::Dark,
                 420.,
                 760.,
-                Automation::Active,
-                PowerSource::Ac,
-                Page::Software,
+                display(&active(), false, false, None),
+            ),
+            (
+                "paused",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                display(&paused(), false, false, None),
             ),
             (
                 "battery",
                 WindowAppearance::Dark,
                 880.,
                 620.,
-                Automation::Waiting,
-                PowerSource::Battery,
-                Page::Settings,
+                display(&battery(), false, false, None),
+            ),
+            (
+                "unavailable-dark",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                unavailable(),
+            ),
+            (
+                "unavailable-light",
+                WindowAppearance::Light,
+                880.,
+                620.,
+                unavailable(),
             ),
         ];
-        for (name, appearance, width, height, automation, power, page) in cases {
+        for (name, appearance, width, height, model) in cases {
             cx.update(|cx| cx.set_global(ForcedAppearance(appearance)));
             let window = cx.open_window(size(px(width), px(height)), |window, cx| {
-                let gallery = cx.new(|cx| Gallery::new(window, cx));
+                let page = cx.new(|_| SoftwarePage::new(model.clone(), |_, _| {}));
                 cx.new(|cx| {
-                    let mut main = MainWindow::new(model(automation, power), window, cx);
-                    main.set_page_view(Page::Software, gallery.into(), cx);
-                    main.show_page(page, cx);
-                    main
-                })
-            })?;
-            capture(
-                &mut cx,
-                window.into(),
-                &output.join(format!("window-{name}.png")),
-            )?;
-        }
-        for (name, appearance) in [
-            ("dark", WindowAppearance::Dark),
-            ("light", WindowAppearance::Light),
-        ] {
-            cx.update(|cx| cx.set_global(ForcedAppearance(appearance)));
-            // Comme le coordinateur sans contrôle : vue vide, plans et alimentation lus.
-            let view = power_plan_sync::domain::ViewState {
-                configuration: Default::default(),
-                plans: vec![],
-                observed_plan: None,
-                status: power_plan_sync::domain::Status::Blocked(
-                    power_plan_sync::domain::Error::InvalidConfiguration(
-                        power_plan_sync::interface::strings::CONTROL_HELD.into(),
-                    ),
-                ),
-                cycle: None,
-                power_source: PowerSource::Ac,
-                open_rules: vec![],
-                poll_processes: false,
-                can_exit: true,
-            };
-            let mut unavailable = power_plan_sync::presentation::display(&view, false, false, None);
-            unavailable.read_only = true;
-            let window = cx.open_window(size(px(880.), px(620.)), |window, cx| {
-                let page = cx.new(|_| ControlPage::new(unavailable.clone(), |_| {}));
-                cx.new(|cx| {
-                    let mut main = MainWindow::new(unavailable.clone(), window, cx);
+                    let mut main = MainWindow::new(model.clone(), window, cx);
                     main.set_page_view(Page::Software, page.into(), cx);
                     main
                 })
             })?;
-            capture(
-                &mut cx,
-                window.into(),
-                &output.join(format!("unavailable-{name}.png")),
-            )?;
+            capture(&mut cx, window.into(), &output.join(format!("{name}.png")))?;
+        }
+        for (name, appearance) in [
+            ("widgets-dark", WindowAppearance::Dark),
+            ("widgets-light", WindowAppearance::Light),
+        ] {
+            cx.update(|cx| cx.set_global(ForcedAppearance(appearance)));
+            let window = cx.open_window(size(px(880.), px(520.)), |window, cx| {
+                cx.new(|cx| Gallery::new(window, cx))
+            })?;
+            capture(&mut cx, window.into(), &output.join(format!("{name}.png")))?;
         }
         Ok(())
     }

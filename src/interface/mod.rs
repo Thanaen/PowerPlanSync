@@ -1,8 +1,8 @@
 #[cfg(windows)]
 pub mod app;
 pub mod assets;
-pub mod control_page;
 pub mod motion;
+pub mod software_page;
 pub mod strings;
 pub mod text_input;
 pub mod theme;

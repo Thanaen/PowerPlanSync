@@ -8,19 +8,20 @@ sudo apt-get install libfontconfig-dev mesa-vulkan-drivers
 cargo run --features screenshots --bin screenshots -- specs/001-app-power-profiles/evidence/gpui-screenshots
 ```
 
-Seul le cadre de la fenêtre est en place. La page **Logiciels** montre les composants de T053
-en attendant T058, la page **Réglages** est vide en attendant T065. Les coins sont carrés : hors
-écran, aucun compositeur ne les arrondit.
+La page **Logiciels** est en place (T058). La page **Réglages** est vide en attendant T065. Les
+coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-dark.png` et
+`widgets-light.png` montrent les composants de T053 seuls.
 
 ## Comparaison aux maquettes
 
 | Capture | Maquette | Constat |
 | --- | --- | --- |
-| `window-dark.png` | `Main.png` | Conforme : barre de titre, barre latérale, barre d'état, cotes, couleurs et typographie. Les composants suivent le thème sombre. |
-| `window-light.png` | `MainLight.png` | Conforme : cadre et surfaces du thème clair, accent sur le bouton teinté, le badge « Appliqué » et le Switch. |
-| `window-narrow.png` | `Narrow.png` | Conforme : 420 × 760, **Commandes** masqué, barre latérale réduite aux icônes, pas de compte dans la barre d'état. |
-| `window-battery.png` | `Battery.png` | Conforme : automatisation en attente, « Sur batterie », **Réglages** sélectionné comme dans `Settings.png`. |
-| `unavailable-dark.png` | aucune (T058) | Cadre conforme à `Main.png`. Titre, texte et **Réessayer** du contrat ; pas de compte dans la barre d'état. |
-| `unavailable-light.png` | aucune (T058) | Mêmes constats en thème clair. |
+| `main-dark.png` | `Main.png` | Conforme. |
+| `main-light.png` | `MainLight.png` | Conforme. |
+| `main-narrow.png` | `Narrow.png` | Conforme : lignes sur trois niveaux, actions l'une sous l'autre. |
+| `paused.png` | `Paused.png` | Conforme : **Reprendre** en premier, plan de retour rétabli. |
+| `battery.png` | `Battery.png` | Conforme : attente sur batterie, badge **Ouvert**. |
+| `unavailable-dark.png` | `Unavailable.png` | Maquette tirée de cette capture. |
+| `unavailable-light.png` | aucune | Mêmes constats en thème clair. |
 
-Aucun écart du cadre hors de ceux listés dans `design/README.md`.
+Aucun écart hors de ceux listés dans `design/README.md`.

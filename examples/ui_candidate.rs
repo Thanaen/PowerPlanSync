@@ -64,6 +64,8 @@ fn fake_model() -> UiDisplayModel {
         reason: "Aucun logiciel simulé n'est ouvert.".into(),
         automation: Automation::Disabled,
         status: "Automatisation prête, sans écriture Windows".into(),
+        status_detail: String::new(),
+        return_line: String::new(),
         followed: "2 logiciels suivis sur 2".into(),
         power_source: "Sur secteur".into(),
         power: power_plan_sync::domain::PowerSource::Ac,

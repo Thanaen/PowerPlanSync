@@ -10,7 +10,7 @@ use futures::StreamExt as _;
 use futures::channel::mpsc::{UnboundedReceiver, UnboundedSender, unbounded};
 use gpui::{App, AppContext as _, Entity, QuitMode};
 
-use crate::interface::control_page::ControlPage;
+use crate::interface::software_page::{SoftwareEvent, SoftwarePage};
 use crate::interface::theme::{self, HighContrast};
 use crate::interface::tray::{self, Tray, TrayCommand};
 use crate::interface::window::{self, Page, ShellEvent};
@@ -32,7 +32,7 @@ struct Shell {
     start_minimized: bool,
     tray_sender: UnboundedSender<TrayCommand>,
     tray: Option<Tray>,
-    page: Option<Entity<ControlPage>>,
+    page: Option<Entity<SoftwarePage>>,
     on_action: OnAction,
 }
 
@@ -120,10 +120,11 @@ fn handle(shell: &Rc<RefCell<Shell>>, event: Event, cx: &mut App) -> bool {
     let started = shell.borrow().started;
     match command {
         UiCommand::Update { model, alert } if !started => {
-            shell.borrow_mut().model = model;
+            shell.borrow_mut().model = *model;
             start(shell, alert, true, cx);
         }
         UiCommand::Update { model, alert } => {
+            let model = *model;
             let page = {
                 let mut state = shell.borrow_mut();
                 if let Some(tray) = &mut state.tray {
@@ -237,8 +238,13 @@ fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App, notify: bool) -> bool {
     if existed {
         return true;
     }
-    let retry = Arc::clone(&on_action);
-    let page = cx.new(|_| ControlPage::new(model, move |_| retry(UiAction::Retry)));
+    let send = Arc::clone(&on_action);
+    let page = cx.new(|_| SoftwarePage::new(model, move |action, _| send(action)));
+    // Les dialogues et le retrait annulable arrivent avec T059 et T064.
+    cx.subscribe(&page, |_, event: &SoftwareEvent, _| match event {
+        SoftwareEvent::Add | SoftwareEvent::Edit(_) | SoftwareEvent::Delete(_) => {}
+    })
+    .detach();
     let Ok(main) = handle.update(cx, |main, _, cx| {
         main.set_page_view(Page::Software, page.clone().into(), cx);
         cx.entity()

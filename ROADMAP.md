@@ -45,8 +45,9 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
   `specs/001-app-power-profiles/design/README.md` et leur adoption est demandée au projet Bientôt.
 - Ne jamais lancer Battlefield. Ne jamais toucher aux PR des autres fils.
 - Issues : labels `bug`, `enhancement` ou `documentation`, jalon v1, cases des epics à jour.
-- Rythme : un passage par jour à 8 h 47, heure de Paris (décision du 26 octobre 2026, pour
-  ménager le quota). Pas de rythme plus serré sans demande de Clément.
+- Rythme : deux passages par jour, à 8 h 47 et 20 h 47, heure de Paris (décision du 27 octobre
+  2026, la consommation étant devenue raisonnable). Pas de rythme plus serré sans demande de
+  Clément.
 
 ## Priorités
 
@@ -88,3 +89,4 @@ Aucun bug ouvert au 25 octobre 2026.
 | 2026-10-26 | [#19](https://github.com/Thanaen/PowerPlanSync/pull/19) | T054 : fenêtre GPUI, barre de titre, barre latérale, barre d'état et fenêtre étroite. |
 | 2026-10-26 | [#20](https://github.com/Thanaen/PowerPlanSync/pull/20) | T056 : interface GPUI derrière `--gpui`, vue « Contrôle indisponible » ; T012 constatée terminée. |
 | 2026-10-27 | #21 | T057 : crate compilable sous Linux, binaire `screenshots` et captures comparées aux maquettes. |
+| 2026-10-28 | #22 | T058 : page **Logiciels** (en-tête, actions, liste) et maquette `Unavailable.png`. |

@@ -18,7 +18,7 @@ relecteur consacré au mouvement.
 | Cycle actif | [Main](ecrans/Main.png), [thème clair](ecrans/MainLight.png), [fenêtre étroite](ecrans/Narrow.png) |
 | Premier lancement | [Pour commencer](ecrans/FirstLaunch.png), [prêt](ecrans/FirstLaunchReady.png), [plan normal absent](ecrans/FirstLaunchMissing.png) |
 | Ajouter ou modifier | [Ajouter](ecrans/AddRule.png), [plan invalide](ecrans/AddRuleInvalid.png), [fichier introuvable](ecrans/EditRule.png) |
-| États | [en attente, retrait annulable](ecrans/Idle.png), [en pause](ecrans/Paused.png), [plan changé dans Windows](ecrans/External.png), [changement refusé](ecrans/Error.png), [sur batterie](ecrans/Battery.png), [retour échoué en quittant](ecrans/QuitFailed.png), [réglages illisibles](ecrans/ConfigError.png), [démonstration](ecrans/Demo.png) |
+| États | [en attente, retrait annulable](ecrans/Idle.png), [en pause](ecrans/Paused.png), [plan changé dans Windows](ecrans/External.png), [changement refusé](ecrans/Error.png), [sur batterie](ecrans/Battery.png), [retour échoué en quittant](ecrans/QuitFailed.png), [réglages illisibles](ecrans/ConfigError.png), [démonstration](ecrans/Demo.png), [contrôle indisponible](ecrans/Unavailable.png) |
 | Réordonner | [Blender passe en tête](ecrans/Reorder.png) |
 | Autres pages | [Réglages](ecrans/Settings.png), [Aide et limites](ecrans/Help.png), [palette de commandes](ecrans/Palette.png) |
 | Clavier | [focus dans la liste](ecrans/Focus.png), [focus dans le dialogue](ecrans/FocusDialog.png) |

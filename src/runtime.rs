@@ -52,7 +52,7 @@ fn send_ui(command: UiCommand) {
 fn slint_command(ui: &UiRuntime, command: UiCommand) {
     match command {
         UiCommand::Update { model, alert } => {
-            ui.update(model);
+            ui.update(*model);
             if alert {
                 let _ = ui.open();
             }
@@ -833,7 +833,9 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
             worker.demo_running,
             worker.error.clone(),
         );
-        display.read_only = worker.controller.is_none();
+        if worker.controller.is_none() {
+            display = presentation::without_control(display);
+        }
         if previous.as_ref() != Some(&display) {
             if let Some(log) = &mut worker.diagnostics {
                 let _ = log.record(
@@ -850,7 +852,7 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
                     .is_none_or(|old: &UiDisplayModel| old.error_message != display.error_message);
             previous = Some(display.clone());
             send_ui(UiCommand::Update {
-                model: display,
+                model: Box::new(display),
                 alert,
             });
         }
