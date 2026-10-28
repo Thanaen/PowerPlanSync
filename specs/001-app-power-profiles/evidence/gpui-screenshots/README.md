@@ -8,7 +8,7 @@ sudo apt-get install libfontconfig-dev mesa-vulkan-drivers
 cargo run --features screenshots --bin screenshots -- specs/001-app-power-profiles/evidence/gpui-screenshots
 ```
 
-La page **Logiciels** est en place (T058). La page **Réglages** est vide en attendant T065. Les
+La page **Logiciels** est en place (T058), avec ses dialogues **Ajouter un logiciel** et **Modifier** (T059). La page **Réglages** est vide en attendant T065. Les
 coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-dark.png` et
 `widgets-light.png` montrent les composants de T053 seuls.
 
@@ -23,5 +23,9 @@ coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-da
 | `battery.png` | `Battery.png` | Conforme : attente sur batterie, badge **Ouvert**. |
 | `unavailable-dark.png` | `Unavailable.png` | Maquette tirée de cette capture. |
 | `unavailable-light.png` | aucune | Mêmes constats en thème clair. |
+| `add-rule.png` | `AddRule.png` | Conforme, sauf le nom du processus (`bf6.exe`) dans la liste : Windows ne donne pas le nom du produit. |
+| `add-rule-light.png` | aucune | Mêmes constats en thème clair. |
+| `add-rule-invalid.png` | `AddRuleInvalid.png` | Entrée sur un dialogue vide : chaque champ dit quoi corriger. La maquette montre le cas du plan disparu, signalé de la même façon sous **Plan pendant l'exécution**. |
+| `edit-rule.png` | `EditRule.png` | Conforme. |
 
 Aucun écart hors de ceux listés dans `design/README.md`.

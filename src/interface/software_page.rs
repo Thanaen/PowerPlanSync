@@ -5,8 +5,8 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, Context, EventEmitter, FontWeight, Hsla, IntoElement, ParentElement, Render, Role,
-    SharedString, Styled, Window, div, prelude::*, px,
+    App, ClickEvent, Context, EventEmitter, FontWeight, Hsla, IntoElement, ParentElement, Render,
+    Role, SharedString, Styled, Window, div, prelude::*, px,
 };
 
 use crate::interface::strings;
@@ -20,7 +20,10 @@ use crate::presentation::{Automation, RuleDisplay, UiAction, UiDisplayModel};
 /// (T059), retrait annulable (T064).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SoftwareEvent {
-    Add,
+    /// `keyboard` : pressé à Entrée ou Espace, le dialogue paraît sans animation.
+    Add {
+        keyboard: bool,
+    },
     Edit(i32),
     Delete(i32),
 }
@@ -133,7 +136,11 @@ impl SoftwarePage {
         .icon("plus")
         .keys(strings::ADD_KEYS)
         .backdrop(theme.editor)
-        .on_click(cx.listener(|_, _, _, cx| cx.emit(SoftwareEvent::Add)));
+        .on_click(cx.listener(|_, event: &ClickEvent, _, cx| {
+            cx.emit(SoftwareEvent::Add {
+                keyboard: event.is_keyboard(),
+            })
+        }));
         let on_action = Rc::clone(&self.on_action);
         let toggle = Button::new(
             "pause",

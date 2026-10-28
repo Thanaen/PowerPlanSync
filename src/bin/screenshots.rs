@@ -31,6 +31,7 @@ mod shots {
         ViewState,
     };
     use power_plan_sync::interface::assets::Assets;
+    use power_plan_sync::interface::rule_dialog::{RuleDialog, RuleDialogMode};
     use power_plan_sync::interface::software_page::SoftwarePage;
     use power_plan_sync::interface::strings;
     use power_plan_sync::interface::text_input::TextInput;
@@ -39,7 +40,9 @@ mod shots {
         self, Button, ButtonStyle, Message, MessageKind, Select, SelectOption, Switch,
     };
     use power_plan_sync::interface::window::{MainWindow, Page};
-    use power_plan_sync::presentation::{Badge, UiDisplayModel, display, without_control};
+    use power_plan_sync::presentation::{
+        Badge, RunningAppDisplay, UiDisplayModel, display, without_control,
+    };
 
     fn rule(id: u64, label: &str, path: &str, plan: u128, enabled: bool) -> AppRule {
         AppRule {
@@ -142,6 +145,65 @@ mod shots {
             ..active()
         };
         without_control(display(&view, false, false, None))
+    }
+
+    fn running(label: &str, path: &str) -> RunningAppDisplay {
+        RunningAppDisplay {
+            label: label.into(),
+            path: path.into(),
+            accessible: !path.is_empty(),
+        }
+    }
+
+    /// Les dialogues de T059 sur la page **Logiciels**, dans l'état de leur maquette.
+    #[derive(Clone, Copy)]
+    enum DialogCase {
+        /// **Application ouverte** : Battlefield 6 choisi, une application inaccessible.
+        Add,
+        /// Rien de choisi puis Entrée : chaque champ dit quoi corriger.
+        AddInvalid,
+        /// Hollow Bloom introuvable.
+        EditMissing,
+    }
+
+    fn dialog(
+        case: DialogCase,
+        model: &UiDisplayModel,
+        window: &mut Window,
+        cx: &mut Context<RuleDialog>,
+    ) -> RuleDialog {
+        let mode = match case {
+            DialogCase::Add | DialogCase::AddInvalid => RuleDialogMode::Add,
+            DialogCase::EditMissing => RuleDialogMode::Edit {
+                rule: model.rules[2].clone(),
+                missing: true,
+            },
+        };
+        let mut dialog = RuleDialog::new(mode, model, false, |_, _| {}, window, cx);
+        match case {
+            DialogCase::Add => {
+                let bf6 = r"C:\Jeux\EA\Battlefield 6\bf6.exe";
+                dialog.set_executable(bf6.into(), "Battlefield 6".into(), cx);
+                dialog.set_running_apps(
+                    vec![
+                        running("bf6.exe", bf6),
+                        running(
+                            "EADesktop.exe",
+                            r"C:\Program Files\Electronic Arts\EA Desktop\EADesktop.exe",
+                        ),
+                        running("AntiCheat.exe", ""),
+                    ],
+                    cx,
+                );
+                dialog.select_plan(1, cx);
+            }
+            DialogCase::AddInvalid => {
+                dialog.set_running_apps(Vec::new(), cx);
+                dialog.confirm(window, cx);
+            }
+            DialogCase::EditMissing => {}
+        }
+        dialog
     }
 
     /// Les composants de T053, rendus seuls.
@@ -290,6 +352,7 @@ mod shots {
             widgets::bind_keys(cx);
             power_plan_sync::interface::window::bind_keys(cx);
             power_plan_sync::interface::text_input::bind_keys(cx);
+            power_plan_sync::interface::rule_dialog::bind_keys(cx);
             anyhow::Ok(())
         })?;
         let cases = [
@@ -350,6 +413,56 @@ mod shots {
                 cx.new(|cx| {
                     let mut main = MainWindow::new(model.clone(), window, cx);
                     main.set_page_view(Page::Software, page.into(), cx);
+                    main
+                })
+            })?;
+            capture(&mut cx, window.into(), &output.join(format!("{name}.png")))?;
+        }
+        let empty = {
+            let mut view = active();
+            view.configuration.rules.clear();
+            view.configuration.automation_enabled = false;
+            view.status = Status::Unconfigured;
+            view.cycle = None;
+            view.open_rules.clear();
+            view.observed_plan = Some(PlanId(1));
+            display(&view, false, false, None)
+        };
+        let dialogs = [
+            (
+                "add-rule",
+                WindowAppearance::Dark,
+                DialogCase::Add,
+                empty.clone(),
+            ),
+            (
+                "add-rule-light",
+                WindowAppearance::Light,
+                DialogCase::Add,
+                empty.clone(),
+            ),
+            (
+                "add-rule-invalid",
+                WindowAppearance::Dark,
+                DialogCase::AddInvalid,
+                empty,
+            ),
+            (
+                "edit-rule",
+                WindowAppearance::Dark,
+                DialogCase::EditMissing,
+                display(&active(), false, false, None),
+            ),
+        ];
+        for (name, appearance, case, model) in dialogs {
+            cx.update(|cx| cx.set_global(ForcedAppearance(appearance)));
+            let window = cx.open_window(size(px(880.), px(620.)), |window, cx| {
+                let page = cx.new(|_| SoftwarePage::new(model.clone(), |_, _| {}));
+                let dialog = cx.new(|cx| dialog(case, &model, window, cx));
+                cx.new(|cx| {
+                    let mut main = MainWindow::new(model.clone(), window, cx);
+                    main.set_page_view(Page::Software, page.into(), cx);
+                    main.set_dialog(Some(dialog.into()), cx);
                     main
                 })
             })?;

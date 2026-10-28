@@ -3,6 +3,9 @@ use std::os::windows::ffi::OsStringExt;
 use std::path::PathBuf;
 
 use windows::Win32::Foundation::HWND;
+use windows::Win32::System::Com::{
+    COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE, CoInitializeEx, CoUninitialize,
+};
 use windows::Win32::UI::Controls::Dialogs::{
     CommDlgExtendedError, GetOpenFileNameW, OFN_DONTADDTORECENT, OFN_FILEMUSTEXIST,
     OFN_NOCHANGEDIR, OFN_PATHMUSTEXIST, OPENFILENAMEW,
@@ -55,6 +58,18 @@ pub fn choose_executable(owner: Option<HWND>) -> Result<Option<PathBuf>, FileDia
     } else {
         Err(FileDialogError(error.0))
     }
+}
+
+/// Le sélecteur dans un appartement STA, comme l'exige l'Explorateur : à appeler depuis un
+/// thread qui lui est réservé, jamais depuis la boucle de l'interface.
+pub fn choose_executable_in_sta() -> Result<Option<PathBuf>, FileDialogError> {
+    let initialized =
+        unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE) };
+    let result = choose_executable(None);
+    if initialized.is_ok() {
+        unsafe { CoUninitialize() };
+    }
+    result
 }
 
 fn wide_nul(value: &str) -> Vec<u16> {

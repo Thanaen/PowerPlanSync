@@ -39,6 +39,44 @@ pub const MOVE_DOWN: &str = "Descendre";
 pub const EDIT: &str = "Modifier";
 pub const DELETE: &str = "Supprimer";
 
+pub fn edit_title(label: &str) -> String {
+    format!("Modifier {label}")
+}
+pub const SOFTWARE: &str = "Logiciel";
+pub const BROWSE: &str = "Parcourir…";
+pub const RUNNING_APP: &str = "Application ouverte";
+pub const RUNNING_APPS: &str = "Applications ouvertes";
+pub const FILTER_RUNNING: &str = "Filtrer les applications ouvertes";
+pub const RUNNING_LOADING: &str = "Recherche des applications ouvertes…";
+pub const NO_RUNNING: &str = "Aucune application ouverte.";
+pub const NO_RUNNING_MATCH: &str = "Aucune application ouverte ne correspond.";
+pub const INACCESSIBLE: &str = "Fichier inaccessible · impossible à suivre";
+pub const FILE: &str = "Fichier";
+pub const SAME_NAME: &str = "Le même nom dans un autre dossier compte comme un autre logiciel.";
+pub const FILE_NOT_FOUND: &str = "Fichier introuvable";
+pub const NOT_FOUND_BADGE: &str = "Introuvable";
+pub const CHOOSE_NEW_FILE: &str = "Choisir le nouveau fichier…";
+
+pub fn file_moved(label: &str) -> String {
+    format!(
+        "{label} n’est plus à cet emplacement. Choisissez son nouveau fichier\u{a0}; le plan \
+         associé est conservé."
+    )
+}
+
+pub const DISPLAY_NAME: &str = "Nom affiché";
+pub const NAME_PLACEHOLDER: &str = "Nom du logiciel";
+pub const PLAN_DURING: &str = "Plan pendant l’exécution";
+pub const PLAN_GONE: &str = "Ce plan n’existe plus dans Windows. Choisissez-en un autre.";
+pub const CHOOSE_FILE: &str = "Choisissez le fichier du logiciel.";
+pub const ENTER_NAME: &str = "Saisissez le nom affiché.";
+pub const CHOOSE_PLAN: &str = "Choisissez un plan.";
+pub const ADD: &str = "Ajouter";
+pub const SAVE: &str = "Enregistrer";
+pub const CANCEL: &str = "Annuler";
+pub const ENTER_KEYS: [&str; 1] = ["Entrée"];
+pub const ESCAPE_KEYS: [&str; 1] = ["Échap"];
+
 /// La ligne sous l'état, quand le plan de retour s'appliquera.
 pub fn return_when_closed(plan: &str) -> String {
     format!(

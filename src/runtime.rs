@@ -198,6 +198,8 @@ struct Worker {
     quit_requested: bool,
     notifications_ready: bool,
     sender: Option<Sender<AppEvent>>,
+    /// Vrai tant qu'un sélecteur de fichier est ouvert.
+    choosing: Arc<AtomicBool>,
 }
 impl Worker {
     fn acquire(&mut self) -> Result<(), String> {
@@ -493,16 +495,27 @@ impl Worker {
                 return self.acquire();
             }
             UiAction::BrowseForExecutable { .. } => {
-                if let Some(sender) = self.sender.clone() {
+                // Un seul sélecteur à la fois : un double clic n'en ouvre pas un second.
+                if let Some(sender) = self.sender.clone()
+                    && !self.choosing.swap(true, Ordering::SeqCst)
+                {
+                    let choosing = Arc::clone(&self.choosing);
+                    let gpui = self.options.gpui;
                     let choose = move || {
-                        let result = windows::file_dialog::choose_executable(None).map_err(|_| {
+                        let result = if gpui {
+                            windows::file_dialog::choose_executable_in_sta()
+                        } else {
+                            windows::file_dialog::choose_executable(None)
+                        }
+                        .map_err(|_| {
                             "Le sélecteur de fichier ne peut pas être ouvert.".to_string()
                         });
+                        choosing.store(false, Ordering::SeqCst);
                         let _ = sender.send(AppEvent::Chosen(result));
                     };
-                    // Jamais dans un écouteur GPUI (réentrance) ; T059 donne au sélecteur son
-                    // thread STA et la fenêtre propriétaire.
-                    if self.options.gpui {
+                    // Jamais dans un écouteur GPUI (réentrance) : sous GPUI, le sélecteur a son
+                    // propre thread STA.
+                    if gpui {
                         std::thread::spawn(choose);
                     } else {
                         let _ = slint::invoke_from_event_loop(choose);
@@ -518,19 +531,33 @@ impl Worker {
                     let apps = vec![RunningAppDisplay {
                         label: "Logiciel témoin simulé".into(),
                         path: path.to_string_lossy().into_owned(),
+                        accessible: true,
                     }];
                     send_ui(UiCommand::RunningApps(apps));
                     return Ok(());
                 }
                 let apps = windows::processes::running_apps(self.owner.session_id)
                     .map_err(|_| "La liste des applications est indisponible.")?;
-                self.running = apps.iter().map(|p| p.executable_path.clone()).collect();
+                self.running = apps
+                    .verified
+                    .iter()
+                    .map(|p| p.executable_path.clone())
+                    .collect();
+                // Les applications vérifiables d'abord : leur rang est l'index que renvoie
+                // `SelectRunningApplication`.
                 let display = apps
+                    .verified
                     .into_iter()
                     .map(|p| RunningAppDisplay {
                         label: p.image_name.to_string_lossy().into_owned(),
                         path: p.executable_path.to_string_lossy().into_owned(),
+                        accessible: true,
                     })
+                    .chain(apps.inaccessible.into_iter().map(|name| RunningAppDisplay {
+                        label: name.to_string_lossy().into_owned(),
+                        path: String::new(),
+                        accessible: false,
+                    }))
                     .collect();
                 send_ui(UiCommand::RunningApps(display));
                 return Ok(());
@@ -796,6 +823,7 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
         quit_requested: false,
         notifications_ready: true,
         sender: None,
+        choosing: Arc::default(),
     };
     worker.sender = Some(worker_sender);
     worker.notifications_ready = notifications.is_ok();
@@ -1026,6 +1054,7 @@ mod tests {
             quit_requested: false,
             notifications_ready: true,
             sender: None,
+            choosing: Arc::default(),
         }
     }
     fn cleanup(mut worker: Worker) {
