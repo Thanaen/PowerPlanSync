@@ -337,7 +337,7 @@ fn return_line_says_when_and_whether_the_return_plan_applies() {
     paused.cycle = None;
     assert_eq!(
         display(&paused, false, false, None).return_line,
-        "Le plan Utilisation\u{a0}normale a été rétabli à la mise en pause."
+        "Plan de retour\u{a0}: Utilisation\u{a0}normale, appliqué si un logiciel suivi tourne à la mise en pause."
     );
 
     let mut overridden = active_view();
@@ -369,7 +369,7 @@ fn without_control_waits_instead_of_reporting_a_suspension() {
     let mut view = active_view();
     view.status = Status::Blocked(Error::InvalidConfiguration("refus".into()));
     let model = without_control(display(&view, false, false, None));
-    assert!(model.read_only && !model.blocked);
+    assert!(model.read_only && model.blocked);
     assert_eq!(model.automation, Automation::Waiting);
     assert_eq!(
         model.status,

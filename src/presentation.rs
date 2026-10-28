@@ -209,7 +209,7 @@ pub fn display(
             .map(|cycle| cycle.return_plan)
             .or(config.return_plan.filter(|id| plan_exists(*id)));
         match plan {
-            Some(plan) if config.paused => strings::restored_on_pause(&name(plan)),
+            Some(plan) if config.paused => strings::return_on_pause(&name(plan)),
             Some(plan) if detail == strings::ON_BATTERY => strings::return_on_battery(&name(plan)),
             Some(plan) => strings::return_when_closed(&name(plan)),
             None => String::new(),
@@ -337,7 +337,8 @@ fn status(view: &ViewState, winner: Option<&AppRule>) -> (Automation, String) {
 }
 
 /// Une autre session détient le contrôle : rien n'est géré ici, l'automatisation attend que
-/// le contrôle se libère. Le refus reste dans `error_message` pour le message de la page.
+/// le contrôle se libère. Le refus reste dans `error_message` pour le message de la page, et
+/// `blocked` garde le bouton **Réessayer** de l'interface Slint.
 pub fn without_control(model: UiDisplayModel) -> UiDisplayModel {
     let detail = strings::CONTROL_ELSEWHERE;
     UiDisplayModel {
@@ -345,7 +346,6 @@ pub fn without_control(model: UiDisplayModel) -> UiDisplayModel {
         automation: Automation::Waiting,
         status: strings::status_line(Automation::Waiting, detail),
         status_detail: detail.into(),
-        blocked: false,
         ..model
     }
 }

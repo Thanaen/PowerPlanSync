@@ -280,21 +280,17 @@ impl SoftwarePage {
             .text_color(name_color)
             .child(widgets::icon("zap", theme.text_muted).size(token::ICON_SM))
             .child(div().truncate().child(rule.plan.clone()));
-        let follow = Switch::new(
-            ("follow", id as u64),
-            format!("{} {}", strings::FOLLOW, rule.label),
-            rule.enabled,
-        )
-        .backdrop(theme.surface)
-        .on_toggle(move |enabled, _, cx| {
-            on_action(
-                UiAction::SetRuleEnabled {
-                    rule_id: id,
-                    enabled,
-                },
-                cx,
-            )
-        });
+        let follow = Switch::new(("follow", id as u64), named(strings::FOLLOW), rule.enabled)
+            .backdrop(theme.surface)
+            .on_toggle(move |enabled, _, cx| {
+                on_action(
+                    UiAction::SetRuleEnabled {
+                        rule_id: id,
+                        enabled,
+                    },
+                    cx,
+                )
+            });
         let actions = div()
             .flex()
             .flex_none()

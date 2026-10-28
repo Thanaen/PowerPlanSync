@@ -49,14 +49,14 @@ pub fn return_when_closed(plan: &str) -> String {
 
 pub fn return_on_battery(plan: &str) -> String {
     format!(
-        "Plan de retour\u{a0}: {}, appliqué au passage sur batterie.",
+        "Plan de retour\u{a0}: {}, appliqué si un logiciel suivi tourne au passage sur batterie.",
         plan_name(plan)
     )
 }
 
-pub fn restored_on_pause(plan: &str) -> String {
+pub fn return_on_pause(plan: &str) -> String {
     format!(
-        "Le plan {} a été rétabli à la mise en pause.",
+        "Plan de retour\u{a0}: {}, appliqué si un logiciel suivi tourne à la mise en pause.",
         plan_name(plan)
     )
 }
