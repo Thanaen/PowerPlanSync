@@ -496,6 +496,9 @@ impl Worker {
             }
             UiAction::BrowseForExecutable { .. } => {
                 // Un seul sélecteur à la fois : un double clic n'en ouvre pas un second.
+                if self.choosing.load(Ordering::SeqCst) {
+                    return Err("Le sélecteur de fichier est déjà ouvert.".into());
+                }
                 if let Some(sender) = self.sender.clone()
                     && !self.choosing.swap(true, Ordering::SeqCst)
                 {

@@ -183,7 +183,6 @@ mod shots {
         match case {
             DialogCase::Add => {
                 let bf6 = r"C:\Jeux\EA\Battlefield 6\bf6.exe";
-                dialog.set_executable(bf6.into(), "Battlefield 6".into(), cx);
                 dialog.set_running_apps(
                     vec![
                         running("bf6.exe", bf6),
@@ -195,6 +194,8 @@ mod shots {
                     ],
                     cx,
                 );
+                dialog.choose(0, cx);
+                dialog.set_executable(bf6.into(), "Battlefield 6".into(), cx);
                 dialog.select_plan(1, cx);
             }
             DialogCase::AddInvalid => {

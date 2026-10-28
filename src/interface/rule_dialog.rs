@@ -143,6 +143,8 @@ pub struct RuleDialog {
     running: Option<Vec<RunningAppDisplay>>,
     /// Vrai entre la demande de la liste et sa réponse.
     loading: bool,
+    /// Vrai après **Parcourir…** ou le choix d'une application, jusqu'au fichier vérifié.
+    awaiting_file: bool,
     chosen_app: Option<usize>,
     error: Option<String>,
     /// Après une validation refusée : chaque champ invalide dit quoi corriger.
@@ -208,6 +210,7 @@ impl RuleDialog {
             suggested_name: String::new(),
             running: None,
             loading: false,
+            awaiting_file: false,
             chosen_app: None,
             error: None,
             show_errors: false,
@@ -312,6 +315,11 @@ impl RuleDialog {
 
     /// Le fichier vérifié par le coordinateur, avec le nom qu'il propose.
     pub fn set_executable(&mut self, path: String, name: String, cx: &mut Context<Self>) {
+        // Un sélecteur resté ouvert après la fermeture d'un autre dialogue ne change pas
+        // celui-ci.
+        if !std::mem::take(&mut self.awaiting_file) {
+            return;
+        }
         let typed = self.name.read(cx).text().to_owned();
         if typed.trim().is_empty() || typed == self.suggested_name {
             self.name.update(cx, |input, cx| input.set_text(&name, cx));
@@ -336,6 +344,7 @@ impl RuleDialog {
 
     pub fn set_error(&mut self, error: String, cx: &mut Context<Self>) {
         self.error = Some(error);
+        self.loading = false;
         cx.notify();
     }
 
@@ -355,6 +364,7 @@ impl RuleDialog {
 
     fn browse(&mut self, cx: &mut Context<Self>) {
         self.running = None;
+        self.awaiting_file = true;
         (self.on_action)(
             UiAction::BrowseForExecutable {
                 editing_rule_id: self.rule_id(),
@@ -364,7 +374,8 @@ impl RuleDialog {
         cx.notify();
     }
 
-    fn choose(&mut self, index: usize, cx: &mut Context<Self>) {
+    /// L'application `index` de la liste, comme cliquée.
+    pub fn choose(&mut self, index: usize, cx: &mut Context<Self>) {
         if self
             .running
             .as_ref()
@@ -372,6 +383,7 @@ impl RuleDialog {
             .is_some_and(|app| app.accessible)
         {
             self.chosen_app = Some(index);
+            self.awaiting_file = true;
             (self.on_action)(UiAction::SelectRunningApplication { index }, cx);
             cx.notify();
         }
@@ -436,13 +448,15 @@ impl RuleDialog {
 
     /// Tab reste dans le dialogue : le reste de la fenêtre est sous le voile.
     fn cycle_focus(&mut self, forward: bool, window: &mut Window, cx: &mut Context<Self>) {
-        for _ in 0..64 {
+        // Jusqu'à revenir dans le dialogue, ou au point de départ après un tour complet.
+        let start = window.focused(cx);
+        loop {
             if forward {
                 window.focus_next(cx);
             } else {
                 window.focus_prev(cx);
             }
-            if self.focus_handle.contains_focused(window, cx) {
+            if self.focus_handle.contains_focused(window, cx) || window.focused(cx) == start {
                 return;
             }
         }
