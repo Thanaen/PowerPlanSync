@@ -143,8 +143,9 @@ pub struct RuleDialog {
     running: Option<Vec<RunningAppDisplay>>,
     /// Vrai entre la demande de la liste et sa réponse.
     loading: bool,
-    /// Vrai après **Parcourir…** ou le choix d'une application, jusqu'au fichier vérifié.
-    awaiting_file: bool,
+    /// Les fichiers demandés par **Parcourir…** ou le choix d'une application et pas encore
+    /// reçus. Les réponses arrivent dans l'ordre : la dernière demande l'emporte.
+    pending_files: usize,
     chosen_app: Option<usize>,
     error: Option<String>,
     /// Après une validation refusée : chaque champ invalide dit quoi corriger.
@@ -210,7 +211,7 @@ impl RuleDialog {
             suggested_name: String::new(),
             running: None,
             loading: false,
-            awaiting_file: false,
+            pending_files: 0,
             chosen_app: None,
             error: None,
             show_errors: false,
@@ -317,9 +318,10 @@ impl RuleDialog {
     pub fn set_executable(&mut self, path: String, name: String, cx: &mut Context<Self>) {
         // Un sélecteur resté ouvert après la fermeture d'un autre dialogue ne change pas
         // celui-ci.
-        if !std::mem::take(&mut self.awaiting_file) {
+        if self.pending_files == 0 {
             return;
         }
+        self.pending_files -= 1;
         let typed = self.name.read(cx).text().to_owned();
         if typed.trim().is_empty() || typed == self.suggested_name {
             self.name.update(cx, |input, cx| input.set_text(&name, cx));
@@ -364,7 +366,7 @@ impl RuleDialog {
 
     fn browse(&mut self, cx: &mut Context<Self>) {
         self.running = None;
-        self.awaiting_file = true;
+        self.pending_files += 1;
         (self.on_action)(
             UiAction::BrowseForExecutable {
                 editing_rule_id: self.rule_id(),
@@ -383,7 +385,7 @@ impl RuleDialog {
             .is_some_and(|app| app.accessible)
         {
             self.chosen_app = Some(index);
-            self.awaiting_file = true;
+            self.pending_files += 1;
             (self.on_action)(UiAction::SelectRunningApplication { index }, cx);
             cx.notify();
         }
