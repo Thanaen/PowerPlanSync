@@ -91,7 +91,8 @@ pub fn is_narrow(width: Pixels) -> bool {
 /// une action est nécessaire, orange quand elle est suspendue, grise sinon. Le mot qui la suit
 /// porte l'état ; la couleur ne fait que le répéter.
 pub fn status_dot(model: &UiDisplayModel, theme: &Theme) -> Hsla {
-    if model.error_message.is_some() || model.blocked {
+    // Sans contrôle, le refus a son message rouge ; l'automatisation, elle, attend.
+    if !model.read_only && (model.error_message.is_some() || model.blocked) {
         theme.error
     } else {
         match model.automation {

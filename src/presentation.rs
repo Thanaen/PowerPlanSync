@@ -54,6 +54,10 @@ pub struct UiDisplayModel {
     pub reason: String,
     pub automation: Automation,
     pub status: String,
+    /// La phrase de [`Self::status`] après le mot-clé de l'automatisation.
+    pub status_detail: String,
+    /// Ce que fera le plan de retour, sous l'état ; vide quand il n'y en a pas encore.
+    pub return_line: String,
     pub followed: String,
     pub power_source: String,
     pub power: PowerSource,
@@ -133,7 +137,7 @@ pub enum UiAction {
 pub enum UiCommand {
     /// Nouvel état ; `alert` ouvre la fenêtre pour une nouvelle erreur.
     Update {
-        model: UiDisplayModel,
+        model: Box<UiDisplayModel>,
         alert: bool,
     },
     Open,
@@ -194,6 +198,23 @@ pub fn display(
         _ => String::new(),
     };
     let plan_exists = |id: PlanId| view.plans.iter().any(|p| p.id == id);
+    let return_line = if view.status == Status::ManualOverride {
+        strings::NO_RETURN.into()
+    } else if !return_plan_note.is_empty() {
+        return_plan_note.clone()
+    } else {
+        let plan = view
+            .cycle
+            .as_ref()
+            .map(|cycle| cycle.return_plan)
+            .or(config.return_plan.filter(|id| plan_exists(*id)));
+        match plan {
+            Some(plan) if config.paused => strings::restored_on_pause(&name(plan)),
+            Some(plan) if detail == strings::ON_BATTERY => strings::return_on_battery(&name(plan)),
+            Some(plan) => strings::return_when_closed(&name(plan)),
+            None => String::new(),
+        }
+    };
     UiDisplayModel {
         observed_plan: view
             .observed_plan
@@ -202,6 +223,8 @@ pub fn display(
         reason,
         automation,
         status: strings::status_line(automation, &detail),
+        status_detail: detail,
+        return_line,
         followed: strings::followed(
             config.rules.iter().filter(|r| r.enabled).count(),
             config.rules.len(),
@@ -313,6 +336,20 @@ fn status(view: &ViewState, winner: Option<&AppRule>) -> (Automation, String) {
     (automation, detail.into())
 }
 
+/// Une autre session détient le contrôle : rien n'est géré ici, l'automatisation attend que
+/// le contrôle se libère. Le refus reste dans `error_message` pour le message de la page.
+pub fn without_control(model: UiDisplayModel) -> UiDisplayModel {
+    let detail = strings::CONTROL_ELSEWHERE;
+    UiDisplayModel {
+        read_only: true,
+        automation: Automation::Waiting,
+        status: strings::status_line(Automation::Waiting, detail),
+        status_detail: detail.into(),
+        blocked: false,
+        ..model
+    }
+}
+
 /// Windows n'a pas confirmé le plan du logiciel réservé : une lecture échouée après
 /// l'application ne compte pas comme un refus.
 fn refused(view: &ViewState, rule: &AppRule) -> bool {
@@ -329,6 +366,8 @@ fn badge(view: &ViewState, rule: &AppRule) -> Option<Badge> {
         Status::Active | Status::ExitGrace { .. } if reserved => Some(Badge::Applied),
         Status::ManualOverride if reserved => Some(Badge::Suspended),
         Status::Blocked(_) if refused(view, rule) => Some(Badge::Refused),
+        // En pause, les processus ne sont plus relus : « Ouvert » serait périmé.
+        _ if view.configuration.paused => None,
         _ if rule.enabled && view.open_rules.contains(&rule.id) => Some(Badge::Open),
         _ => None,
     }

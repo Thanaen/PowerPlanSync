@@ -30,6 +30,7 @@ const ICONS: &[(&str, &[u8])] = icons![
     "log-out",
     "minus",
     "pause",
+    "circle-pause",
     "pencil",
     "play",
     "plug",

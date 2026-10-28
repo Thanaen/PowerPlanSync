@@ -27,6 +27,45 @@ pub fn automation(automation: Automation) -> &'static str {
     }
 }
 
+pub const ACTIVE_PLAN: &str = "Plan actif dans Windows";
+pub const NO_RETURN: &str = "Aucun retour prévu pour ce cycle.";
+pub const ADD_SOFTWARE: &str = "Ajouter un logiciel";
+pub const ADD_KEYS: [&str; 2] = ["Ctrl", "N"];
+pub const PAUSE_KEYS: [&str; 3] = ["Ctrl", "Alt", "P"];
+pub const ASSOCIATED_SOFTWARE: &str = "Logiciels associés";
+pub const FOLLOW: &str = "Suivre";
+pub const MOVE_UP: &str = "Monter";
+pub const MOVE_DOWN: &str = "Descendre";
+pub const EDIT: &str = "Modifier";
+pub const DELETE: &str = "Supprimer";
+
+/// La ligne sous l'état, quand le plan de retour s'appliquera.
+pub fn return_when_closed(plan: &str) -> String {
+    format!(
+        "Plan de retour\u{a0}: {}, quand le dernier logiciel suivi se fermera.",
+        plan_name(plan)
+    )
+}
+
+pub fn return_on_battery(plan: &str) -> String {
+    format!(
+        "Plan de retour\u{a0}: {}, appliqué au passage sur batterie.",
+        plan_name(plan)
+    )
+}
+
+pub fn restored_on_pause(plan: &str) -> String {
+    format!(
+        "Le plan {} a été rétabli à la mise en pause.",
+        plan_name(plan)
+    )
+}
+
+/// Le nom accessible d'une action de ligne : « Monter Blender ».
+pub fn row_action(action: &str, label: &str) -> String {
+    format!("{action} {label}")
+}
+
 pub fn status_line(automation: Automation, detail: &str) -> String {
     format!("{} · {detail}", self::automation(automation))
 }
@@ -48,6 +87,7 @@ pub const REFUSED: &str = "Windows a refusé le changement de plan";
 pub const ACTION_NEEDED: &str = "action nécessaire";
 pub const RECOVERING: &str = "récupération en cours";
 pub const SESSION_INACTIVE: &str = "session Windows inactive";
+pub const CONTROL_ELSEWHERE: &str = "une autre session gère les plans";
 pub const STOPPED: &str = "PowerPlanSync s’arrête";
 
 pub fn badge(badge: Badge) -> &'static str {
