@@ -5,10 +5,12 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, FontWeight, Hsla, IntoElement, ParentElement, Render,
-    Role, SharedString, Styled, Window, div, prelude::*, px,
+    App, ClickEvent, Context, Entity, EventEmitter, FontWeight, HighlightStyle, Hsla, IntoElement,
+    ParentElement, Render, Role, SharedString, Styled, StyledText, Subscription, Window, div,
+    prelude::*, px,
 };
 
+use crate::interface::first_launch::{self, AddRequested, FirstLaunch};
 use crate::interface::strings;
 use crate::interface::theme::spacing::*;
 use crate::interface::theme::{Theme, TypeStyled as _, radius, size as token, text};
@@ -33,6 +35,8 @@ type OnAction = Rc<dyn Fn(UiAction, &mut App)>;
 pub struct SoftwarePage {
     model: UiDisplayModel,
     on_action: OnAction,
+    /// « Pour commencer », créé au premier affichage qui en a besoin.
+    first_launch: Option<(Entity<FirstLaunch>, Subscription)>,
 }
 
 impl EventEmitter<SoftwareEvent> for SoftwarePage {}
@@ -42,14 +46,34 @@ impl SoftwarePage {
         Self {
             model,
             on_action: Rc::new(on_action),
+            first_launch: None,
         }
     }
 
     pub fn set_model(&mut self, model: UiDisplayModel, cx: &mut Context<Self>) {
         if self.model != model {
+            if let Some((steps, _)) = &self.first_launch {
+                let model = model.clone();
+                steps.update(cx, |steps, cx| steps.set_model(model, cx));
+            }
             self.model = model;
             cx.notify();
         }
+    }
+
+    fn first_launch(&mut self, window: &mut Window, cx: &mut Context<Self>) -> Entity<FirstLaunch> {
+        if let Some((steps, _)) = &self.first_launch {
+            return steps.clone();
+        }
+        let (model, on_action) = (self.model.clone(), Rc::clone(&self.on_action));
+        let steps = cx.new(|cx| FirstLaunch::new(model, on_action, window, cx));
+        let relay = cx.subscribe(&steps, |_, _, event: &AddRequested, cx| {
+            cx.emit(SoftwareEvent::Add {
+                keyboard: event.keyboard,
+            })
+        });
+        self.first_launch = Some((steps.clone(), relay));
+        steps
     }
 
     fn header(&self, narrow: bool, theme: &Theme) -> impl IntoElement {
@@ -90,36 +114,29 @@ impl SoftwarePage {
                         )
                     })
                     .flex()
-                    .flex_wrap()
-                    .items_center()
+                    .items_start()
                     .gap(BASE_06)
                     .type_style(text::LABEL_MD)
-                    .child(widgets::icon(status_icon(model), color).size(token::ICON_MD))
+                    .text_color(theme.text_muted)
                     .child(
                         div()
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .text_color(color)
-                            .child(strings::automation(model.automation)),
+                            .h(text::LABEL_MD.line_height)
+                            .flex()
+                            .items_center()
+                            .child(widgets::icon(status_icon(model), color).size(token::ICON_MD)),
                     )
-                    .when(!model.status_detail.is_empty(), |line| {
-                        line.child(
-                            div()
-                                .text_color(theme.text_muted)
-                                .child(format!("· {}", model.status_detail)),
-                        )
-                    }),
+                    // Une seule ligne de texte : étroite, elle se coupe entre les mots et le
+                    // point reste avec l'état.
+                    .child(div().flex_1().min_w_0().child(status_text(model, color))),
             )
-            .when(
-                !model.return_line.is_empty() && !model.read_only,
-                |header| {
-                    header.child(
-                        div()
-                            .type_style(text::LABEL_SM)
-                            .text_color(theme.text_muted)
-                            .child(model.return_line.clone()),
-                    )
-                },
-            )
+            .when_some(note(model), |header, note| {
+                header.child(
+                    div()
+                        .type_style(text::LABEL_SM)
+                        .text_color(theme.text_muted)
+                        .child(note),
+                )
+            })
     }
 
     fn actions(&self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
@@ -374,6 +391,34 @@ impl SoftwarePage {
     }
 }
 
+/// L'état en gras et en couleur, puis « · » et le détail.
+fn status_text(model: &UiDisplayModel, color: Hsla) -> StyledText {
+    let keyword = strings::automation(model.automation);
+    let line = if model.status_detail.is_empty() {
+        keyword.to_string()
+    } else {
+        format!("{keyword} · {}", model.status_detail)
+    };
+    StyledText::new(line).with_highlights([(
+        0..keyword.len(),
+        HighlightStyle {
+            color: Some(color),
+            font_weight: Some(FontWeight::SEMIBOLD),
+            ..HighlightStyle::default()
+        },
+    )])
+}
+
+/// La ligne sous l'état : avant l'activation, la promesse de « Pour commencer » ; ensuite, ce
+/// que fera le plan de retour.
+pub fn note(model: &UiDisplayModel) -> Option<String> {
+    if first_launch::shown(model) {
+        Some(strings::NOTHING_BEFORE_ACTIVATION.into())
+    } else {
+        (!model.return_line.is_empty() && !model.read_only).then(|| model.return_line.clone())
+    }
+}
+
 /// Le texte du refus quand une autre session détient le contrôle, ou l'état à défaut.
 pub fn unavailable_text(model: &UiDisplayModel) -> Option<String> {
     model.read_only.then(|| {
@@ -440,6 +485,7 @@ impl Render for SoftwarePage {
                     ),
                 )
             }
+            None if first_launch::shown(&self.model) => body.child(self.first_launch(window, cx)),
             None => body
                 .child(self.actions(&theme, cx))
                 .child(self.list(narrow, &theme, cx)),
@@ -474,6 +520,22 @@ mod tests {
             unavailable_text(&model).as_deref(),
             Some("Contrôle indisponible")
         );
+    }
+
+    #[test]
+    fn before_activation_the_header_promises_no_change() {
+        let mut model = UiDisplayModel {
+            return_line: "Plan de retour : Équilibré".into(),
+            ..UiDisplayModel::default()
+        };
+        assert_eq!(
+            note(&model).as_deref(),
+            Some(strings::NOTHING_BEFORE_ACTIVATION)
+        );
+        model.automation_enabled = true;
+        assert_eq!(note(&model).as_deref(), Some("Plan de retour : Équilibré"));
+        model.read_only = true;
+        assert_eq!(note(&model), None);
     }
 
     #[test]

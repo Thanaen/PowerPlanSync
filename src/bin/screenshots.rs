@@ -131,6 +131,39 @@ mod shots {
         view
     }
 
+    /// « Pour commencer » : rien d'ajouté, avec ou sans le plan normal, puis prêt à activer.
+    fn first_launch(normal_plan: bool, ready: bool) -> ViewState {
+        let normal = PlanId(0x381b4222_f694_41f0_9685_ff5bb260df2e);
+        let mut view = active();
+        let first = if normal_plan {
+            (normal, "Utilisation normale")
+        } else {
+            (PlanId(4), "Équilibré")
+        };
+        view.plans = [
+            first,
+            (PlanId(2), "Haute performance"),
+            (PlanId(3), "Performances optimales"),
+        ]
+        .map(|(id, name)| PowerPlan {
+            id,
+            name: name.into(),
+        })
+        .to_vec();
+        view.observed_plan = Some(first.0);
+        view.configuration.automation_enabled = false;
+        view.configuration.return_plan = ready.then_some(normal);
+        view.configuration.rules.truncate(if ready { 1 } else { 0 });
+        view.status = if ready {
+            Status::Idle
+        } else {
+            Status::Unconfigured
+        };
+        view.cycle = None;
+        view.open_rules.clear();
+        view
+    }
+
     /// Comme le coordinateur sans contrôle : configuration non lue, plan actif lu, refus en
     /// erreur.
     fn unavailable() -> UiDisplayModel {
@@ -393,6 +426,41 @@ mod shots {
                 display(&battery(), false, false, None),
             ),
             (
+                "first-launch",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                display(&first_launch(true, false), false, false, None),
+            ),
+            (
+                "first-launch-missing",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                display(&first_launch(false, false), false, false, None),
+            ),
+            (
+                "first-launch-ready",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                display(&first_launch(true, true), false, false, None),
+            ),
+            (
+                "first-launch-light",
+                WindowAppearance::Light,
+                880.,
+                620.,
+                display(&first_launch(true, false), false, false, None),
+            ),
+            (
+                "first-launch-narrow",
+                WindowAppearance::Dark,
+                420.,
+                760.,
+                display(&first_launch(true, false), false, false, None),
+            ),
+            (
                 "unavailable-dark",
                 WindowAppearance::Dark,
                 880.,
@@ -423,6 +491,7 @@ mod shots {
             let mut view = active();
             view.configuration.rules.clear();
             view.configuration.automation_enabled = false;
+            view.configuration.return_plan = None;
             view.status = Status::Unconfigured;
             view.cycle = None;
             view.open_rules.clear();

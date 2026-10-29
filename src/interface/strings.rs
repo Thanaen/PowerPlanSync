@@ -225,3 +225,57 @@ pub const HIDDEN_BODY: &str = "Il continue de fonctionner dans la zone de notifi
 pub fn tray_tooltip(plan: &str, status: &str) -> String {
     format!("PowerPlanSync · {plan}\n{status}")
 }
+
+pub const GETTING_STARTED: &str = "Pour commencer";
+pub const NOTHING_BEFORE_ACTIVATION: &str = "Rien ne change dans Windows avant l’étape 3.";
+pub const STEP_ADD_HINT: &str =
+    "Choisissez le fichier du logiciel ou une application déjà ouverte, puis son plan.";
+pub const STEP_ADD_DONE: &str = "Vous pourrez en ajouter d’autres ensuite.";
+pub const STEP_RETURN: &str = "Confirmer le plan de retour";
+pub const STEP_RETURN_HINT: &str = "Plan appliqué quand le dernier logiciel suivi se ferme. Vérifiez la proposition, puis confirmez.";
+pub const STEP_RETURN_MISSING: &str =
+    "Le plan Utilisation\u{a0}normale n’existe pas sur ce PC. Choisissez le plan de retour.";
+pub const STEP_RETURN_DONE: &str = "Modifiable à tout moment dans Réglages.";
+pub const RETURN_PLAN: &str = "Plan de retour";
+pub const CONFIRM: &str = "Confirmer";
+pub const ACTIVATE: &str = "Activer l’automatisation";
+pub const STEP_ACTIVATE_LOCKED: &str = "Disponible après les étapes 1 et 2.";
+
+/// Ce que fera l'étape 3 : le logiciel suivi, ou « un logiciel suivi » s'il y en a plusieurs.
+pub fn activate_ready(followed: &[&str]) -> String {
+    match followed {
+        [label] => format!(
+            "PowerPlanSync changera le plan à l’ouverture {}.",
+            of(label)
+        ),
+        _ => "PowerPlanSync changera le plan à l’ouverture d’un logiciel suivi.".into(),
+    }
+}
+
+/// Le résumé de l'étape 1 faite : le logiciel et son plan, ou leur nombre.
+pub fn step_add_summary(followed: &[(&str, &str)]) -> String {
+    match followed {
+        [(label, plan)] => format!("{label} · {}", plan_name(plan)),
+        _ => format!("{} logiciels suivis", followed.len()),
+    }
+}
+
+/// Le nom lu d'une étape : « Étape 2 sur 3, Confirmer le plan de retour, faite ».
+pub fn step_name(number: usize, title: &str, done: bool) -> String {
+    let state = if done { "terminée" } else { "à faire" };
+    format!("Étape {number} sur 3, {title}, {state}")
+}
+
+/// « de Blender », « d’Elden Ring », insécable : « Battlefield 6. » ne se coupe pas.
+fn of(label: &str) -> String {
+    let label = label.replace(' ', "\u{a0}");
+    let vowel = label
+        .chars()
+        .next()
+        .is_some_and(|first| "aeiouàâäéèêëîïôöùûüœæAEIOUÀÂÄÉÈÊËÎÏÔÖÙÛÜŒÆ".contains(first));
+    if vowel {
+        format!("d’{label}")
+    } else {
+        format!("de {label}")
+    }
+}
