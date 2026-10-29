@@ -8,7 +8,7 @@ sudo apt-get install libfontconfig-dev mesa-vulkan-drivers
 cargo run --features screenshots --bin screenshots -- specs/001-app-power-profiles/evidence/gpui-screenshots
 ```
 
-La page **Logiciels** est en place (T058), avec ses dialogues **Ajouter un logiciel** et **Modifier** (T059). La page **Réglages** est vide en attendant T065. Les
+La page **Logiciels** est en place (T058), avec ses dialogues **Ajouter un logiciel** et **Modifier** (T059) et « Pour commencer » avant la première activation (T060). La page **Réglages** est vide en attendant T065. Les
 coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-dark.png` et
 `widgets-light.png` montrent les composants de T053 seuls.
 
@@ -27,5 +27,11 @@ coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-da
 | `add-rule-light.png` | aucune | Mêmes constats en thème clair. |
 | `add-rule-invalid.png` | `AddRuleInvalid.png` | Entrée sur un dialogue vide : chaque champ dit quoi corriger. La maquette montre le cas du plan disparu, signalé de la même façon sous **Plan pendant l'exécution**. |
 | `edit-rule.png` | `EditRule.png` | Conforme. |
+| `first-launch.png` | `FirstLaunch.png` | Conforme : plan normal proposé, **Activer l'automatisation** indisponible. |
+| `first-launch-missing.png` | `FirstLaunchMissing.png` | Conforme : aucun plan présélectionné, **Confirmer** indisponible. |
+| `first-launch-ready.png` | `FirstLaunchReady.png` | Conforme : étapes 1 et 2 cochées, pastilles au repos. |
+| `first-launch-unfollowed.png` | aucune | Seul logiciel non suivi : l'automatisation s'est arrêtée, les étapes reviennent et la liste reste dessous pour le suivre de nouveau. |
+| `first-launch-light.png` | aucune | Mêmes constats en thème clair. |
+| `first-launch-narrow.png` | aucune | Fenêtre étroite : chaque commande passe sous le texte de son étape. |
 
 Aucun écart hors de ceux listés dans `design/README.md`.

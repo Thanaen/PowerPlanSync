@@ -4,7 +4,7 @@
 
 use std::time::{Duration, Instant};
 
-use gpui::{App, Pixels, Styled, Window};
+use gpui::{App, Pixels, SpringConfig, Styled, Window};
 
 /// Durée d'un type d'animation. En debug, `POWERPLANSYNC_MOTION_SLOWDOWN` la multiplie.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -14,6 +14,9 @@ pub const PRESS: Timing = Timing(Duration::from_millis(140));
 pub const TOOLTIP: Timing = Timing(Duration::from_millis(150));
 pub const MENU: Timing = Timing(Duration::from_millis(200));
 pub const DIALOG: Timing = Timing(Duration::from_millis(250));
+/// La pastille d'une étape validée dans « Pour commencer » : un moment unique, pas un jeton.
+pub const STEP_DONE: Timing = Timing(Duration::from_millis(250));
+pub const STEP_DONE_BOUNCE: f32 = 0.2;
 
 impl Timing {
     pub fn duration(self) -> Duration {
@@ -143,6 +146,15 @@ fn entering(opacity: f32, time: f32, from: Pixels) -> Entering {
     }
 }
 
+/// Un ressort décrit par sa durée et son rebond, comme dans SwiftUI : masse 1, raideur
+/// `(2π / durée)²`, amortissement `4π (1 − rebond) / durée`.
+pub fn spring(timing: Timing, bounce: f32) -> SpringConfig {
+    let seconds = timing.duration().as_secs_f32();
+    let stiffness = (std::f32::consts::TAU / seconds).powi(2);
+    let damping = 4. * std::f32::consts::PI * (1. - bounce) / seconds;
+    SpringConfig::new(stiffness, damping, 1.)
+}
+
 /// Pour ce qui entre ou sort.
 pub fn ease_out() -> impl Fn(f32) -> f32 {
     cubic_bezier(0.23, 1., 0.32, 1.)
@@ -249,6 +261,16 @@ mod tests {
         assert_eq!(TOOLTIP.duration(), Duration::from_millis(150));
         assert_eq!(MENU.duration(), Duration::from_millis(200));
         assert_eq!(DIALOG.duration(), Duration::from_millis(250));
+    }
+
+    #[test]
+    fn a_spring_keeps_its_duration_and_bounce() {
+        if std::env::var_os("POWERPLANSYNC_MOTION_SLOWDOWN").is_some() {
+            return;
+        }
+        let (frequency, damping_ratio) = spring(STEP_DONE, STEP_DONE_BOUNCE).canonical();
+        assert_close(frequency, std::f32::consts::TAU / 0.25);
+        assert_close(damping_ratio, 0.8);
     }
 
     #[test]
