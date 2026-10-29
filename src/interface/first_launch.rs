@@ -1,7 +1,7 @@
-//! « Pour commencer », à la place de **Logiciels associés** tant que l'automatisation n'a
-//! jamais été activée : **Ajouter un logiciel**, **Confirmer le plan de retour** puis
-//! **Activer l'automatisation**, indisponible avant les deux premières étapes. Rien ne change
-//! dans Windows avant l'étape 3 (FR-002, FR-025).
+//! « Pour commencer », à la place des actions tant que l'automatisation n'est pas activée :
+//! **Ajouter un logiciel**, **Confirmer le plan de retour** puis **Activer l'automatisation**,
+//! indisponible avant les deux premières étapes. Rien ne change dans Windows avant l'étape 3
+//! (FR-002, FR-025). Un logiciel qui ne compte pas pour l'étape 1 reste dans la liste dessous.
 
 use std::rc::Rc;
 
@@ -60,7 +60,27 @@ pub fn followed(model: &UiDisplayModel) -> Vec<&RuleDisplay> {
         .collect()
 }
 
-/// La page affiche « Pour commencer » tant que l'automatisation n'a jamais été activée.
+/// Le texte de l'étape 2 : un plan choisi qui a disparu n'est pas le plan normal absent.
+pub fn return_hint(model: &UiDisplayModel) -> &'static str {
+    if model.return_plan_confirmed {
+        strings::STEP_RETURN_DONE
+    } else if model.return_plan_chosen {
+        strings::STEP_RETURN_GONE
+    } else if model.return_plan_index < 0 {
+        strings::STEP_RETURN_MISSING
+    } else {
+        strings::STEP_RETURN_HINT
+    }
+}
+
+/// Sous les étapes, la liste reste à portée tant qu'un logiciel ne compte pas pour l'étape 1 :
+/// non suivi, plan disparu, ou automatisation coupée faute de logiciel suivi.
+pub fn list_shown(model: &UiDisplayModel) -> bool {
+    followed(model).len() < model.rules.len()
+}
+
+/// La page affiche « Pour commencer » tant que l'automatisation n'est pas activée : avant la
+/// première activation, ou après son arrêt faute de logiciel suivi, qu'elle relance.
 pub fn shown(model: &UiDisplayModel) -> bool {
     !model.automation_enabled && !model.read_only
 }
@@ -336,13 +356,7 @@ impl Render for FirstLaunch {
         .into_any_element();
 
         let labels: Vec<_> = followed.iter().map(|rule| rule.label.as_str()).collect();
-        let return_hint = if steps.return_plan {
-            strings::STEP_RETURN_DONE
-        } else if model.return_plan_index < 0 {
-            strings::STEP_RETURN_MISSING
-        } else {
-            strings::STEP_RETURN_HINT
-        };
+        let return_hint = return_hint(model);
         let list = div()
             .id("getting-started")
             .role(Role::List)
@@ -360,8 +374,10 @@ impl Render for FirstLaunch {
                         title: strings::ADD_SOFTWARE,
                         hint: if steps.software {
                             strings::STEP_ADD_DONE
-                        } else {
+                        } else if model.rules.is_empty() {
                             strings::STEP_ADD_HINT
+                        } else {
+                            strings::STEP_ADD_FOLLOW
                         }
                         .into(),
                         done: steps.software,
@@ -459,6 +475,37 @@ mod tests {
 
         model.automation_enabled = true;
         assert!(!shown(&model));
+    }
+
+    #[test]
+    fn rules_that_do_not_count_stay_reachable_below_the_steps() {
+        let mut model = UiDisplayModel {
+            rules: vec![rule("Battlefield 6", true, 1)],
+            ..UiDisplayModel::default()
+        };
+        assert!(!list_shown(&model));
+        // Suivre coupé sur le seul logiciel : l'automatisation s'arrête et les étapes
+        // reviennent, avec la liste pour le suivre de nouveau.
+        model.rules[0].enabled = false;
+        assert!(list_shown(&model));
+        model.rules[0].enabled = true;
+        model.rules[0].plan_index = -1;
+        assert!(list_shown(&model));
+    }
+
+    #[test]
+    fn a_vanished_return_plan_is_not_called_the_missing_normal_plan() {
+        let mut model = UiDisplayModel {
+            return_plan_index: 0,
+            ..UiDisplayModel::default()
+        };
+        assert_eq!(return_hint(&model), strings::STEP_RETURN_HINT);
+        model.return_plan_index = -1;
+        assert_eq!(return_hint(&model), strings::STEP_RETURN_MISSING);
+        model.return_plan_chosen = true;
+        assert_eq!(return_hint(&model), strings::STEP_RETURN_GONE);
+        model.return_plan_confirmed = true;
+        assert_eq!(return_hint(&model), strings::STEP_RETURN_DONE);
     }
 
     #[test]

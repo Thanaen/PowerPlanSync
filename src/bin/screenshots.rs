@@ -447,6 +447,22 @@ mod shots {
                 display(&first_launch(true, true), false, false, None),
             ),
             (
+                "first-launch-unfollowed",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                display(
+                    &{
+                        let mut view = first_launch(true, true);
+                        view.configuration.rules[0].enabled = false;
+                        view
+                    },
+                    false,
+                    false,
+                    None,
+                ),
+            ),
+            (
                 "first-launch-light",
                 WindowAppearance::Light,
                 880.,

@@ -485,7 +485,12 @@ impl Render for SoftwarePage {
                     ),
                 )
             }
-            None if first_launch::shown(&self.model) => body.child(self.first_launch(window, cx)),
+            None if first_launch::shown(&self.model) => {
+                let steps = self.first_launch(window, cx);
+                let list =
+                    first_launch::list_shown(&self.model).then(|| self.list(narrow, &theme, cx));
+                body.child(steps).children(list)
+            }
             None => body
                 .child(self.actions(&theme, cx))
                 .child(self.list(narrow, &theme, cx)),

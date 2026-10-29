@@ -79,6 +79,8 @@ pub struct UiDisplayModel {
     pub return_plan_note: String,
     pub return_plan_index: i32,
     pub return_plan_confirmed: bool,
+    /// Un plan de retour a été choisi, même s'il a depuis disparu de Windows.
+    pub return_plan_chosen: bool,
     pub rules: Vec<RuleDisplay>,
     pub plans: Vec<PlanDisplay>,
 }
@@ -255,6 +257,7 @@ pub fn display(
         return_plan_note,
         return_plan_index: return_index.map_or(-1, |i| i as i32),
         return_plan_confirmed: config.return_plan.is_some() && return_index.is_some(),
+        return_plan_chosen: config.return_plan.is_some(),
         rules: config
             .rules
             .iter()

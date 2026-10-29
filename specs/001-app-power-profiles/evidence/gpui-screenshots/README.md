@@ -30,6 +30,7 @@ coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-da
 | `first-launch.png` | `FirstLaunch.png` | Conforme : plan normal proposé, **Activer l'automatisation** indisponible. |
 | `first-launch-missing.png` | `FirstLaunchMissing.png` | Conforme : aucun plan présélectionné, **Confirmer** indisponible. |
 | `first-launch-ready.png` | `FirstLaunchReady.png` | Conforme : étapes 1 et 2 cochées, pastilles au repos. |
+| `first-launch-unfollowed.png` | aucune | Seul logiciel non suivi : l'automatisation s'est arrêtée, les étapes reviennent et la liste reste dessous pour le suivre de nouveau. |
 | `first-launch-light.png` | aucune | Mêmes constats en thème clair. |
 | `first-launch-narrow.png` | aucune | Fenêtre étroite : chaque commande passe sous le texte de son étape. |
 

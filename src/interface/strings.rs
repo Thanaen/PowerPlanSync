@@ -230,11 +230,15 @@ pub const GETTING_STARTED: &str = "Pour commencer";
 pub const NOTHING_BEFORE_ACTIVATION: &str = "Rien ne change dans Windows avant l’étape 3.";
 pub const STEP_ADD_HINT: &str =
     "Choisissez le fichier du logiciel ou une application déjà ouverte, puis son plan.";
+pub const STEP_ADD_FOLLOW: &str =
+    "Ajoutez un logiciel, ou activez Suivre sur un logiciel de la liste ci-dessous.";
 pub const STEP_ADD_DONE: &str = "Vous pourrez en ajouter d’autres ensuite.";
 pub const STEP_RETURN: &str = "Confirmer le plan de retour";
 pub const STEP_RETURN_HINT: &str = "Plan appliqué quand le dernier logiciel suivi se ferme. Vérifiez la proposition, puis confirmez.";
 pub const STEP_RETURN_MISSING: &str =
     "Le plan Utilisation\u{a0}normale n’existe pas sur ce PC. Choisissez le plan de retour.";
+pub const STEP_RETURN_GONE: &str =
+    "Le plan de retour choisi n’existe plus dans Windows. Choisissez-en un autre.";
 pub const STEP_RETURN_DONE: &str = "Modifiable à tout moment dans Réglages.";
 pub const RETURN_PLAN: &str = "Plan de retour";
 pub const CONFIRM: &str = "Confirmer";
@@ -260,7 +264,7 @@ pub fn step_add_summary(followed: &[(&str, &str)]) -> String {
     }
 }
 
-/// Le nom lu d'une étape : « Étape 2 sur 3, Confirmer le plan de retour, faite ».
+/// Le nom lu d'une étape : « Étape 2 sur 3, Confirmer le plan de retour, terminée ».
 pub fn step_name(number: usize, title: &str, done: bool) -> String {
     let state = if done { "terminée" } else { "à faire" };
     format!("Étape {number} sur 3, {title}, {state}")
