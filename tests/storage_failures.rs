@@ -1,10 +1,13 @@
 use power_plan_sync::{
+    coordinator::{Controller, PowerPort},
     domain::*,
     storage::{FileStore, Store},
 };
 use std::{
+    cell::RefCell,
     fs,
     path::PathBuf,
+    rc::Rc,
     sync::atomic::{AtomicU64, Ordering},
 };
 static NEXT: AtomicU64 = AtomicU64::new(0);
@@ -142,4 +145,113 @@ fn cleared_journal_allows_restart_and_next_cycle() {
     r.transaction = 2;
     s.prepare(&r).unwrap();
     assert_eq!(s.load_recovery().unwrap(), Some(r));
+}
+
+/// Un plan actif fixe ; chaque écriture est notée.
+#[derive(Clone, Default)]
+struct Power(Rc<RefCell<Vec<PlanId>>>);
+impl PowerPort for Power {
+    fn active_plan(&mut self) -> Result<PlanId, Error> {
+        Ok(PlanId(1))
+    }
+    fn set_active_plan(&mut self, plan: PlanId) -> Result<(), Error> {
+        self.0.borrow_mut().push(plan);
+        Ok(())
+    }
+    fn plans(&mut self) -> Result<Vec<PowerPlan>, Error> {
+        Ok((1..=2)
+            .map(|n| PowerPlan {
+                id: PlanId(n),
+                name: n.to_string(),
+            })
+            .collect())
+    }
+}
+
+fn configured() -> Configuration {
+    Configuration {
+        rules: vec![AppRule {
+            id: RuleId(1),
+            label: "Témoin".into(),
+            executable: ExecutablePath(vec![67, 58, 92, 116, 46, 101, 120, 101]),
+            plan: PlanId(2),
+            enabled: true,
+        }],
+        return_plan: Some(PlanId(1)),
+        automation_enabled: true,
+        ..Default::default()
+    }
+}
+
+fn controller(f: &Folder, power: &Power) -> Controller<Power, FileStore> {
+    let mut s = FileStore::new(&f.0).unwrap();
+    s.save_configuration(&configured()).unwrap();
+    Controller::open(
+        power.clone(),
+        FileStore::new(&f.0).unwrap(),
+        Owner {
+            user: "test".into(),
+            session_id: 1,
+        },
+    )
+    .unwrap()
+}
+
+#[test]
+fn reload_keeps_the_last_settings_while_the_file_is_still_unreadable() {
+    let f = Folder::new();
+    let power = Power::default();
+    let mut c = controller(&f, &power);
+    let path = f.0.join("config.json");
+    fs::write(&path, b"broken").unwrap();
+    assert!(matches!(
+        c.handle(Command::ReloadConfiguration),
+        Err(Error::Storage(_))
+    ));
+    assert_eq!(c.view().configuration, configured());
+    assert!(matches!(
+        c.view().status,
+        Status::Blocked(Error::Storage(_))
+    ));
+    assert_eq!(fs::read(&path).unwrap(), b"broken");
+    assert!(power.0.borrow().is_empty());
+}
+
+#[test]
+fn reload_reads_the_repaired_file_without_changing_the_plan() {
+    let f = Folder::new();
+    let power = Power::default();
+    let mut c = controller(&f, &power);
+    let path = f.0.join("config.json");
+    fs::write(&path, b"broken").unwrap();
+    assert!(c.handle(Command::ReloadConfiguration).is_err());
+    let repaired = Configuration {
+        allow_on_battery: true,
+        ..configured()
+    };
+    fs::write(&path, serde_json::to_vec(&repaired).unwrap()).unwrap();
+    let view = c.handle(Command::ReloadConfiguration).unwrap();
+    assert_eq!(view.configuration, repaired);
+    assert!(!matches!(view.status, Status::Blocked(_)));
+    assert_eq!(view.observed_plan, Some(PlanId(1)));
+    assert!(power.0.borrow().is_empty());
+}
+
+#[test]
+fn reload_keeps_a_pause_found_in_the_file() {
+    let f = Folder::new();
+    let power = Power::default();
+    let mut c = controller(&f, &power);
+    let paused = Configuration {
+        paused: true,
+        ..configured()
+    };
+    fs::write(
+        f.0.join("config.json"),
+        serde_json::to_vec(&paused).unwrap(),
+    )
+    .unwrap();
+    let view = c.handle(Command::ReloadConfiguration).unwrap();
+    assert_eq!(view.status, Status::Paused);
+    assert!(power.0.borrow().is_empty());
 }

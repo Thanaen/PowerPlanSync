@@ -210,6 +210,9 @@ pub enum Command {
     Pause,
     Resume,
     Retry,
+    /// Relit `config.json` : une lecture refusée garde les réglages en mémoire et le fichier
+    /// tel quel.
+    ReloadConfiguration,
     Quit,
     QuitAnyway,
 }

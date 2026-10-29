@@ -91,4 +91,5 @@ Aucun bug ouvert au 25 octobre 2026.
 | 2026-10-27 | [#21](https://github.com/Thanaen/PowerPlanSync/pull/21) | T057 : crate compilable sous Linux, binaire `screenshots` et captures comparées aux maquettes. |
 | 2026-10-28 | [#22](https://github.com/Thanaen/PowerPlanSync/pull/22) | T058 : page **Logiciels** (en-tête, actions, liste) et maquette `Unavailable.png`. |
 | 2026-10-28 | [#23](https://github.com/Thanaen/PowerPlanSync/pull/23) | T059 : dialogues **Ajouter un logiciel** et **Modifier**, Ctrl+N, sélecteur de fichier sur thread STA. |
-| 2026-10-29 | #24 | T060 : « Pour commencer » en trois étapes, aucun changement Windows avant l'activation. |
+| 2026-10-29 | [#24](https://github.com/Thanaen/PowerPlanSync/pull/24) | T060 : « Pour commencer » en trois étapes, aucun changement Windows avant l'activation. |
+| 2026-10-29 | #25 | T061 : commande **Relire les réglages**, sans changement de plan ni réécriture du fichier. |
