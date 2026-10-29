@@ -232,6 +232,8 @@ pub const STEP_ADD_HINT: &str =
     "Choisissez le fichier du logiciel ou une application déjà ouverte, puis son plan.";
 pub const STEP_ADD_FOLLOW: &str =
     "Ajoutez un logiciel, ou activez Suivre sur un logiciel de la liste ci-dessous.";
+pub const STEP_ADD_REPLAN: &str =
+    "Ajoutez un logiciel, ou choisissez un autre plan pour un logiciel de la liste ci-dessous.";
 pub const STEP_ADD_DONE: &str = "Vous pourrez en ajouter d’autres ensuite.";
 pub const STEP_RETURN: &str = "Confirmer le plan de retour";
 pub const STEP_RETURN_HINT: &str = "Plan appliqué quand le dernier logiciel suivi se ferme. Vérifiez la proposition, puis confirmez.";

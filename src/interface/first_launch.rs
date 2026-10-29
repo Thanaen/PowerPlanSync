@@ -60,6 +60,19 @@ pub fn followed(model: &UiDisplayModel) -> Vec<&RuleDisplay> {
         .collect()
 }
 
+/// Le texte de l'étape 1 : la liste dessous dit quoi corriger quand un logiciel ne compte pas.
+pub fn add_hint(model: &UiDisplayModel) -> &'static str {
+    if Steps::of(model).software {
+        strings::STEP_ADD_DONE
+    } else if model.rules.is_empty() {
+        strings::STEP_ADD_HINT
+    } else if model.rules.iter().any(|rule| !rule.enabled) {
+        strings::STEP_ADD_FOLLOW
+    } else {
+        strings::STEP_ADD_REPLAN
+    }
+}
+
 /// Le texte de l'étape 2 : un plan choisi qui a disparu n'est pas le plan normal absent.
 pub fn return_hint(model: &UiDisplayModel) -> &'static str {
     if model.return_plan_confirmed {
@@ -367,26 +380,17 @@ impl Render for FirstLaunch {
             .border_1()
             .border_color(theme.border_variant)
             .bg(theme.surface)
-            .child(
-                self.step(
-                    Step {
-                        number: 1,
-                        title: strings::ADD_SOFTWARE,
-                        hint: if steps.software {
-                            strings::STEP_ADD_DONE
-                        } else if model.rules.is_empty() {
-                            strings::STEP_ADD_HINT
-                        } else {
-                            strings::STEP_ADD_FOLLOW
-                        }
-                        .into(),
-                        done: steps.software,
-                        control: add,
-                    },
-                    narrow,
-                    &theme,
-                ),
-            )
+            .child(self.step(
+                Step {
+                    number: 1,
+                    title: strings::ADD_SOFTWARE,
+                    hint: add_hint(model).into(),
+                    done: steps.software,
+                    control: add,
+                },
+                narrow,
+                &theme,
+            ))
             .child(self.step(
                 Step {
                     number: 2,
@@ -488,9 +492,14 @@ mod tests {
         // reviennent, avec la liste pour le suivre de nouveau.
         model.rules[0].enabled = false;
         assert!(list_shown(&model));
+        assert_eq!(add_hint(&model), strings::STEP_ADD_FOLLOW);
+        // Suivi, mais son plan a disparu : c'est le plan qu'il faut changer.
         model.rules[0].enabled = true;
         model.rules[0].plan_index = -1;
         assert!(list_shown(&model));
+        assert_eq!(add_hint(&model), strings::STEP_ADD_REPLAN);
+        model.rules.clear();
+        assert_eq!(add_hint(&model), strings::STEP_ADD_HINT);
     }
 
     #[test]
