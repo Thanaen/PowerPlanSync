@@ -260,15 +260,6 @@ impl Worker {
             },
         )
         .map_err(|e| error_message(&e))?;
-        if controller
-            .view()
-            .configuration
-            .rules
-            .iter()
-            .any(|r| i32::try_from(r.id.0).is_err())
-        {
-            return Err("Une règle possède un identifiant incompatible avec cette version. La configuration est conservée.".into());
-        }
         let snapshot = self.snapshot(&controller.view().configuration, true);
         let _ = controller.handle(Command::Observe(snapshot));
         let startup_error = if self.options.demo {

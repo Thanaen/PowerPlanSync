@@ -255,3 +255,21 @@ fn reload_keeps_a_pause_found_in_the_file() {
     assert_eq!(view.status, Status::Paused);
     assert!(power.0.borrow().is_empty());
 }
+
+#[test]
+fn reload_refuses_a_rule_id_the_interface_cannot_address() {
+    let f = Folder::new();
+    let power = Power::default();
+    let mut c = controller(&f, &power);
+    let mut edited = configured();
+    edited.rules[0].id = RuleId(u64::from(u32::MAX) + 2);
+    let bytes = serde_json::to_vec(&edited).unwrap();
+    fs::write(f.0.join("config.json"), &bytes).unwrap();
+    assert!(matches!(
+        c.handle(Command::ReloadConfiguration),
+        Err(Error::InvalidConfiguration(_))
+    ));
+    assert_eq!(c.view().configuration, configured());
+    assert_eq!(fs::read(f.0.join("config.json")).unwrap(), bytes);
+    assert!(power.0.borrow().is_empty());
+}
