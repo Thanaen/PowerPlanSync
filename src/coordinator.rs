@@ -178,6 +178,26 @@ impl<P: PowerPort, S: Store> Controller<P, S> {
                     Status::Idle
                 };
             }
+            Command::ReloadConfiguration => {
+                let c = self.store.load_configuration()?;
+                self.plans = self.power.plans()?;
+                let paused = c.paused;
+                self.configuration = c;
+                if paused && self.state.status != Status::Paused {
+                    self.restore(Status::Paused)?;
+                    return Ok(());
+                }
+                if paused {
+                    return Ok(());
+                }
+                if matches!(self.state.status, Status::Blocked(_) | Status::Paused) {
+                    self.state.status = if self.record.is_some() {
+                        Status::Recovering
+                    } else {
+                        Status::Idle
+                    };
+                }
+            }
             Command::Observe(snapshot) => {
                 self.snapshot = snapshot;
                 if matches!(self.state.status, Status::Blocked(_) | Status::Exited) {

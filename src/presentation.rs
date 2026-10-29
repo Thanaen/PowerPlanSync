@@ -129,6 +129,9 @@ pub enum UiAction {
     Pause,
     Resume,
     Retry,
+    /// **Relire les réglages** : relit `config.json`, ou rouvre le contrôle s'il était illisible
+    /// au démarrage.
+    ReloadConfiguration,
     DemoStart,
     DemoStop,
     Quit,

@@ -71,6 +71,13 @@ impl Configuration {
             ));
         }
         for (i, rule) in self.rules.iter().enumerate() {
+            // L'interface désigne une règle par un `i32` : un identifiant plus grand serait
+            // tronqué et viserait une autre règle.
+            if i32::try_from(rule.id.0).is_err() {
+                return Err(Error::InvalidConfiguration(
+                    "Une règle possède un identifiant incompatible avec cette version. La configuration est conservée.".into(),
+                ));
+            }
             if rule.executable.0.is_empty() || rule.executable.0.contains(&0) {
                 return Err(Error::InvalidConfiguration("Chemin invalide".into()));
             }
@@ -210,6 +217,9 @@ pub enum Command {
     Pause,
     Resume,
     Retry,
+    /// Relit `config.json` : une lecture refusée garde les réglages en mémoire et le fichier
+    /// tel quel.
+    ReloadConfiguration,
     Quit,
     QuitAnyway,
 }

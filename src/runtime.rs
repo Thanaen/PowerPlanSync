@@ -260,15 +260,6 @@ impl Worker {
             },
         )
         .map_err(|e| error_message(&e))?;
-        if controller
-            .view()
-            .configuration
-            .rules
-            .iter()
-            .any(|r| i32::try_from(r.id.0).is_err())
-        {
-            return Err("Une règle possède un identifiant incompatible avec cette version. La configuration est conservée.".into());
-        }
         let snapshot = self.snapshot(&controller.view().configuration, true);
         let _ = controller.handle(Command::Observe(snapshot));
         let startup_error = if self.options.demo {
@@ -491,7 +482,7 @@ impl Worker {
                 }
                 return Ok(());
             }
-            UiAction::Retry if self.controller.is_none() => {
+            UiAction::Retry | UiAction::ReloadConfiguration if self.controller.is_none() => {
                 return self.acquire();
             }
             UiAction::BrowseForExecutable { .. } => {
@@ -585,11 +576,15 @@ impl Worker {
             }
             return Ok(());
         }
-        if matches!(action, UiAction::Pause | UiAction::Resume | UiAction::Retry) {
+        if matches!(
+            action,
+            UiAction::Pause | UiAction::Resume | UiAction::Retry | UiAction::ReloadConfiguration
+        ) {
             self.observe(true);
             let command = match action {
                 UiAction::Pause => Command::Pause,
                 UiAction::Resume => Command::Resume,
+                UiAction::ReloadConfiguration => Command::ReloadConfiguration,
                 _ if self.quit_requested => Command::Quit,
                 _ => Command::Retry,
             };
@@ -1226,6 +1221,27 @@ mod tests {
             std::fs::read_to_string(worker.options.data_directory.join("recovery.json")).unwrap(),
             "live journal untouched"
         );
+        cleanup(worker);
+    }
+    #[test]
+    fn reloading_a_repaired_configuration_takes_control_without_changing_the_plan() {
+        let mut worker = demo();
+        let directory = worker.options.data_directory.join("simulation");
+        std::fs::create_dir_all(&directory).unwrap();
+        let path = directory.join("config.json");
+        std::fs::write(&path, "broken configuration").unwrap();
+        assert!(worker.acquire().is_err());
+        assert!(worker.action(UiAction::ReloadConfiguration).is_err());
+        assert!(worker.controller.is_none());
+        let repaired = Configuration {
+            return_plan: Some(PlanId(1)),
+            ..Default::default()
+        };
+        std::fs::write(&path, serde_json::to_vec(&repaired).unwrap()).unwrap();
+        worker.action(UiAction::ReloadConfiguration).unwrap();
+        assert!(worker.controller.is_some());
+        assert_eq!(worker.view().configuration, repaired);
+        assert_eq!(worker.view().observed_plan, Some(PlanId(1)));
         cleanup(worker);
     }
     #[test]
