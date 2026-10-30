@@ -83,6 +83,36 @@ pub struct UiDisplayModel {
     pub return_plan_chosen: bool,
     pub rules: Vec<RuleDisplay>,
     pub plans: Vec<PlanDisplay>,
+    /// Le message intégré de la page **Logiciels**, s'il y a quelque chose à signaler.
+    pub notice: Option<Notice>,
+}
+
+/// Ce que la page signale dans un message intégré, jamais dans un dialogue (FR-009, FR-012,
+/// FR-013, FR-017). Les noms de plans et de logiciels sont ceux de l'affichage.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Notice {
+    /// Un plan a été choisi dans Windows pendant un cycle. `resume` : le plan et le logiciel
+    /// que **Reprendre l'automatisation** rétablirait.
+    ChosenInWindows {
+        chosen: String,
+        resume: Option<(String, String)>,
+    },
+    /// Windows n'a pas confirmé le plan du logiciel réservé.
+    Refused { plan: String, label: String },
+    /// Le retour au plan de retour a échoué en quittant.
+    /// `return_plan` manque quand le plan de retour a disparu de Windows.
+    ReturnFailed {
+        active: String,
+        return_plan: Option<String>,
+    },
+    /// `config.json` est illisible : l'automatisation reste arrêtée.
+    SettingsUnreadable,
+    /// Une autre session détient le contrôle, ou le contrôle n'a pas pu être pris.
+    ControlUnavailable(String),
+    /// Une autre erreur suspend l'automatisation : **Réessayer**.
+    Blocked(String),
+    /// Une action a échoué sans suspendre l'automatisation.
+    Problem(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -137,6 +167,10 @@ pub enum UiAction {
     Quit,
     QuitAfterFailedRestore,
     OpenWindowsSettings,
+    /// **Ouvrir le dossier des données**, où se trouvent `config.json` et sa copie de secours.
+    OpenDataFolder,
+    /// **Ouvrir le guide**, à la section « Réglages illisibles ».
+    OpenGuide,
     WindowOpened,
 }
 
@@ -206,8 +240,31 @@ pub fn display(
         _ => String::new(),
     };
     let plan_exists = |id: PlanId| view.plans.iter().any(|p| p.id == id);
+    let notice = match &view.status {
+        Status::ManualOverride => Some(Notice::ChosenInWindows {
+            chosen: view
+                .observed_plan
+                .map(name)
+                .unwrap_or_else(|| strings::OBSERVATION_UNAVAILABLE.into()),
+            resume: winner.map(|r| (name(r.plan), r.label.clone())),
+        }),
+        Status::Blocked(blocked) => Some(match winner.filter(|r| refused(view, r)) {
+            Some(rule) => Notice::Refused {
+                plan: name(rule.plan),
+                label: rule.label.clone(),
+            },
+            None => Notice::Blocked(
+                error
+                    .clone()
+                    .unwrap_or_else(|| strings::error_message(blocked)),
+            ),
+        }),
+        _ => error.clone().map(Notice::Problem),
+    };
     let return_line = if view.status == Status::ManualOverride {
         strings::NO_RETURN.into()
+    } else if matches!(notice, Some(Notice::Refused { .. })) {
+        strings::NO_AUTOMATIC_RETRY.into()
     } else if !return_plan_note.is_empty() {
         return_plan_note.clone()
     } else {
@@ -306,6 +363,7 @@ pub fn display(
                 name: p.name.clone(),
             })
             .collect(),
+        notice,
     }
 }
 
@@ -320,7 +378,16 @@ fn status(view: &ViewState, winner: Option<&AppRule>) -> (Automation, String) {
         (Status::ManualOverride, _) => (Automation::Suspended, strings::CHOSEN_IN_WINDOWS),
         (Status::Paused, _) => (Automation::Paused, strings::NO_CHANGE),
         (Status::Blocked(_), Some(rule)) if refused(view, rule) => {
-            (Automation::Suspended, strings::REFUSED)
+            let kept = view
+                .observed_plan
+                .and_then(|id| view.plans.iter().find(|p| p.id == id));
+            return (
+                Automation::Suspended,
+                kept.map_or_else(
+                    || strings::REFUSED_DETAIL.into(),
+                    |p| strings::windows_kept(&p.name),
+                ),
+            );
         }
         (Status::Blocked(_), _) => (Automation::Suspended, strings::ACTION_NEEDED),
         (Status::Recovering, _) => (Automation::Waiting, strings::RECOVERING),
@@ -350,11 +417,62 @@ fn status(view: &ViewState, winner: Option<&AppRule>) -> (Automation, String) {
 /// `blocked` garde le bouton **Réessayer** de l'interface Slint.
 pub fn without_control(model: UiDisplayModel) -> UiDisplayModel {
     let detail = strings::CONTROL_ELSEWHERE;
+    let notice = Notice::ControlUnavailable(
+        model
+            .error_message
+            .clone()
+            .unwrap_or_else(|| strings::CONTROL_UNAVAILABLE.into()),
+    );
     UiDisplayModel {
         read_only: true,
         automation: Automation::Waiting,
         status: strings::status_line(Automation::Waiting, detail),
         status_detail: detail.into(),
+        return_line: String::new(),
+        notice: Some(notice),
+        ..model
+    }
+}
+
+/// `config.json` est illisible au lancement : sans contrôle, l'automatisation reste arrêtée
+/// jusqu'à **Relire les réglages**.
+pub fn settings_unreadable(model: UiDisplayModel) -> UiDisplayModel {
+    let detail = strings::SETTINGS_UNREADABLE_DETAIL;
+    UiDisplayModel {
+        read_only: true,
+        automation: Automation::Stopped,
+        status: strings::status_line(Automation::Stopped, detail),
+        status_detail: detail.into(),
+        return_line: strings::SETTINGS_UNREADABLE_NOTE.into(),
+        notice: Some(Notice::SettingsUnreadable),
+        ..model
+    }
+}
+
+/// Le retour a échoué en quittant : le message propose de réessayer, d'ouvrir les options
+/// d'alimentation ou de quitter quand même.
+pub fn after_failed_quit(model: UiDisplayModel, view: &ViewState) -> UiDisplayModel {
+    let Some(cycle) = &view.cycle else {
+        return model;
+    };
+    let return_plan = view
+        .plans
+        .iter()
+        .find(|p| p.id == cycle.return_plan)
+        .map(|p| p.name.clone());
+    let detail = strings::return_failed_detail(&model.observed_plan);
+    UiDisplayModel {
+        status: strings::status_line(model.automation, &detail),
+        status_detail: detail,
+        return_line: strings::return_plan(
+            return_plan
+                .as_deref()
+                .unwrap_or(strings::RETURN_PLAN_UNAVAILABLE),
+        ),
+        notice: Some(Notice::ReturnFailed {
+            active: model.observed_plan.clone(),
+            return_plan,
+        }),
         ..model
     }
 }

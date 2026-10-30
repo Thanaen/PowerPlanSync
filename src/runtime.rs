@@ -5,7 +5,7 @@ use crate::{
     interface::strings::error_message,
     presentation::{self, RunningAppDisplay, UiAction, UiCommand, UiDisplayModel},
     runtime_power::RuntimePower,
-    storage::FileStore,
+    storage::{FileStore, Store as _},
     ui::{UiPalette, UiRuntime},
     windows::{
         self,
@@ -41,6 +41,9 @@ enum AppEvent {
 type AppController = Controller<RuntimePower, FileStore>;
 
 /// L'interface en cours, Slint ou GPUI, vue depuis le thread du coordinateur.
+/// La section « Réglages illisibles » du guide utilisateur.
+const GUIDE_UNREADABLE_SETTINGS: &str = "https://github.com/Thanaen/PowerPlanSync/blob/main/docs/guide-utilisateur.md#r%C3%A9glages-illisibles";
+
 static UI_SINK: OnceLock<Box<dyn Fn(UiCommand) + Send + Sync>> = OnceLock::new();
 
 fn send_ui(command: UiCommand) {
@@ -196,6 +199,8 @@ struct Worker {
     chosen: HashMap<String, PathBuf>,
     running: Vec<PathBuf>,
     quit_requested: bool,
+    /// `config.json` n'a pas pu être lu au dernier essai de prise du contrôle.
+    settings_unreadable: bool,
     notifications_ready: bool,
     sender: Option<Sender<AppEvent>>,
     /// Vrai tant qu'un sélecteur de fichier est ouvert.
@@ -210,6 +215,7 @@ impl Worker {
         self.lease = None;
         self.data_lock = None;
         self.diagnostics = None;
+        self.settings_unreadable = false;
         if !self.notifications_ready {
             return Err(
                 "Les notifications Windows sont indisponibles. Relancez PowerPlanSync.".into(),
@@ -240,13 +246,13 @@ impl Worker {
                 open_listener = Some(OpenListener::start(self.owner.clone(), sender)?);
             }
         }
-        let directory = if self.options.demo {
-            self.options.data_directory.join("simulation")
-        } else {
-            self.options.data_directory.clone()
-        };
+        let directory = self.data_folder();
         let diagnostics = crate::diagnostics::Diagnostics::open(&directory).ok();
-        let store = FileStore::new(directory).map_err(|e| error_message(&e))?;
+        let mut store = FileStore::new(directory).map_err(|e| error_message(&e))?;
+        if let Err(error) = store.load_configuration() {
+            self.settings_unreadable = true;
+            return Err(error_message(&error));
+        }
         let mut controller = Controller::open(
             RuntimePower::new(self.options.demo),
             store,
@@ -278,6 +284,14 @@ impl Worker {
         self.diagnostics = diagnostics;
         self.error = startup_error;
         Ok(())
+    }
+    /// Le dossier de `config.json` ; une démonstration garde le sien.
+    fn data_folder(&self) -> PathBuf {
+        if self.options.demo {
+            self.options.data_directory.join("simulation")
+        } else {
+            self.options.data_directory.clone()
+        }
     }
     fn snapshot(&self, config: &Configuration, include_processes: bool) -> Snapshot {
         let now_ms = self.started.elapsed().as_millis().min(u64::MAX as u128) as u64;
@@ -467,6 +481,20 @@ impl Worker {
                     .arg("ms-settings:powersleep")
                     .spawn()
                     .map_err(|_| "Les réglages Windows ne peuvent pas être ouverts.")?;
+                return Ok(());
+            }
+            UiAction::OpenDataFolder => {
+                std::process::Command::new("explorer.exe")
+                    .arg(self.data_folder())
+                    .spawn()
+                    .map_err(|_| "Le dossier des données ne peut pas être ouvert.")?;
+                return Ok(());
+            }
+            UiAction::OpenGuide => {
+                std::process::Command::new("explorer.exe")
+                    .arg(GUIDE_UNREADABLE_SETTINGS)
+                    .spawn()
+                    .map_err(|_| "Le guide ne peut pas être ouvert.")?;
                 return Ok(());
             }
             UiAction::Quit | UiAction::QuitAfterFailedRestore => {
@@ -819,6 +847,7 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
         chosen: HashMap::new(),
         running: vec![],
         quit_requested: false,
+        settings_unreadable: false,
         notifications_ready: true,
         sender: None,
         choosing: Arc::default(),
@@ -860,7 +889,13 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
             worker.error.clone(),
         );
         if worker.controller.is_none() {
-            display = presentation::without_control(display);
+            display = if worker.settings_unreadable {
+                presentation::settings_unreadable(display)
+            } else {
+                presentation::without_control(display)
+            };
+        } else if worker.quit_requested && matches!(view.status, Status::Blocked(_)) {
+            display = presentation::after_failed_quit(display, &view);
         }
         if previous.as_ref() != Some(&display) {
             if let Some(log) = &mut worker.diagnostics {
@@ -1050,6 +1085,7 @@ mod tests {
             chosen: HashMap::new(),
             running: vec![],
             quit_requested: false,
+            settings_unreadable: false,
             notifications_ready: true,
             sender: None,
             choosing: Arc::default(),
@@ -1231,6 +1267,7 @@ mod tests {
         let path = directory.join("config.json");
         std::fs::write(&path, "broken configuration").unwrap();
         assert!(worker.acquire().is_err());
+        assert!(worker.settings_unreadable);
         assert!(worker.action(UiAction::ReloadConfiguration).is_err());
         assert!(worker.controller.is_none());
         let repaired = Configuration {
@@ -1240,6 +1277,7 @@ mod tests {
         std::fs::write(&path, serde_json::to_vec(&repaired).unwrap()).unwrap();
         worker.action(UiAction::ReloadConfiguration).unwrap();
         assert!(worker.controller.is_some());
+        assert!(!worker.settings_unreadable);
         assert_eq!(worker.view().configuration, repaired);
         assert_eq!(worker.view().observed_plan, Some(PlanId(1)));
         cleanup(worker);

@@ -1,6 +1,6 @@
 //! La page **Logiciels** : **Plan actif dans Windows**, l'état et le plan de retour, puis les
-//! actions et la liste **Logiciels associés** (FR-001, FR-006, FR-018, FR-024). Sans contrôle,
-//! la liste laisse place au message « Contrôle indisponible » (FR-016).
+//! actions, le message intégré et la liste **Logiciels associés** (FR-001, FR-006, FR-018,
+//! FR-024). Sans contrôle, actions et liste laissent place au seul message (FR-016).
 
 use std::rc::Rc;
 
@@ -11,12 +11,13 @@ use gpui::{
 };
 
 use crate::interface::first_launch::{self, AddRequested, FirstLaunch};
+use crate::interface::messages;
 use crate::interface::strings;
 use crate::interface::theme::spacing::*;
 use crate::interface::theme::{Theme, TypeStyled as _, radius, size as token, text};
-use crate::interface::widgets::{self, Button, ButtonStyle, Message, MessageKind, Switch, Tooltip};
-use crate::interface::window::{is_narrow, status_dot};
-use crate::presentation::{Automation, RuleDisplay, UiAction, UiDisplayModel};
+use crate::interface::widgets::{self, Button, ButtonStyle, Switch, Tooltip};
+use crate::interface::window::{is_narrow, needs_action, status_dot};
+use crate::presentation::{Automation, Notice, RuleDisplay, UiAction, UiDisplayModel};
 
 /// Les demandes qui ouvrent un dialogue ou un message, reliées avec leurs tâches : dialogues
 /// (T059), retrait annulable (T064).
@@ -140,11 +141,15 @@ impl SoftwarePage {
     }
 
     fn actions(&self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
-        let paused = self.model.paused;
+        // Un plan choisi dans Windows a son propre **Reprendre l'automatisation** : la page
+        // garde **Mettre en pause**.
+        let chosen = matches!(self.model.notice, Some(Notice::ChosenInWindows { .. }));
+        let paused = self.model.paused && !chosen;
+        // Un message porte ses propres actions : **Ajouter un logiciel** cède l'accent.
         let add = Button::new(
             "add",
             strings::ADD_SOFTWARE,
-            if paused {
+            if paused || self.model.notice.is_some() {
                 ButtonStyle::Subtle
             } else {
                 ButtonStyle::Tinted
@@ -415,18 +420,8 @@ pub fn note(model: &UiDisplayModel) -> Option<String> {
     if first_launch::shown(model) {
         Some(strings::NOTHING_BEFORE_ACTIVATION.into())
     } else {
-        (!model.return_line.is_empty() && !model.read_only).then(|| model.return_line.clone())
+        (!model.return_line.is_empty()).then(|| model.return_line.clone())
     }
-}
-
-/// Le texte du refus quand une autre session détient le contrôle, ou l'état à défaut.
-pub fn unavailable_text(model: &UiDisplayModel) -> Option<String> {
-    model.read_only.then(|| {
-        model
-            .error_message
-            .clone()
-            .unwrap_or_else(|| model.status.clone())
-    })
 }
 
 /// Le mot-clé de l'état est coloré comme le point de la barre d'état ; en pause ou en
@@ -442,7 +437,7 @@ fn status_color(model: &UiDisplayModel, theme: &Theme) -> Hsla {
 
 /// L'icône porte l'état avec le mot : la couleur seule ne le dit jamais.
 pub fn status_icon(model: &UiDisplayModel) -> &'static str {
-    if !model.read_only && (model.error_message.is_some() || model.blocked) {
+    if needs_action(model) {
         return "circle-x";
     }
     match model.automation {
@@ -466,34 +461,21 @@ impl Render for SoftwarePage {
             .flex()
             .flex_col()
             .gap(BASE_20);
-        let body = match unavailable_text(&self.model) {
-            Some(text) => {
-                // Le titre ne coiffe que le refus du contrôle ; les autres erreurs ont leurs
-                // propres messages avec T062.
-                let held = text == strings::CONTROL_HELD;
-                let mut message = Message::new("control-unavailable", MessageKind::Error, text);
-                if held {
-                    message = message.title(strings::CONTROL_UNAVAILABLE);
-                }
-                let on_action = Rc::clone(&self.on_action);
-                body.child(
-                    message.action(
-                        Button::new("retry", strings::RETRY, ButtonStyle::Outlined)
-                            .icon("refresh-cw")
-                            .backdrop(theme.error_background)
-                            .on_click(move |_, _, cx| on_action(UiAction::Retry, cx)),
-                    ),
-                )
-            }
-            None if first_launch::shown(&self.model) => {
-                let steps = self.first_launch(window, cx);
-                let list =
-                    first_launch::list_shown(&self.model).then(|| self.list(narrow, &theme, cx));
-                body.child(steps).children(list)
-            }
-            None => body
-                .child(self.actions(&theme, cx))
-                .child(self.list(narrow, &theme, cx)),
+        let message = self
+            .model
+            .notice
+            .as_ref()
+            .map(|notice| messages::message(notice, &self.on_action, &theme));
+        let body = if self.model.read_only {
+            body.children(message)
+        } else if first_launch::shown(&self.model) {
+            let steps = self.first_launch(window, cx);
+            let list = first_launch::list_shown(&self.model).then(|| self.list(narrow, &theme, cx));
+            body.children(message).child(steps).children(list)
+        } else {
+            body.child(self.actions(&theme, cx))
+                .children(message)
+                .child(self.list(narrow, &theme, cx))
         };
         div()
             .flex()
@@ -508,26 +490,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn only_a_read_only_model_shows_the_refusal() {
-        let mut model = UiDisplayModel {
-            error_message: Some("Une autre session contrôle déjà les plans.".into()),
-            status: "Contrôle indisponible".into(),
-            ..UiDisplayModel::default()
-        };
-        assert_eq!(unavailable_text(&model), None);
-        model.read_only = true;
-        assert_eq!(
-            unavailable_text(&model).as_deref(),
-            Some("Une autre session contrôle déjà les plans.")
-        );
-        model.error_message = None;
-        assert_eq!(
-            unavailable_text(&model).as_deref(),
-            Some("Contrôle indisponible")
-        );
-    }
-
-    #[test]
     fn before_activation_the_header_promises_no_change() {
         let mut model = UiDisplayModel {
             return_line: "Plan de retour : Équilibré".into(),
@@ -539,8 +501,6 @@ mod tests {
         );
         model.automation_enabled = true;
         assert_eq!(note(&model).as_deref(), Some("Plan de retour : Équilibré"));
-        model.read_only = true;
-        assert_eq!(note(&model), None);
     }
 
     #[test]

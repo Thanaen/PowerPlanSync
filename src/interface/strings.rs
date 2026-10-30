@@ -122,6 +122,23 @@ pub const RETURN_PLAN_MISSING: &str = "plan de retour à confirmer";
 pub const NO_CHANGE: &str = "aucun plan ne sera changé";
 pub const CHOSEN_IN_WINDOWS: &str = "plan choisi dans Windows";
 pub const REFUSED: &str = "Windows a refusé le changement de plan";
+pub const RETURN_PLAN_UNAVAILABLE: &str = "indisponible";
+pub const REFUSED_DETAIL: &str = "changement de plan refusé";
+pub const NO_AUTOMATIC_RETRY: &str = "PowerPlanSync ne réessaiera pas seul.";
+
+pub fn windows_kept(plan: &str) -> String {
+    format!("Windows garde le plan {}", plan_name(plan))
+}
+
+/// La ligne sous l'état quand le retour a échoué en quittant.
+pub fn return_plan(plan: &str) -> String {
+    format!("Plan de retour\u{a0}: {}.", plan_name(plan))
+}
+
+pub fn return_failed_detail(active: &str) -> String {
+    format!("retour échoué, le plan {} reste actif", plan_name(active))
+}
+
 pub const ACTION_NEEDED: &str = "action nécessaire";
 pub const RECOVERING: &str = "récupération en cours";
 pub const SESSION_INACTIVE: &str = "session Windows inactive";
@@ -284,4 +301,74 @@ fn of(label: &str) -> String {
     } else {
         format!("de {label}")
     }
+}
+
+pub const SETTINGS_UNREADABLE_DETAIL: &str = "réglages illisibles";
+pub const SETTINGS_UNREADABLE_NOTE: &str =
+    "Les logiciels associés s’afficheront une fois les réglages lus.";
+pub const SETTINGS_UNREADABLE: &str = "Les réglages sont illisibles";
+pub const SETTINGS_UNREADABLE_TEXT: &str = "PowerPlanSync n’a pas pu lire config.json. Le \
+fichier et sa copie de secours sont conservés sans modification. L’automatisation reste arrêtée \
+tant que les réglages ne sont pas lisibles.";
+pub const SETTINGS_UNREADABLE_HINT: &str = "Aucun plan n’a été changé. La section \
+«\u{a0}Réglages illisibles\u{a0}» du guide explique comment restaurer la copie\u{a0}de\u{a0}secours.";
+pub const OPEN_DATA_FOLDER: &str = "Ouvrir le dossier des données";
+pub const RELOAD_SETTINGS: &str = "Relire les réglages";
+pub const OPEN_GUIDE: &str = "Ouvrir le guide";
+pub const OPEN_POWER_OPTIONS: &str = "Ouvrir les options d’alimentation";
+pub const RESUME_AUTOMATION: &str = "Reprendre l’automatisation";
+pub const QUIT_ANYWAY: &str = "Quitter quand même";
+pub const CHOSEN_TITLE: &str = "Plan modifié dans Windows";
+
+pub fn chosen_text(chosen: &str) -> String {
+    format!(
+        "Le plan {} a été choisi dans Windows pendant le cycle. PowerPlanSync garde ce plan et \
+         ne reviendra pas au plan de retour quand le dernier logiciel suivi se fermera.",
+        plan_name(chosen)
+    )
+}
+
+pub fn chosen_hint(plan: &str, label: &str) -> String {
+    format!(
+        "Reprendre l’automatisation applique de nouveau le plan {}, car {} est ouvert.",
+        plan_name(plan),
+        software_name(label)
+    )
+}
+
+pub fn refused_text(plan: &str, label: &str) -> String {
+    format!(
+        "Le plan {} n’a pas été appliqué pour {}. Réessayez, ou vérifiez ce plan dans les \
+         options d’alimentation.",
+        plan_name(plan),
+        software_name(label)
+    )
+}
+
+pub fn return_failed_title(plan: Option<&str>) -> String {
+    match plan {
+        Some(plan) => format!("Le retour au plan {} a échoué", plan_name(plan)),
+        None => "Le retour au plan de retour a échoué".into(),
+    }
+}
+
+/// Nom de logiciel cité dans une phrase, insécable : « Battlefield 6. » ne se coupe pas.
+fn software_name(label: &str) -> String {
+    label.replace(' ', "\u{a0}")
+}
+
+pub fn return_failed_text(active: &str) -> String {
+    format!(
+        "Le plan actif reste {}. Réessayez, ou choisissez un plan dans les options \
+         d’alimentation avant de quitter.",
+        plan_name(active)
+    )
+}
+
+pub fn return_failed_hint(active: &str) -> String {
+    format!(
+        "Quitter quand même laisse le plan {} actif. Au prochain lancement, PowerPlanSync \
+         tentera le retour si le plan n’a pas changé.",
+        plan_name(active)
+    )
 }

@@ -8,7 +8,7 @@ sudo apt-get install libfontconfig-dev mesa-vulkan-drivers
 cargo run --features screenshots --bin screenshots -- specs/001-app-power-profiles/evidence/gpui-screenshots
 ```
 
-La page **Logiciels** est en place (T058), avec ses dialogues **Ajouter un logiciel** et **Modifier** (T059) et « Pour commencer » avant la première activation (T060). La page **Réglages** est vide en attendant T065. Les
+La page **Logiciels** est en place (T058), avec ses dialogues **Ajouter un logiciel** et **Modifier** (T059) « Pour commencer » avant la première activation (T060) et ses messages intégrés (T062). La page **Réglages** est vide en attendant T065. Les
 coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-dark.png` et
 `widgets-light.png` montrent les composants de T053 seuls.
 
@@ -21,6 +21,13 @@ coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-da
 | `main-narrow.png` | `Narrow.png` | Conforme : lignes sur trois niveaux, actions l'une sous l'autre. |
 | `paused.png` | `Paused.png` | Conforme : **Reprendre** en premier, plan de retour rétabli. |
 | `battery.png` | `Battery.png` | Conforme : attente sur batterie, badge **Ouvert**. |
+| `external.png` | `External.png` | Conforme, sauf l'en-tête, qui garde le mot-clé « Automatisation suspendue ». |
+| `refused.png` | `Error.png` | Conforme ; en-tête « Automatisation suspendue · Windows garde le plan Utilisation normale ». |
+| `refused-light.png` | aucune | Mêmes constats en thème clair. |
+| `quit-failed.png` | `QuitFailed.png` | Conforme ; en-tête « Automatisation suspendue · retour échoué, le plan Haute performance reste actif ». |
+| `quit-failed-narrow.png` | aucune | Fenêtre étroite : les trois actions passent l'une sous l'autre. |
+| `settings-unreadable.png` | `ConfigError.png` | Conforme, sauf la barre d'état, qui garde le mot-clé « Automatisation arrêtée ». |
+| `settings-unreadable-light.png` | aucune | Mêmes constats en thème clair. |
 | `unavailable-dark.png` | `Unavailable.png` | Maquette tirée de cette capture. |
 | `unavailable-light.png` | aucune | Mêmes constats en thème clair. |
 | `add-rule.png` | `AddRule.png` | Conforme, sauf le nom du processus (`bf6.exe`) dans la liste : Windows ne donne pas le nom du produit. |
