@@ -100,6 +100,10 @@ pub fn content(notice: &Notice) -> Content {
             (text == strings::CONTROL_HELD).then(|| strings::CONTROL_UNAVAILABLE.into()),
             text.clone(),
         ),
+        Notice::Stopped(text) => Content {
+            actions: Vec::new(),
+            ..error(None, text.clone())
+        },
         Notice::Blocked(text) => error(None, text.clone()),
         Notice::Problem(text) => Content {
             kind: MessageKind::Warning,
@@ -251,6 +255,13 @@ mod tests {
             actions(&Notice::ControlUnavailable("x".into())),
             [UiAction::Retry]
         );
+    }
+
+    #[test]
+    fn a_coordinator_that_could_not_start_offers_nothing_to_retry() {
+        let content = content(&Notice::Stopped("Identité invérifiable.".into()));
+        assert_eq!(content.kind, MessageKind::Error);
+        assert!(content.actions.is_empty());
     }
 
     #[test]

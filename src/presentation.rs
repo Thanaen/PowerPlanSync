@@ -109,6 +109,8 @@ pub enum Notice {
     SettingsUnreadable,
     /// Une autre session détient le contrôle, ou le contrôle n'a pas pu être pris.
     ControlUnavailable(String),
+    /// Le coordinateur n'a pas pu démarrer : rien à réessayer depuis la fenêtre.
+    Stopped(String),
     /// Une autre erreur suspend l'automatisation : **Réessayer**.
     Blocked(String),
     /// Une action a échoué sans suspendre l'automatisation.

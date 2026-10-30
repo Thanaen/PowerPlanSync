@@ -40,10 +40,10 @@ enum AppEvent {
 }
 type AppController = Controller<RuntimePower, FileStore>;
 
-/// L'interface en cours, Slint ou GPUI, vue depuis le thread du coordinateur.
 /// La section « Réglages illisibles » du guide utilisateur.
 const GUIDE_UNREADABLE_SETTINGS: &str = "https://github.com/Thanaen/PowerPlanSync/blob/main/docs/guide-utilisateur.md#r%C3%A9glages-illisibles";
 
+/// L'interface en cours, Slint ou GPUI, vue depuis le thread du coordinateur.
 static UI_SINK: OnceLock<Box<dyn Fn(UiCommand) + Send + Sync>> = OnceLock::new();
 
 fn send_ui(command: UiCommand) {

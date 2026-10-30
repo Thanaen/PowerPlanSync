@@ -93,19 +93,23 @@ pub fn is_narrow(width: Pixels) -> bool {
     width < NARROW_WIDTH
 }
 
-/// La pastille de la barre d'état : bleue quand l'automatisation applique un plan, rouge quand
-/// une action est nécessaire, orange quand elle est suspendue, grise sinon. Le mot qui la suit
-/// porte l'état ; la couleur ne fait que le répéter.
 /// Une erreur attend l'utilisateur. Sans contrôle, le refus d'une autre session a son message
-/// rouge mais l'automatisation, elle, attend ; des réglages illisibles l'arrêtent.
+/// rouge mais l'automatisation, elle, attend ; des réglages illisibles ou un coordinateur qui
+/// n'a pas démarré l'arrêtent.
 pub fn needs_action(model: &UiDisplayModel) -> bool {
     if model.read_only {
-        model.notice == Some(Notice::SettingsUnreadable)
+        matches!(
+            model.notice,
+            Some(Notice::SettingsUnreadable | Notice::Stopped(_))
+        )
     } else {
         model.error_message.is_some() || model.blocked
     }
 }
 
+/// La pastille de la barre d'état : bleue quand l'automatisation applique un plan, rouge quand
+/// une action est nécessaire, orange quand elle est suspendue, grise sinon. Le mot qui la suit
+/// porte l'état ; la couleur ne fait que le répéter.
 pub fn status_dot(model: &UiDisplayModel, theme: &Theme) -> Hsla {
     if needs_action(model) {
         theme.error
