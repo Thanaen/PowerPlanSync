@@ -17,7 +17,7 @@ use crate::interface::theme::spacing::*;
 use crate::interface::theme::{Theme, TypeStyled as _, radius, size as token, text};
 use crate::interface::widgets::{self, Button, ButtonStyle, Switch, Tooltip};
 use crate::interface::window::{is_narrow, needs_action, status_dot};
-use crate::presentation::{Automation, Notice, RuleDisplay, UiAction, UiDisplayModel};
+use crate::presentation::{Automation, RuleDisplay, UiAction, UiDisplayModel};
 
 /// Les demandes qui ouvrent un dialogue ou un message, reliées avec leurs tâches : dialogues
 /// (T059), retrait annulable (T064).
@@ -141,15 +141,12 @@ impl SoftwarePage {
     }
 
     fn actions(&self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
-        // Un plan choisi dans Windows a son propre **Reprendre l'automatisation** : la page
-        // garde **Mettre en pause**.
-        let chosen = matches!(self.model.notice, Some(Notice::ChosenInWindows { .. }));
-        let paused = self.model.paused && !chosen;
+        let resume = self.model.pause_toggle() == Some(UiAction::Resume);
         // Un message porte ses propres actions : **Ajouter un logiciel** cède l'accent.
         let add = Button::new(
             "add",
             strings::ADD_SOFTWARE,
-            if paused || self.model.notice.is_some() {
+            if resume || self.model.notice.is_some() {
                 ButtonStyle::Subtle
             } else {
                 ButtonStyle::Tinted
@@ -166,23 +163,23 @@ impl SoftwarePage {
         let on_action = Rc::clone(&self.on_action);
         let toggle = Button::new(
             "pause",
-            if paused {
+            if resume {
                 strings::TRAY_RESUME
             } else {
                 strings::TRAY_PAUSE
             },
-            if paused {
+            if resume {
                 ButtonStyle::Tinted
             } else {
                 ButtonStyle::Subtle
             },
         )
-        .icon(if paused { "play" } else { "pause" })
+        .icon(if resume { "play" } else { "pause" })
         .keys(strings::PAUSE_KEYS)
         .backdrop(theme.editor)
         .on_click(move |_, _, cx| {
             on_action(
-                if paused {
+                if resume {
                     UiAction::Resume
                 } else {
                     UiAction::Pause
@@ -192,7 +189,7 @@ impl SoftwarePage {
         });
         // En pause, **Reprendre** passe en premier : une seule action principale par surface.
         let row = div().flex().flex_wrap().items_center().gap(BASE_12);
-        if paused {
+        if resume {
             row.child(toggle).child(add)
         } else {
             row.child(add).child(toggle)

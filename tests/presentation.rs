@@ -1,7 +1,8 @@
 use power_plan_sync::{
     domain::*,
     presentation::{
-        Automation, Badge, Notice, after_failed_quit, display, settings_unreadable, without_control,
+        Automation, Badge, Notice, UiAction, after_failed_quit, display, settings_unreadable,
+        without_control,
     },
 };
 
@@ -453,4 +454,31 @@ fn without_control_waits_instead_of_reporting_a_suspension() {
         Some(Notice::ControlUnavailable("refus".into()))
     );
     assert_eq!(model.return_line, "");
+}
+
+#[test]
+fn the_pause_shortcut_follows_the_page_button() {
+    let model = display(&active_view(), false, false, None);
+    assert_eq!(model.pause_toggle(), Some(UiAction::Pause));
+    let mut view = active_view();
+    view.configuration.paused = true;
+    view.status = Status::Paused;
+    view.cycle = None;
+    assert_eq!(
+        display(&view, false, false, None).pause_toggle(),
+        Some(UiAction::Resume)
+    );
+    // Un plan choisi dans Windows se reprend par son message ; la page garde la pause.
+    let mut view = active_view();
+    view.status = Status::ManualOverride;
+    assert_eq!(
+        display(&view, false, false, None).pause_toggle(),
+        Some(UiAction::Pause)
+    );
+    let mut view = active_view();
+    view.status = Status::Blocked(Error::InvalidConfiguration("refus".into()));
+    assert_eq!(
+        without_control(display(&view, false, false, None)).pause_toggle(),
+        None
+    );
 }
