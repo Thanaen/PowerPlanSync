@@ -16,7 +16,7 @@ use crate::interface::theme::{self, HighContrast};
 use crate::interface::tray::{self, Tray, TrayCommand};
 use crate::interface::window::{self, MainWindow, Page, ShellEvent};
 use crate::interface::{text_input, widgets};
-use crate::presentation::{UiAction, UiCommand, UiDisplayModel};
+use crate::presentation::{Notice, UiAction, UiCommand, UiDisplayModel};
 
 type OnAction = Arc<dyn Fn(UiAction) + Send + Sync>;
 
@@ -170,7 +170,9 @@ fn handle(shell: &Rc<RefCell<Shell>>, event: Event, cx: &mut App) -> bool {
         UiCommand::QuitFailure(reason) => {
             {
                 let mut state = shell.borrow_mut();
+                state.model.notice = Some(Notice::Stopped(reason.clone()));
                 state.model.error_message = Some(reason);
+                state.model.return_line.clear();
                 state.model.read_only = true;
             }
             if started {

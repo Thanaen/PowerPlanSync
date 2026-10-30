@@ -1,6 +1,8 @@
 use power_plan_sync::{
     domain::*,
-    presentation::{Automation, Badge, display, without_control},
+    presentation::{
+        Automation, Badge, Notice, after_failed_quit, display, settings_unreadable, without_control,
+    },
 };
 
 type Change = fn(&mut ViewState);
@@ -147,6 +149,7 @@ fn manual_override_suspends_without_claiming_rule_is_applied() {
 fn refused_change_marks_the_reserved_rule_as_refused() {
     let mut view = active_view();
     view.status = Status::Blocked(Error::Power("refus".into()));
+    view.observed_plan = Some(PlanId(1));
     view.cycle.as_mut().unwrap().last_confirmed = PlanId(1);
     let model = display(&view, false, false, None);
     assert!(model.blocked);
@@ -154,10 +157,79 @@ fn refused_change_marks_the_reserved_rule_as_refused() {
     assert_eq!(model.rules[0].state, "Refusé");
     assert_eq!(
         model.status,
-        "Automatisation suspendue · Windows a refusé le changement de plan"
+        "Automatisation suspendue · Windows garde le plan Utilisation\u{a0}normale"
     );
+    assert_eq!(model.return_line, "PowerPlanSync ne réessaiera pas seul.");
     assert!(model.error_message.is_some());
     assert!(!model.reason.contains("pendant Témoin"));
+    assert_eq!(
+        model.notice,
+        Some(Notice::Refused {
+            plan: "Haute performance".into(),
+            label: "Témoin".into()
+        })
+    );
+}
+
+#[test]
+fn a_plan_chosen_in_windows_names_it_and_what_resuming_reapplies() {
+    let mut view = active_view();
+    view.status = Status::ManualOverride;
+    view.observed_plan = Some(PlanId(3));
+    let model = display(&view, false, false, None);
+    assert_eq!(
+        model.notice,
+        Some(Notice::ChosenInWindows {
+            chosen: "Économies d'énergie".into(),
+            resume: Some(("Haute performance".into(), "Témoin".into())),
+        })
+    );
+}
+
+#[test]
+fn other_blocking_errors_and_failed_actions_have_their_own_notice() {
+    let mut view = active_view();
+    view.status = Status::Blocked(Error::Storage("disque".into()));
+    let model = display(&view, false, false, None);
+    assert!(matches!(model.notice, Some(Notice::Blocked(text)) if text.contains("journal")));
+    let model = display(&active_view(), false, false, Some("Échec.".into()));
+    assert_eq!(model.notice, Some(Notice::Problem("Échec.".into())));
+    assert_eq!(display(&active_view(), false, false, None).notice, None);
+}
+
+#[test]
+fn a_failed_return_while_quitting_keeps_the_active_plan_in_view() {
+    let mut view = active_view();
+    view.status = Status::Blocked(Error::Power("refus".into()));
+    let model = after_failed_quit(display(&view, false, false, None), &view);
+    assert_eq!(
+        model.notice,
+        Some(Notice::ReturnFailed {
+            active: "Haute performance".into(),
+            return_plan: Some("Utilisation normale".into()),
+        })
+    );
+    assert_eq!(
+        model.status,
+        "Automatisation suspendue · retour échoué, le plan Haute\u{a0}performance reste actif"
+    );
+    assert_eq!(
+        model.return_line,
+        "Plan de retour\u{a0}: Utilisation\u{a0}normale."
+    );
+}
+
+#[test]
+fn unreadable_settings_stop_the_automation_without_control() {
+    let model = settings_unreadable(display(&active_view(), false, false, None));
+    assert!(model.read_only);
+    assert_eq!(model.automation, Automation::Stopped);
+    assert_eq!(model.status, "Automatisation arrêtée · réglages illisibles");
+    assert_eq!(model.notice, Some(Notice::SettingsUnreadable));
+    assert_eq!(
+        model.return_line,
+        "Les logiciels associés s’afficheront une fois les réglages lus."
+    );
 }
 
 #[test]
@@ -376,4 +448,9 @@ fn without_control_waits_instead_of_reporting_a_suspension() {
         "Automatisation en attente · une autre session gère les plans"
     );
     assert_eq!(model.error_message.as_deref(), Some("refus"));
+    assert_eq!(
+        model.notice,
+        Some(Notice::ControlUnavailable("refus".into()))
+    );
+    assert_eq!(model.return_line, "");
 }

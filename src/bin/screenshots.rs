@@ -41,7 +41,8 @@ mod shots {
     };
     use power_plan_sync::interface::window::{MainWindow, Page};
     use power_plan_sync::presentation::{
-        Badge, RunningAppDisplay, UiDisplayModel, display, without_control,
+        Badge, RunningAppDisplay, UiDisplayModel, after_failed_quit, display, settings_unreadable,
+        without_control,
     };
 
     fn rule(id: u64, label: &str, path: &str, plan: u128, enabled: bool) -> AppRule {
@@ -129,6 +130,52 @@ mod shots {
         view.power_source = PowerSource::Battery;
         view.open_rules = vec![RuleId(1)];
         view
+    }
+
+    /// **Plan modifié dans Windows** : Économies d'énergie choisi pendant le cycle de
+    /// Battlefield 6.
+    fn external() -> ViewState {
+        let mut view = active();
+        view.plans.push(PowerPlan {
+            id: PlanId(4),
+            name: "Économies d’énergie".into(),
+        });
+        view.observed_plan = Some(PlanId(4));
+        view.status = Status::ManualOverride;
+        view
+    }
+
+    /// Windows garde Utilisation normale au lieu de Haute performance pour Battlefield 6.
+    fn refused() -> ViewState {
+        let mut view = active();
+        view.observed_plan = Some(PlanId(1));
+        view.status = Status::Blocked(Error::Power("refus".into()));
+        if let Some(cycle) = &mut view.cycle {
+            cycle.last_confirmed = PlanId(1);
+        }
+        view
+    }
+
+    /// Le retour à Utilisation normale a échoué en quittant : Haute performance reste actif.
+    fn quit_failed() -> UiDisplayModel {
+        let mut view = active();
+        view.status = Status::Blocked(Error::Power("refus".into()));
+        after_failed_quit(display(&view, false, false, None), &view)
+    }
+
+    /// `config.json` illisible au lancement : sans contrôle ni liste.
+    fn unreadable() -> UiDisplayModel {
+        let view = ViewState {
+            configuration: Default::default(),
+            observed_plan: Some(PlanId(1)),
+            status: Status::Blocked(Error::InvalidConfiguration("illisible".into())),
+            cycle: None,
+            open_rules: vec![],
+            poll_processes: false,
+            can_exit: true,
+            ..active()
+        };
+        settings_unreadable(display(&view, false, false, None))
     }
 
     /// « Pour commencer » : rien d'ajouté, avec ou sans le plan normal, puis prêt à activer.
@@ -475,6 +522,55 @@ mod shots {
                 420.,
                 760.,
                 display(&first_launch(true, false), false, false, None),
+            ),
+            (
+                "external",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                display(&external(), false, false, None),
+            ),
+            (
+                "refused",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                display(&refused(), false, false, None),
+            ),
+            (
+                "refused-light",
+                WindowAppearance::Light,
+                880.,
+                620.,
+                display(&refused(), false, false, None),
+            ),
+            (
+                "quit-failed",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                quit_failed(),
+            ),
+            (
+                "quit-failed-narrow",
+                WindowAppearance::Dark,
+                420.,
+                760.,
+                quit_failed(),
+            ),
+            (
+                "settings-unreadable",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                unreadable(),
+            ),
+            (
+                "settings-unreadable-light",
+                WindowAppearance::Light,
+                880.,
+                620.,
+                unreadable(),
             ),
             (
                 "unavailable-dark",

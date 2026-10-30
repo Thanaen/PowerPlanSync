@@ -611,7 +611,8 @@ fn message_icon(kind: MessageKind) -> &'static str {
 }
 
 /// Un message dans la page, annoncé sans déplacer le focus : `Alert` pour une erreur,
-/// `Status` sinon. Un titre en gras peut précéder le texte ; les actions se rangent dessous.
+/// `Status` sinon. Un titre en gras peut précéder le texte ; les actions se rangent dessous,
+/// suivies d'une précision discrète.
 #[derive(IntoElement)]
 pub struct Message {
     id: ElementId,
@@ -619,6 +620,7 @@ pub struct Message {
     title: Option<SharedString>,
     text: SharedString,
     actions: Vec<AnyElement>,
+    note: Option<SharedString>,
 }
 
 impl Message {
@@ -629,7 +631,14 @@ impl Message {
             title: None,
             text: text.into(),
             actions: Vec::new(),
+            note: None,
         }
+    }
+
+    /// La conséquence d'une action, sous les boutons : « Quitter quand même laisse… ».
+    pub fn note(mut self, note: impl Into<SharedString>) -> Self {
+        self.note = Some(note.into());
+        self
     }
 
     /// **Windows a refusé le changement de plan**, au-dessus du texte.
@@ -648,6 +657,7 @@ impl RenderOnce for Message {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = Theme::of(window, cx);
         let colors = message_colors(self.kind, &theme);
+        let note_color = theme.text_muted;
         let name = match &self.title {
             Some(title) => SharedString::from(format!("{title}. {}", self.text)),
             None => self.text.clone(),
@@ -660,6 +670,9 @@ impl RenderOnce for Message {
                 Role::Status
             })
             .aria_label(name)
+            .when_some(self.note.clone(), |message, note| {
+                message.aria_description(note)
+            })
             .flex()
             .items_start()
             .gap(BASE_08)
@@ -698,6 +711,15 @@ impl RenderOnce for Message {
                                 .flex_wrap()
                                 .gap(BASE_08)
                                 .children(self.actions),
+                        )
+                    })
+                    .when_some(self.note, |content, note| {
+                        content.child(
+                            div()
+                                .mt(BASE_04)
+                                .type_style(text::LABEL_SM)
+                                .text_color(note_color)
+                                .child(note),
                         )
                     }),
             )
