@@ -284,6 +284,13 @@ fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App, notify: bool) -> bool {
     cx.subscribe(&main, move |_, event, cx| match event {
         ShellEvent::Quit => on_action(UiAction::Quit),
         ShellEvent::AddSoftware => open_dialog(&opened, None, false, cx),
+        // Sans contrôle, le raccourci ne fait rien, comme le bouton absent de la page.
+        ShellEvent::TogglePause => {
+            let toggle = opened.borrow().model.pause_toggle();
+            if let Some(action) = toggle {
+                on_action(action);
+            }
+        }
         // La palette de commandes arrive avec T067.
         ShellEvent::OpenCommands => {}
     })

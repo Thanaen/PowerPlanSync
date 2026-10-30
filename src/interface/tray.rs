@@ -26,6 +26,9 @@ pub struct TrayModel {
     pub status: String,
     /// Le menu propose **Reprendre** au lieu de **Mettre en pause**.
     pub paused: bool,
+    /// Sans contrôle, **Mettre en pause** ou **Reprendre** est grisé : il remplacerait le
+    /// refus par une autre erreur.
+    pub can_pause: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -61,6 +64,7 @@ pub fn model(display: &UiDisplayModel) -> TrayModel {
         ),
         status: display.status.clone(),
         paused: display.paused,
+        can_pause: !display.read_only,
     }
 }
 
@@ -223,7 +227,7 @@ mod native {
         ) -> Result<Self, String> {
             let status = MenuItem::new(menu_text(&model.status), false, None);
             let open = MenuItem::new(strings::TRAY_OPEN, true, None);
-            let toggle = MenuItem::new(toggle_label(model.paused), true, None);
+            let toggle = MenuItem::new(toggle_label(model.paused), model.can_pause, None);
             let quit = MenuItem::new(strings::TRAY_QUIT, true, None);
             let menu = Menu::new();
             menu.append_items(&[
@@ -281,6 +285,9 @@ mod native {
             if model.paused != self.shown.paused {
                 self.toggle.set_text(toggle_label(model.paused));
                 self.paused.store(model.paused, Ordering::Relaxed);
+            }
+            if model.can_pause != self.shown.can_pause {
+                self.toggle.set_enabled(model.can_pause);
             }
             self.shown = model;
             Ok(())

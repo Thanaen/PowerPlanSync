@@ -18,7 +18,13 @@ use crate::presentation::{Automation, Notice, UiDisplayModel};
 
 actions!(
     main_window,
-    [OpenCommands, AddSoftware, FocusNext, FocusPrevious]
+    [
+        OpenCommands,
+        AddSoftware,
+        TogglePause,
+        FocusNext,
+        FocusPrevious
+    ]
 );
 
 const KEY_CONTEXT: &str = "MainWindow";
@@ -40,6 +46,7 @@ pub fn bind_keys(cx: &mut App) {
     cx.bind_keys([
         KeyBinding::new("ctrl-shift-p", OpenCommands, context),
         KeyBinding::new("ctrl-n", AddSoftware, context),
+        KeyBinding::new("ctrl-alt-p", TogglePause, context),
         KeyBinding::new("tab", FocusNext, context),
         KeyBinding::new("shift-tab", FocusPrevious, context),
     ]);
@@ -87,6 +94,8 @@ pub enum ShellEvent {
     Quit,
     /// Ctrl+N : le dialogue **Ajouter un logiciel**, sans animation.
     AddSoftware,
+    /// Ctrl+Alt+P : **Mettre en pause** ou **Reprendre**, comme le bouton de la page.
+    TogglePause,
 }
 
 pub fn is_narrow(width: Pixels) -> bool {
@@ -544,6 +553,7 @@ impl Render for MainWindow {
             .track_focus(&self.focus_handle)
             .on_action(cx.listener(|_, _: &OpenCommands, _, cx| cx.emit(ShellEvent::OpenCommands)))
             .on_action(cx.listener(|_, _: &AddSoftware, _, cx| cx.emit(ShellEvent::AddSoftware)))
+            .on_action(cx.listener(|_, _: &TogglePause, _, cx| cx.emit(ShellEvent::TogglePause)))
             .on_action(|_: &FocusNext, window, cx| window.focus_next(cx))
             .on_action(|_: &FocusPrevious, window, cx| window.focus_prev(cx))
             .relative()

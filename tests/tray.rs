@@ -1,7 +1,7 @@
 use power_plan_sync::{
     domain::*,
     interface::tray::{TrayIconState, model},
-    presentation::display,
+    presentation::{display, without_control},
 };
 
 fn rule(id: u64, label: &str, plan: u128) -> AppRule {
@@ -89,6 +89,15 @@ fn a_choice_made_in_windows_turns_the_icon_orange() {
     let tray = tray(&view);
     assert_eq!(tray.icon, TrayIconState::Suspended);
     assert!(tray.paused);
+    assert!(tray.can_pause);
+}
+
+#[test]
+fn without_control_the_menu_cannot_pause() {
+    let mut view = applied();
+    view.status = Status::Blocked(Error::InvalidConfiguration("refus".into()));
+    let tray = model(&without_control(display(&view, false, false, None)));
+    assert!(!tray.can_pause);
 }
 
 #[test]

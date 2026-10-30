@@ -87,6 +87,20 @@ pub struct UiDisplayModel {
     pub notice: Option<Notice>,
 }
 
+impl UiDisplayModel {
+    /// Ce que font le bouton de la page et Ctrl+Alt+P : **Reprendre** en pause, sinon
+    /// **Mettre en pause**. Un plan choisi dans Windows a son propre **Reprendre
+    /// l'automatisation** : la page garde **Mettre en pause**. Sans contrôle, rien.
+    pub fn pause_toggle(&self) -> Option<UiAction> {
+        let chosen = matches!(self.notice, Some(Notice::ChosenInWindows { .. }));
+        match () {
+            _ if self.read_only => None,
+            _ if self.paused && !chosen => Some(UiAction::Resume),
+            _ => Some(UiAction::Pause),
+        }
+    }
+}
+
 /// Ce que la page signale dans un message intégré, jamais dans un dialogue (FR-009, FR-012,
 /// FR-013, FR-017). Les noms de plans et de logiciels sont ceux de l'affichage.
 #[derive(Clone, Debug, PartialEq, Eq)]
