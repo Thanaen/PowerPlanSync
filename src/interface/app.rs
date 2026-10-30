@@ -284,9 +284,17 @@ fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App, notify: bool) -> bool {
     cx.subscribe(&main, move |_, event, cx| match event {
         ShellEvent::Quit => on_action(UiAction::Quit),
         ShellEvent::AddSoftware => open_dialog(&opened, None, false, cx),
-        // Sans contrôle, le raccourci ne fait rien, comme le bouton absent de la page.
+        // Sans contrôle ou sous un dialogue, le raccourci ne fait rien, comme le bouton de la
+        // page, absent ou inaccessible.
         ShellEvent::TogglePause => {
-            let toggle = opened.borrow().model.pause_toggle();
+            let toggle = {
+                let state = opened.borrow();
+                if state.dialog.is_some() {
+                    None
+                } else {
+                    state.model.pause_toggle()
+                }
+            };
             if let Some(action) = toggle {
                 on_action(action);
             }
