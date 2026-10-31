@@ -5,3 +5,4 @@ pub mod preferences;
 pub mod processes;
 pub mod session;
 pub mod startup;
+pub mod window_channel;
