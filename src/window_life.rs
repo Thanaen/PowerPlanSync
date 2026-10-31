@@ -189,7 +189,7 @@ mod tests {
     }
 
     /// Une ligne par ligne de la table d'états de `contracts/runtime.md`, sauf `Quit` du
-    /// coordinateur : le processus de suivi ferme alors la fenêtre lui-même, hors de cette table.
+    /// coordinateur : le processus de suivi ferme alors la fenêtre lui-même, hors de `step`.
     #[test]
     fn every_row_of_the_state_table() {
         use Effect::*;
