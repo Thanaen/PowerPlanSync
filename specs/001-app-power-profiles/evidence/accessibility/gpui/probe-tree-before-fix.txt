@@ -1,0 +1,16 @@
+pid=21508 captured_utc=2026-10-31T14:46:33.6601788Z
+focus: Pane "Sonde GPUI" focusable FOCUS [955,411 650x550]
+--- window 0
+Window "Sonde GPUI" [946,411 668x559]
+  Pane "Sonde GPUI" focusable FOCUS [955,411 650x550]
+    Button "Fermer la fenêtre" [1548,411 57x45]
+    Button "Parcourir avec GPUI" focusable [975,476 204x42]
+    Button "Parcourir avec Win32" focusable [1189,476 217x42]
+    Button "Suivre" focusable toggle=On [975,534 55x30]
+    List "Logiciels associés" [975,580 610x136]
+      ListItem "1. Battlefield 6" focusable selected=True pos=2/System.__ComObject [975,580 610x41]
+      ListItem "2. Blender" focusable selected=False pos=3/System.__ComObject [975,627 610x42]
+      ListItem "3. OBS Studio" focusable selected=False pos=4/System.__ComObject [975,674 610x42]
+    StatusBar "Prêt" [975,731 610x28]
+capture: probe-01-0.png
+

@@ -6,9 +6,15 @@ dont l'interface a besoin. Elle ne change aucun réglage Windows et n'utilise au
 ```powershell
 cargo run --locked --release --example gpui_probe
 cargo run --locked --release --example gpui_probe -- --smoke
+cargo run --locked --release --example gpui_probe -- --tray-only
+pwsh scripts/verify-window-lifecycle.ps1 -ExecutablePath target/release/examples/gpui_probe.exe -Arguments --lifecycle
 ```
 
 `--smoke` ouvre la fenêtre, la détruit, la rouvre, la détruit de nouveau puis quitte.
+`--tray-only` démarre sans fenêtre, pour mesurer GPUI avant tout rendu. `--lifecycle` suit le
+protocole des cent cycles de `scripts/verify-window-lifecycle.ps1`. Ctrl+Alt+A change le statut
+sans déplacer le focus, pour vérifier son annonce. `POWERPLANSYNC_PROBE_CLOSE=wm` ferme les fenêtres
+de `--lifecycle` par `WM_CLOSE`, avec le contournement de la fuite ; `wm-raw` sans lui.
 Sans option, la sonde reste dans la zone de notification après la fermeture de la fenêtre.
 **Ouvrir la sonde** ou un clic gauche sur l'icône rouvre la fenêtre ; **Quitter la sonde** arrête tout.
 
@@ -16,8 +22,9 @@ Sans option, la sonde reste dans la zone de notification après la fermeture de 
 
 La sonde compile pour `x86_64-pc-windows-msvc` : `cargo clippy --locked --all-targets
 --target x86_64-pc-windows-msvc -- -D warnings` réussit le 26 octobre 2026, dans le conteneur Linux
-de la routine. **Elle n'a pas encore été exécutée.** Les comportements ci-dessous sont confirmés
-dans les sources de GPUI, pas sur un bureau Windows. T048 les vérifie sur Windows réel.
+de la routine. Le 31 octobre 2026, elle a été exécutée sur Windows réel (T048) : résultats dans
+[prototype-results.md](prototype-results.md), section « Sonde GPUI sur Windows réel », et
+décision en attente dans D17 de [research.md](../research.md).
 
 ## API confirmées dans les sources
 
@@ -43,9 +50,16 @@ dans les sources de GPUI, pas sur un bureau Windows. T048 les vérifie sur Windo
 ## Manques relevés
 
 - **Annonce d'un statut sans déplacer le focus.** GPUI 0.3.9 n'expose aucune région active
-  (`aria-live`) ni aucune annonce explicite. `Role::Status` est publié, mais rien ne garantit que
-  le Narrateur lise un changement de texte. T048 doit le vérifier. En cas d'échec, il faudra un
-  contournement dans `src/interface/`, par exemple `UiaRaiseNotificationEvent` sur le HWND.
+  (`aria-live`). Vérifié en T048 : un `Role::Status` seul ne lève qu'un `NameChanged`, que le
+  Narrateur ne lit pas. Deux contournements fonctionnent. Le crochet `a11y_synthetic_children`
+  pose `accesskit::Live` sur le nœud. La sonde montre l'autre : un fournisseur UIA minimal, côté
+  serveur, dont l'hôte est le HWND, lève `UiaRaiseNotificationEvent`. Levée sur le fournisseur
+  hôte rendu par `UiaHostProviderFromHwnd`, la notification n'atteint aucun client.
+- **Position dans un ensemble.** `aria_position_in_set` compte à partir de 0 et la taille se pose
+  sur le conteneur : `accesskit_windows` ajoute 1 et lit `size_of_set` sur les parents.
+- **Coût mémoire.** GPUI occupe 59,7 Mio de mémoire privée sans aucune fenêtre ; voir D17.
+- **Fuite à la fermeture par `WM_CLOSE`.** La fenêtre garde son rendu DirectX. `ProbeView::new`
+  refuse la fermeture native par `on_window_should_close` et appelle `remove_window()`.
 - **Filtre et titre du sélecteur GPUI.** `PathPromptOptions` ne permet ni de limiter le choix aux
   `.exe` ni de donner un titre : `prompt` nomme seulement le bouton de validation. Le sélecteur Win32
   existant garde son filtre et son titre ; il reste le choix par défaut de T059.

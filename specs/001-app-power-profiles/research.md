@@ -382,3 +382,57 @@ agrandi exigent un vrai Windows. Les cycles réels utilisent l'exécutable témo
 - Captures Linux : `screenshots` exige que les modules Windows soient compilés sous
   `cfg(windows)`. T057 isole ces modules. S'il coûte trop, il reste facultatif.
 - Licence de `gpui-pre` et des polices IBM Plex : à vérifier en T044.
+
+## D17. Résultats de GPUI sur Windows réel (T048, 2026-10-31)
+
+**Constats.** Les mesures et essais sont dans
+[prototype-results.md](evidence/prototype-results.md), section « Sonde GPUI sur Windows réel ».
+
+- Fenêtre, icône, clavier, échelles 100 à 200 % en cours d'exécution, thèmes clair, sombre et
+  contraste élevé : conformes. Le risque DPI de D16 est levé pour un écran ; le changement
+  d'écran n'a pas été exécuté.
+- Annonce sans déplacement du focus (risque de D16) : un `Role::Status` seul n'est pas annoncé.
+  Deux contournements fonctionnent sans modifier GPUI. Le crochet `a11y_synthetic_children` pose
+  `accesskit::Live` sur le nœud, et AccessKit lève `LiveRegionChanged`. Un fournisseur UIA minimal
+  dont l'hôte est le HWND lève `UiaRaiseNotificationEvent`, prononcé par le Narrateur. Le premier
+  suffit à l'application ; le second reste disponible pour une annonce sans élément visible.
+- `aria_position_in_set` compte à partir de 0 et la taille de l'ensemble se pose sur le
+  conteneur, pas sur l'élément (AccessKit 0.24, `accesskit_windows` 0.34).
+- Texte agrandi (risque de D16) : ignoré par GPUI comme par `src/interface/`. L'interface Slint
+  l'appliquait. À construire en T068, par exemple en dérivant la taille de texte des jetons de
+  `text_scale_percent`, déjà lu par `src/windows/preferences.rs`.
+- Budgets SC-004 (risque de D16) : 92,5 Mio fenêtre ouverte, sous les 100 Mio. **91,1 Mio
+  fenêtre fermée, contre 40 Mio.** Sans aucune fenêtre, GPUI occupe déjà 59,7 Mio, et la première
+  fenêtre de la sonde porte ce chiffre à 111 Mio après sa fermeture. L'interface Slint occupait 3,1 Mio
+  fenêtre fermée. Le contrat d'interface promet que fermer la fenêtre « libère les ressources de
+  la fenêtre » : ce n'est pas le cas dans un processus qui garde GPUI.
+- Fermeture par `WM_CLOSE` (× dessiné, Alt+F4) : GPUI 0.3.9 garde le rendu de la fenêtre,
+  environ 13 Mio par fermeture dans la sonde et 25 Mio dans l'application, qui atteint 219 Mio
+  fenêtre fermée après six ouvertures. Refuser la fermeture native par `on_window_should_close`
+  et appeler `remove_window()` supprime la fuite : l'application se stabilise vers 97 Mio. Ce
+  défaut est à signaler au projet GPUI ; la PR #30 ajoute le contournement à
+  `src/interface/window.rs`.
+- Cent cycles fermés par `remove_window()` : +23,2 Mio et +88 handles entre les marqueurs, en un
+  palier au premier cycle, au-dessus du seuil de 5 Mio et 10 handles calibré sur Slint.
+
+**Proposition d'amendement, en attente du responsable produit.** Comme le prévoit le plan, un
+dépassement de SC-004 arrête ce point et revient au responsable produit avec les mesures.
+
+1. **Recommandée : fenêtre dans un processus séparé.** Le processus de suivi garde le moteur, le
+   coordinateur, le contrôle unique et l'icône `tray-icon`, sans initialiser GPUI. Ouvrir la
+   fenêtre lance `power-plan-sync.exe --window`, qui reçoit l'état et renvoie ses commandes par un
+   canal nommé local réservé à la session ; fermer la fenêtre arrête ce processus. SC-004 et
+   SC-007 restent inchangés, et la fermeture libère réellement GPUI. Le découpage existant s'y
+   prête : l'interface reçoit déjà des `UiCommand` par canal et renvoie des `UiAction` typées
+   (T056). Coûts : sérialisation de ces messages, ouverture plus lente d'une fraction de seconde,
+   un second processus à vérifier pour l'instance unique. À prouver d'abord par une mesure du
+   processus de suivi sans GPUI.
+2. **Amender SC-004** à 100 Mio fenêtre fermée. Aucun changement d'architecture, mais un outil
+   d'arrière-plan trente fois plus lourd que la version Slint, et une promesse du contrat
+   d'interface à retirer. Avec le contournement, l'application se stabilise à 97 à 98 Mio
+   fenêtre fermée sur cette machine : la marge est de 2 Mio, et une autre carte graphique peut
+   la dépasser. SC-007 demanderait aussi un seuil propre à GPUI.
+3. **Revenir à Slint** : rejeté sauf avis contraire, la décision D12 reposant sur le design system.
+
+D'ici la décision, T065 à T070 peuvent avancer : l'option 1 garde tout `src/interface/`.
+T071, qui fait de GPUI l'interface par défaut et retire Slint, attend la décision.

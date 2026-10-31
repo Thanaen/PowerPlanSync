@@ -1,0 +1,12 @@
+2026-10-31T15:17:44.1937579Z écoute pid=5580
+2026-10-31T15:17:45.2392491Z name-changed StatusBar "Automatisation en pause, aucun plan ne sera changé" -> "Automatisation en pause, aucun plan ne sera changé"
+2026-10-31T15:17:45.2397813Z live-region StatusBar "Automatisation en pause, aucun plan ne sera changé"
+2026-10-31T15:17:45.2398853Z name-changed Button "Reprendre" -> "Reprendre"
+2026-10-31T15:17:45.2549573Z name-changed StatusBar "Automatisation en pause, aucun plan ne sera changé" -> "Automatisation en pause, aucun plan ne sera changé"
+2026-10-31T15:17:45.2558670Z name-changed Button "Reprendre" -> "Reprendre"
+2026-10-31T15:17:49.2543024Z name-changed StatusBar "Automatisation en attente, aucun logiciel suivi n’est ouvert" -> "Automatisation en attente, aucun logiciel suivi n’est ouvert"
+2026-10-31T15:17:49.2547923Z live-region StatusBar "Automatisation en attente, aucun logiciel suivi n’est ouvert"
+2026-10-31T15:17:49.2548953Z name-changed Button "Mettre en pause" -> "Mettre en pause"
+2026-10-31T15:17:49.2742078Z name-changed StatusBar "Automatisation en attente, aucun logiciel suivi n’est ouvert" -> "Automatisation en attente, aucun logiciel suivi n’est ouvert"
+2026-10-31T15:17:49.2748660Z name-changed Button "Mettre en pause" -> "Mettre en pause"
+2026-10-31T15:17:53.2323933Z fin

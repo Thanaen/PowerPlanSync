@@ -1,0 +1,42 @@
+{
+  "executable": "D:\\Dev\\PowerPlanSync\\target\\release\\power-plan-sync.exe",
+  "sha256": "EBA126D5F60140A55B290F6768437606108BEFA3EA406A99B51DAE1FB65484C4",
+  "arguments": [
+    "--gpui",
+    "--demo",
+    "--data-dir",
+    "\"D:\\Dev\\PowerPlanSync\\.audit\\t048\\product-gpui\\data\""
+  ],
+  "stabilization_seconds": 10,
+  "plan_unchanged": true,
+  "window_open": {
+    "process_id": 3484,
+    "process_name": "power-plan-sync",
+    "process_started_utc": "2026-10-31T14:58:48.7620998Z",
+    "measured_utc": "2026-10-31T14:59:59.4413331Z",
+    "duration_seconds": 60.349,
+    "logical_processors": 16,
+    "samples": 61,
+    "cpu_percent_machine": 0.09062,
+    "private_mib_max": 92.535,
+    "working_set_mib_max": 70.938,
+    "handles_first": 667,
+    "handles_last": 654,
+    "threads_last": 65
+  },
+  "window_closed": {
+    "process_id": 3484,
+    "process_name": "power-plan-sync",
+    "process_started_utc": "2026-10-31T14:58:48.7620998Z",
+    "measured_utc": "2026-10-31T15:01:11.8794993Z",
+    "duration_seconds": 60.383,
+    "logical_processors": 16,
+    "samples": 61,
+    "cpu_percent_machine": 0.01779,
+    "private_mib_max": 91.059,
+    "working_set_mib_max": 69.977,
+    "handles_first": 653,
+    "handles_last": 649,
+    "threads_last": 64
+  }
+}

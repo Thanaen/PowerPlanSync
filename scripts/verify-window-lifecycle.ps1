@@ -3,6 +3,7 @@
 [CmdletBinding()]
 param(
     [string]$ExecutablePath = (Join-Path $PSScriptRoot '../target/release/examples/window_lifecycle.exe'),
+    [string[]]$Arguments = @(),
     [string]$EvidenceDirectory = (Join-Path $PSScriptRoot '../.audit/window-lifecycle'),
     [ValidateRange(1, 600)][int]$MarkerTimeoutSeconds = 60
 )
@@ -78,6 +79,7 @@ if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) {
 
 $startInfo = [Diagnostics.ProcessStartInfo]::new()
 $startInfo.FileName = $executable
+foreach ($argument in $Arguments) { $startInfo.ArgumentList.Add($argument) }
 $startInfo.UseShellExecute = $false
 $startInfo.CreateNoWindow = $true
 $startInfo.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden

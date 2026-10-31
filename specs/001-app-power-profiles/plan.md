@@ -91,6 +91,11 @@ conception. Le principe III dépend de la mesure T048. Si GPUI dépasse SC-004, 
 et propose un amendement explicite de la spec. Le principe IV dépend des annonces sans
 déplacement du focus et des thèmes de contraste, non prouvés par Bientôt (D16).
 
+Mesure T048 du 2026-10-31 (D17) : les annonces et les thèmes de contraste fonctionnent sur
+Windows réel, avec les contournements notés en D17. SC-004 est dépassé fenêtre fermée (91,1 Mio
+pour 40 Mio). Conformément au paragraphe précédent, ce point s'arrête : D17 propose de placer la
+fenêtre dans un processus séparé, ou à défaut d'amender SC-004. T071 attend cette décision.
+
 ## Project Structure
 
 ### Documentation (this feature)

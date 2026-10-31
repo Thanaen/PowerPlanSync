@@ -1,0 +1,28 @@
+pid=5580 captured_utc=2026-10-31T15:19:02.8133200Z
+focus: hors du processus
+--- window 0
+Window "PowerPlanSync" [721,299 1118x784]
+  Button "Commandes" focusable [865,301 255x35]
+  Button "Réduire" [1659,299 57x39]
+  Button "Agrandir" [1716,299 57x39]
+  Button "Fermer" [1773,299 57x39]
+  Tab "Navigation" [730,339 249x639]
+    TabItem "Logiciels" focusable selected=True [740,354 229x35]
+    TabItem "Réglages" focusable selected=False [740,391 229x35]
+    TabItem "Aide et limites" focusable selected=False [740,428 229x35]
+  Button "Quitter" focusable [740,991 229x35]
+  Pane "Logiciels" [980,339 850x700]
+    StatusBar "Automatisation en attente, aucun logiciel suivi n’est ouvert" [1010,426 790x25]
+    Button "Ajouter un logiciel" focusable [1010,517 261x35]
+    Button "Mettre en pause" focusable [1286,517 279x35]
+    StatusBar "Démonstration. Les logiciels et les changements de plan sont simulés. Aucun réglage Windows n’est modifié." [1010,577 790x118]
+      Button "Lancer le logiciel simulé" focusable [1056,649 236x35]
+    List "Logiciels associés" [1010,780 790x69]
+      ListItem "1. demo_target, plan Haute performance (simulation), suivi" [1011,781 788x67]
+        Button "Suivre demo_target" focusable toggle=On [1593,804 35x20]
+        Button "Monter demo_target" focusable disabled [1643,797 35x35]
+        Button "Descendre demo_target" focusable disabled [1680,797 35x35]
+        Button "Modifier demo_target" focusable [1717,797 35x35]
+        Button "Supprimer demo_target" focusable [1754,797 35x35]
+    StatusBar "demo_target est revenu à sa place."
+

@@ -1,0 +1,8 @@
+2026-10-31T14:49:16.7577282Z écoute pid=21508
+2026-10-31T14:49:17.3093479Z focus ListItem "2. Blender"
+2026-10-31T14:49:17.3095344Z name-changed StatusBar "Suivi désactivé" -> "Suivi désactivé"
+2026-10-31T14:49:17.3096168Z focus Button "Suivre"
+2026-10-31T14:49:18.8072394Z name-changed StatusBar "Suivi activé" -> "Suivi activé"
+2026-10-31T14:49:19.8118937Z name-changed StatusBar "OBS Studio sélectionné" -> "OBS Studio sélectionné"
+2026-10-31T14:49:19.8120061Z focus ListItem "3. OBS Studio"
+2026-10-31T14:49:22.7866638Z fin
