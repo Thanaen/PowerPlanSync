@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "finished_at": "2026-10-31T15:30:59.1291143Z",
+  "application_path": "D:\\Dev\\PowerPlanSync\\target\\release\\power-plan-sync.exe",
+  "fixture_path": "D:\\Dev\\PowerPlanSync\\target\\release\\examples\\demo_target.exe",
+  "initial_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c",
+  "target_plan": "381b4222-f694-41f0-9685-ff5bb260df2e",
+  "external_plan": "a1841308-3541-4fab-bc81-f71556f20b4a",
+  "transition_timeout_ms": 10000,
+  "expectations": {
+    "two_instances": "target after first exit, initial after last exit",
+    "homonym_other_path": "initial throughout",
+    "launcher_child": "initial after child exit while launcher still runs",
+    "forced_fixture_stop": "initial after forced target exit",
+    "manual_external_override": "external after last target exit",
+    "crash_restart_recovery": "initial recovery plan captured before the crash",
+    "two_rules_priority": "second rule, first rule, second rule after grace, then initial, never an intermediate plan"
+  },
+  "passed": true,
+  "failure": null,
+  "cases": [
+    {
+      "name": "two-instances",
+      "started_at": "2026-10-31T15:29:09.2654297Z",
+      "passed": true,
+      "measurements": {
+        "activation_ms": 741.232,
+        "plan_after_first_exit": "381b4222-f694-41f0-9685-ff5bb260df2e",
+        "return_ms": 3969.58
+      },
+      "error": null,
+      "finished_at": "2026-10-31T15:29:34.8120071Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    },
+    {
+      "name": "homonym-other-path",
+      "started_at": "2026-10-31T15:29:34.8249879Z",
+      "passed": true,
+      "measurements": {
+        "observed_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+      },
+      "error": null,
+      "finished_at": "2026-10-31T15:29:45.6031251Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    },
+    {
+      "name": "launcher-child",
+      "started_at": "2026-10-31T15:29:45.6121911Z",
+      "passed": true,
+      "measurements": {
+        "activation_ms": 724.721,
+        "child_started_utc": "2026-10-31T15:29:46.1965775Z",
+        "child_exited_utc": "2026-10-31T15:29:56.2061888Z",
+        "return_ms": 3642.477,
+        "launcher_running_after_return": true
+      },
+      "error": null,
+      "finished_at": "2026-10-31T15:30:06.3253632Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    },
+    {
+      "name": "forced-fixture-stop",
+      "started_at": "2026-10-31T15:30:06.3346942Z",
+      "passed": true,
+      "measurements": {
+        "activation_ms": 724.088,
+        "return_ms": 3942.95
+      },
+      "error": null,
+      "finished_at": "2026-10-31T15:30:11.7307479Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    },
+    {
+      "name": "manual-external-override",
+      "started_at": "2026-10-31T15:30:11.7402916Z",
+      "passed": true,
+      "measurements": {
+        "activation_ms": 721.452,
+        "manual_plan": "a1841308-3541-4fab-bc81-f71556f20b4a",
+        "plan_after_last_exit": "a1841308-3541-4fab-bc81-f71556f20b4a"
+      },
+      "error": null,
+      "finished_at": "2026-10-31T15:30:28.1752539Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    },
+    {
+      "name": "crash-restart-recovery",
+      "started_at": "2026-10-31T15:30:28.1845689Z",
+      "passed": true,
+      "measurements": {
+        "activation_ms": 729.17,
+        "plan_after_crash_and_exit": "381b4222-f694-41f0-9685-ff5bb260df2e",
+        "recovery_ms": 519.893,
+        "recovered_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+      },
+      "error": null,
+      "finished_at": "2026-10-31T15:30:39.4274548Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    },
+    {
+      "name": "two-rules-priority",
+      "started_at": "2026-10-31T15:30:39.4365062Z",
+      "passed": true,
+      "measurements": {
+        "second_rule_activation_ms": 713.609,
+        "first_rule_takeover_ms": 282.186,
+        "back_to_second_rule_ms": 3940.991,
+        "return_ms": 4094.691
+      },
+      "error": null,
+      "finished_at": "2026-10-31T15:30:59.0030391Z",
+      "final_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    }
+  ]
+}
