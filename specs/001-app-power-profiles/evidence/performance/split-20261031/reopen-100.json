@@ -1,0 +1,708 @@
+{
+  "executable": "D:\\Dev\\worktrees\\PowerPlanSync\\app-fenetre-processus-separe\\target\\release\\power-plan-sync.exe",
+  "sha256": "9B097FF1D96C90EB298D9F334FE202F56CAE64D14717AE7FAE521A5FCED23591",
+  "settle_seconds": 3,
+  "per_open_mib": 0.0,
+  "rows": [
+    {
+      "opens": 1,
+      "closed_private_mib": 3.0,
+      "handles": 203,
+      "threads": 9,
+      "window_processes": 0
+    },
+    {
+      "opens": 2,
+      "closed_private_mib": 3.0,
+      "handles": 203,
+      "threads": 9,
+      "window_processes": 0
+    },
+    {
+      "opens": 3,
+      "closed_private_mib": 3.0,
+      "handles": 203,
+      "threads": 9,
+      "window_processes": 0
+    },
+    {
+      "opens": 4,
+      "closed_private_mib": 3.0,
+      "handles": 203,
+      "threads": 9,
+      "window_processes": 0
+    },
+    {
+      "opens": 5,
+      "closed_private_mib": 3.1,
+      "handles": 203,
+      "threads": 9,
+      "window_processes": 0
+    },
+    {
+      "opens": 6,
+      "closed_private_mib": 3.0,
+      "handles": 204,
+      "threads": 7,
+      "window_processes": 0
+    },
+    {
+      "opens": 7,
+      "closed_private_mib": 3.0,
+      "handles": 204,
+      "threads": 7,
+      "window_processes": 0
+    },
+    {
+      "opens": 8,
+      "closed_private_mib": 3.0,
+      "handles": 204,
+      "threads": 7,
+      "window_processes": 0
+    },
+    {
+      "opens": 9,
+      "closed_private_mib": 3.0,
+      "handles": 204,
+      "threads": 7,
+      "window_processes": 0
+    },
+    {
+      "opens": 10,
+      "closed_private_mib": 3.0,
+      "handles": 204,
+      "threads": 7,
+      "window_processes": 0
+    },
+    {
+      "opens": 11,
+      "closed_private_mib": 3.0,
+      "handles": 204,
+      "threads": 7,
+      "window_processes": 0
+    },
+    {
+      "opens": 12,
+      "closed_private_mib": 3.0,
+      "handles": 204,
+      "threads": 7,
+      "window_processes": 0
+    },
+    {
+      "opens": 13,
+      "closed_private_mib": 2.9,
+      "handles": 202,
+      "threads": 6,
+      "window_processes": 0
+    },
+    {
+      "opens": 14,
+      "closed_private_mib": 2.9,
+      "handles": 202,
+      "threads": 6,
+      "window_processes": 0
+    },
+    {
+      "opens": 15,
+      "closed_private_mib": 2.9,
+      "handles": 202,
+      "threads": 6,
+      "window_processes": 0
+    },
+    {
+      "opens": 16,
+      "closed_private_mib": 2.9,
+      "handles": 202,
+      "threads": 6,
+      "window_processes": 0
+    },
+    {
+      "opens": 17,
+      "closed_private_mib": 2.9,
+      "handles": 202,
+      "threads": 6,
+      "window_processes": 0
+    },
+    {
+      "opens": 18,
+      "closed_private_mib": 2.9,
+      "handles": 202,
+      "threads": 6,
+      "window_processes": 0
+    },
+    {
+      "opens": 19,
+      "closed_private_mib": 2.9,
+      "handles": 202,
+      "threads": 6,
+      "window_processes": 0
+    },
+    {
+      "opens": 20,
+      "closed_private_mib": 2.9,
+      "handles": 202,
+      "threads": 6,
+      "window_processes": 0
+    },
+    {
+      "opens": 21,
+      "closed_private_mib": 2.9,
+      "handles": 202,
+      "threads": 6,
+      "window_processes": 0
+    },
+    {
+      "opens": 22,
+      "closed_private_mib": 2.9,
+      "handles": 202,
+      "threads": 6,
+      "window_processes": 0
+    },
+    {
+      "opens": 23,
+      "closed_private_mib": 3.0,
+      "handles": 202,
+      "threads": 6,
+      "window_processes": 0
+    },
+    {
+      "opens": 24,
+      "closed_private_mib": 3.0,
+      "handles": 202,
+      "threads": 6,
+      "window_processes": 0
+    },
+    {
+      "opens": 25,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 26,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 27,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 28,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 29,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 30,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 31,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 32,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 33,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 34,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 35,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 36,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 37,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 38,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 39,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 40,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 41,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 42,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 43,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 44,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 45,
+      "closed_private_mib": 2.9,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 46,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 47,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 48,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 49,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 50,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 51,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 52,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 53,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 54,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 55,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 56,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 57,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 58,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 59,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 60,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 61,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 62,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 63,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 64,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 65,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 66,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 67,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 68,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 69,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 70,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 71,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 72,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 73,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 74,
+      "closed_private_mib": 3.1,
+      "handles": 200,
+      "threads": 8,
+      "window_processes": 0
+    },
+    {
+      "opens": 75,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 76,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 77,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 78,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 79,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 80,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 81,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 82,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 83,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 84,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 85,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 86,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 87,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 88,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 89,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 90,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 91,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 92,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 93,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 94,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 95,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 96,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 97,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 98,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 99,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    },
+    {
+      "opens": 100,
+      "closed_private_mib": 3.0,
+      "handles": 200,
+      "threads": 5,
+      "window_processes": 0
+    }
+  ]
+}

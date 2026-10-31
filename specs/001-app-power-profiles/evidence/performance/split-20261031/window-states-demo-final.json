@@ -1,0 +1,58 @@
+{
+  "executable": "D:\\Dev\\worktrees\\PowerPlanSync\\app-fenetre-processus-separe\\target\\release\\power-plan-sync.exe",
+  "sha256": "9B097FF1D96C90EB298D9F334FE202F56CAE64D14717AE7FAE521A5FCED23591",
+  "arguments": [
+    "--gpui",
+    "--demo",
+    "--data-dir",
+    "\"D:\\Dev\\worktrees\\PowerPlanSync\\app-fenetre-processus-separe\\.audit\\t081states-190837\\data\""
+  ],
+  "stabilization_seconds": 10,
+  "plan_unchanged": true,
+  "window_open": {
+    "process_id": 8940,
+    "process_name": "power-plan-sync",
+    "process_started_utc": "2026-10-31T18:08:37.0952766Z",
+    "measured_utc": "2026-10-31T18:09:47.8941793Z",
+    "duration_seconds": 60.383,
+    "logical_processors": 16,
+    "samples": 61,
+    "cpu_percent_machine": 0.0,
+    "private_mib_max": 3.051,
+    "working_set_mib_max": 16.145,
+    "handles_first": 204,
+    "handles_last": 203,
+    "threads_last": 7
+  },
+  "window_open_window_process": {
+    "process_id": 2796,
+    "process_name": "power-plan-sync",
+    "process_started_utc": "2026-10-31T18:08:37.1171651Z",
+    "measured_utc": "2026-10-31T18:09:47.8941793Z",
+    "duration_seconds": 60.379,
+    "logical_processors": 16,
+    "samples": 61,
+    "cpu_percent_machine": 0.07117,
+    "private_mib_max": 92.016,
+    "working_set_mib_max": 69.582,
+    "handles_first": 644,
+    "handles_last": 633,
+    "threads_last": 65
+  },
+  "window_open_private_mib_sum": 95.067,
+  "window_closed": {
+    "process_id": 8940,
+    "process_name": "power-plan-sync",
+    "process_started_utc": "2026-10-31T18:08:37.0952766Z",
+    "measured_utc": "2026-10-31T18:11:00.2684144Z",
+    "duration_seconds": 60.278,
+    "logical_processors": 16,
+    "samples": 61,
+    "cpu_percent_machine": 0.0,
+    "private_mib_max": 2.848,
+    "working_set_mib_max": 16.086,
+    "handles_first": 197,
+    "handles_last": 195,
+    "threads_last": 4
+  }
+}

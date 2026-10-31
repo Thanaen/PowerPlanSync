@@ -1,0 +1,15 @@
+{
+  "process_id": 8188,
+  "process_name": "power-plan-sync",
+  "process_started_utc": "2026-10-31T18:11:00.3405302Z",
+  "measured_utc": "2026-10-31T18:12:10.6566915Z",
+  "duration_seconds": 60.302,
+  "logical_processors": 16,
+  "samples": 61,
+  "cpu_percent_machine": 0.02753,
+  "private_mib_max": 3.574,
+  "working_set_mib_max": 16.652,
+  "handles_first": 203,
+  "handles_last": 202,
+  "threads_last": 6
+}
