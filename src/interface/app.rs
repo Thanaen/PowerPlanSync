@@ -23,6 +23,9 @@ struct Shell {
     model: UiDisplayModel,
     /// Vrai dès le premier état reçu : avant lui, rien ne s'affiche.
     started: bool,
+    /// La fenêtre s'est fermée et le processus s'arrête : une commande arrivée entre-temps
+    /// n'ouvre pas une autre fenêtre, et le processus de suivi relancera si elle le demandait.
+    closing: bool,
     page: Option<Entity<SoftwarePage>>,
     dialog: Option<Entity<RuleDialog>>,
     /// Ce qui avait le focus avant le dialogue : il le retrouve à la fermeture.
@@ -51,13 +54,19 @@ pub fn run(
             let shell = Rc::new(RefCell::new(Shell {
                 model: UiDisplayModel::default(),
                 started: false,
+                closing: false,
                 page: None,
                 dialog: None,
                 opener: None,
                 on_action: Arc::clone(&on_action),
             }));
 
-            cx.on_window_closed(|cx, _| cx.quit()).detach();
+            let closed = Rc::clone(&shell);
+            cx.on_window_closed(move |cx, _| {
+                closed.borrow_mut().closing = true;
+                cx.quit();
+            })
+            .detach();
 
             let mut commands = commands;
             cx.spawn(async move |cx| {
@@ -75,6 +84,9 @@ pub fn run(
 
 /// Rend vrai quand l'application doit s'arrêter.
 fn handle(shell: &Rc<RefCell<Shell>>, command: UiCommand, cx: &mut App) -> bool {
+    if shell.borrow().closing {
+        return true;
+    }
     let started = shell.borrow().started;
     match command {
         UiCommand::Update { model, .. } if !started => {
