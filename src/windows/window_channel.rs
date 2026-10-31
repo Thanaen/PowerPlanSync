@@ -201,9 +201,10 @@ mod tests {
 
     use windows::Win32::Foundation::HLOCAL;
     use windows::Win32::Security::Authorization::{
-        ConvertSecurityDescriptorToStringSecurityDescriptorW, GetSecurityInfo, SE_KERNEL_OBJECT,
+        ConvertSecurityDescriptorToStringSecurityDescriptorW, ConvertSidToStringSidW,
+        ConvertStringSidToSidW, GetSecurityInfo, SE_KERNEL_OBJECT,
     };
-    use windows::Win32::Security::DACL_SECURITY_INFORMATION;
+    use windows::Win32::Security::{DACL_SECURITY_INFORMATION, PSID};
     use windows::core::PWSTR;
 
     use super::*;
@@ -324,6 +325,26 @@ mod tests {
             let _ = LocalFree(Some(HLOCAL(text.0 as _)));
             let _ = LocalFree(Some(HLOCAL(descriptor.0)));
         }
-        assert_eq!(sddl, format!("D:P(A;;FA;;;{})", owner.sid));
+        let trustee = sddl
+            .strip_prefix("D:P(A;;FA;;;")
+            .and_then(|rest| rest.strip_suffix(')'))
+            .unwrap_or_else(|| panic!("une seule entrée attendue : {sddl}"));
+        assert_eq!(sid_text(trustee), owner.sid, "{sddl}");
+    }
+
+    /// Le SDDL abrège certains comptes, comme l'Administrateur intégré (`LA`) : le SID se
+    /// compare résolu.
+    fn sid_text(trustee: &str) -> String {
+        let wide = wide_nul(trustee);
+        let mut sid = PSID::default();
+        unsafe { ConvertStringSidToSidW(PCWSTR(wide.as_ptr()), &mut sid) }.unwrap();
+        let mut text = PWSTR::null();
+        unsafe { ConvertSidToStringSidW(sid, &mut text) }.unwrap();
+        let resolved = unsafe { text.to_string() }.unwrap();
+        unsafe {
+            let _ = LocalFree(Some(HLOCAL(text.0 as _)));
+            let _ = LocalFree(Some(HLOCAL(sid.0)));
+        }
+        resolved
     }
 }
