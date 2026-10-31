@@ -577,18 +577,23 @@ impl Render for SoftwarePage {
             .notice
             .as_ref()
             .map(|notice| messages::message(notice, &self.on_action, &theme));
+        let removal = self
+            .model
+            .removed
+            .as_deref()
+            .filter(|_| self.model.can_undo())
+            .map(|label| self.removal(label, narrow, &theme));
         let body = if self.model.read_only {
             body.children(message)
         } else if first_launch::shown(&self.model) {
+            // Retirer le dernier logiciel suivi ramène « Pour commencer » : **Annuler** reste.
             let steps = self.first_launch(window, cx);
             let list = first_launch::list_shown(&self.model).then(|| self.list(narrow, &theme, cx));
-            body.children(message).child(steps).children(list)
+            body.children(message)
+                .child(steps)
+                .children(list)
+                .children(removal)
         } else {
-            let removal = self
-                .model
-                .removed
-                .as_deref()
-                .map(|label| self.removal(label, narrow, &theme));
             body.child(self.actions(&theme, cx))
                 .children(message)
                 .child(self.list(narrow, &theme, cx))

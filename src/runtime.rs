@@ -520,6 +520,8 @@ impl Worker {
                 return Ok(());
             }
             UiAction::Retry | UiAction::ReloadConfiguration if self.controller.is_none() => {
+                // La configuration relue n'est plus celle d'où le logiciel a été retiré.
+                self.removed = None;
                 return self.acquire();
             }
             UiAction::BrowseForExecutable { .. } => {
@@ -618,6 +620,9 @@ impl Worker {
             UiAction::Pause | UiAction::Resume | UiAction::Retry | UiAction::ReloadConfiguration
         ) {
             self.observe(true);
+            if action == UiAction::ReloadConfiguration {
+                self.removed = None;
+            }
             let command = match action {
                 UiAction::Pause => Command::Pause,
                 UiAction::Resume => Command::Resume,
@@ -1219,6 +1224,14 @@ mod tests {
         worker.action(UiAction::WindowOpened).unwrap();
         worker.action(UiAction::UndoDelete).unwrap();
         assert_eq!(labels(&worker), ["Troisième"]);
+
+        let last = worker.view().configuration.rules[0].id.0 as i32;
+        worker
+            .action(UiAction::DeleteRule { rule_id: last })
+            .unwrap();
+        worker.action(UiAction::ReloadConfiguration).unwrap();
+        worker.action(UiAction::UndoDelete).unwrap();
+        assert!(labels(&worker).is_empty());
         cleanup(worker);
     }
     #[test]
