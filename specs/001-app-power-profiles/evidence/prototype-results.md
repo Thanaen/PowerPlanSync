@@ -256,3 +256,22 @@ changé ; plan Haute performance relu et rétabli dans un bloc `finally`). Le pr
 | Nouvelle erreur, fenêtre fermée | **Non exécuté** : aucun moyen de provoquer une erreur bloquante fenêtre fermée sur cette machine. Une règle visant un plan absent n'est pas suivie et ne produit pas d'erreur |
 | Notification « PowerPlanSync reste ouvert » au premier masquage seulement | **Non exécuté** : aucun essai ne lit la notification |
 
+### Fenêtre perdue ou sans réponse (T079)
+
+Binaire release de la PR de T079, vrai mode, dossier neuf (aucun plan changé ; plan Haute
+performance rétabli et relu dans un bloc `finally`). La table d'états de `contracts/runtime.md`
+vit dans `src/window_life.rs`, testée ligne par ligne. Le journal est `activity.log`, ligne
+`fenêtre`.
+
+| Essai | Résultat |
+| --- | --- |
+| Processus de fenêtre tué (`Stop-Process -Force`) | Le suivi continue, aucun processus de fenêtre ne reste ; journal : « processus de fenêtre arrêté de façon inattendue » ; un second lancement rouvre une nouvelle fenêtre |
+| Processus de fenêtre suspendu (`NtSuspendProcess`), puis second lancement | Remplacé après 5,3 s par un nouveau processus de fenêtre ; l'ancien est arrêté ; journal : « processus de fenêtre sans réponse, arrêté » |
+| Processus de suivi tué | Le processus de fenêtre s'arrête de lui-même (fin du canal de commandes) |
+| Instance déjà remplacée | Dans l'essai de la fenêtre suspendue, la fin de canal de l'ancienne instance, tuée, arrive après le lancement de la nouvelle : la nouvelle fenêtre reste ouverte et sert à l'essai suivant |
+| **Quitter PowerPlanSync** (`WM_COMMAND` 1003 du menu), fenêtre qui répond | Les deux processus s'arrêtent en 0,15 s |
+| **Quitter PowerPlanSync**, fenêtre suspendue | Le processus de fenêtre est arrêté après le délai de 2 s ; le suivi s'arrête en 2,04 s |
+| Fenêtre fermée, `--demo`, 30 s | Suivi : 2,9 Mio, 0 % de CPU, 199 → 199 handles ; la minuterie des délais n'est armée que pendant une attente de réponse |
+| Délai de lancement de 15 s, trame refusée venant de la fenêtre, file de 64 commandes pleine | **Non exécutés sur Windows réel** : couverts par les tests de `src/window_life.rs` |
+| Notification de perte par l'icône | **Non exécuté** : aucun essai ne lit la notification |
+
