@@ -1,7 +1,8 @@
 //! Trames échangées entre le processus de suivi et le processus de fenêtre (D18) : longueur
 //! sur 4 octets en petit-boutiste, puis `{"version": …, "message": …}` en JSON. Le suivi envoie
 //! des [`UiCommand`](crate::presentation::UiCommand), la fenêtre renvoie des
-//! [`UiAction`](crate::presentation::UiAction). Tout écart refuse la trame.
+//! [`UiAction`](crate::presentation::UiAction). Tout écart refuse la trame : le message lu
+//! doit se sérialiser à nouveau en exactement le JSON reçu, sans champ en plus ni en moins.
 
 use std::fmt;
 use std::io::{self, Read, Write};
@@ -84,7 +85,9 @@ pub fn write_frame<T: Serialize>(
         .map_err(ProtocolError::Io)
 }
 
-pub fn read_frame<T: DeserializeOwned>(reader: &mut impl Read) -> Result<T, ProtocolError> {
+pub fn read_frame<T: DeserializeOwned + Serialize>(
+    reader: &mut impl Read,
+) -> Result<T, ProtocolError> {
     let mut header = [0; 4];
     let mut filled = 0;
     while filled < header.len() {
@@ -115,8 +118,15 @@ pub fn read_frame<T: DeserializeOwned>(reader: &mut impl Read) -> Result<T, Prot
     if incoming.version != VERSION {
         return Err(ProtocolError::Version(incoming.version));
     }
-    serde_json::from_value(incoming.message)
-        .map_err(|error| ProtocolError::Malformed(error.to_string()))
+    let message: T = serde_json::from_value(incoming.message.clone())
+        .map_err(|error| ProtocolError::Malformed(error.to_string()))?;
+    // `serde` ignore un champ inconnu et remplit un `Option` absent par `None`.
+    if serde_json::to_value(&message).ok().as_ref() != Some(&incoming.message) {
+        return Err(ProtocolError::Malformed(
+            "champ inconnu ou manquant dans le message".into(),
+        ));
+    }
+    Ok(message)
 }
 
 #[cfg(test)]
@@ -247,10 +257,39 @@ mod tests {
         let tampered = json.replacen(r#""observed_plan""#, r#""inconnu":1,"observed_plan""#, 1);
         let result = read_frame::<UiCommand>(&mut frame(&tampered).as_slice());
         assert!(matches!(result, Err(ProtocolError::Malformed(_))));
-        let missing = json.replacen(r#""demo_mode":true,"#, "", 1);
-        assert_ne!(missing, json);
-        let result = read_frame::<UiCommand>(&mut frame(&missing).as_slice());
+        for field in [
+            r#""demo_mode":true,"#,
+            r#""error_message":"Windows a refusé le plan.","#,
+            r#""badge":"Applied","#,
+        ] {
+            let missing = json.replacen(field, "", 1);
+            assert_ne!(missing, json, "{field}");
+            let result = read_frame::<UiCommand>(&mut frame(&missing).as_slice());
+            assert!(
+                matches!(result, Err(ProtocolError::Malformed(_))),
+                "{field}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_missing_optional_field_never_reads_as_none() {
+        let result = read_frame::<UiAction>(
+            &mut frame(r#"{"version":1,"message":{"BrowseForExecutable":{}}}"#).as_slice(),
+        );
         assert!(matches!(result, Err(ProtocolError::Malformed(_))));
+        let explicit = read_frame::<UiAction>(
+            &mut frame(
+                r#"{"version":1,"message":{"BrowseForExecutable":{"editing_rule_id":null}}}"#,
+            )
+            .as_slice(),
+        );
+        assert_eq!(
+            explicit.unwrap(),
+            UiAction::BrowseForExecutable {
+                editing_rule_id: None
+            }
+        );
     }
 
     #[test]
