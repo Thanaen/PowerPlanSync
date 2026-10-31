@@ -15,7 +15,7 @@ use crate::interface::software_page::{SoftwareEvent, SoftwarePage};
 use crate::interface::theme::{self, HighContrast};
 use crate::interface::window::{self, MainWindow, Page, ShellEvent};
 use crate::interface::{text_input, widgets};
-use crate::presentation::{Notice, UiAction, UiCommand, UiDisplayModel};
+use crate::presentation::{UiAction, UiCommand, UiDisplayModel};
 
 type OnAction = Arc<dyn Fn(UiAction) + Send + Sync>;
 
@@ -114,13 +114,7 @@ fn handle(shell: &Rc<RefCell<Shell>>, command: UiCommand, cx: &mut App) -> bool 
         // Le coordinateur n'a pas pu démarrer : la raison s'affiche, sans contrôle. Il est
         // arrêté : la fenêtre ne lui signale pas son ouverture.
         UiCommand::QuitFailure(reason) => {
-            {
-                let mut state = shell.borrow_mut();
-                state.model.notice = Some(Notice::Stopped(reason.clone()));
-                state.model.error_message = Some(reason);
-                state.model.return_line.clear();
-                state.model.read_only = true;
-            }
+            shell.borrow_mut().model.stop(reason);
             if started {
                 show(shell, cx, false);
             } else {

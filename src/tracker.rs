@@ -3,18 +3,21 @@
 //! [`UiCommand`] ; l'icône et le processus de fenêtre lui renvoient des [`UiAction`]. La
 //! fenêtre s'exécute dans `power-plan-sync.exe --window`, lancé à la demande.
 
+use std::cell::RefCell;
 use std::fs::File;
 use std::os::windows::process::CommandExt as _;
 use std::process::{Child, Command, Stdio};
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
-use windows::Win32::Foundation::{LPARAM, WPARAM};
-use windows::Win32::System::Threading::{CREATE_NO_WINDOW, GetCurrentThreadId};
+use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+use windows::Win32::System::Threading::CREATE_NO_WINDOW;
 use windows::Win32::UI::WindowsAndMessaging::{
-    DispatchMessageW, GetMessageW, MSG, PM_NOREMOVE, PeekMessageW, PostThreadMessageW,
-    TranslateMessage, WM_APP,
+    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetMessageW, HWND_MESSAGE,
+    MSG, PostMessageW, PostQuitMessage, RegisterClassW, TranslateMessage, WINDOW_EX_STYLE,
+    WINDOW_STYLE, WM_APP, WNDCLASSW,
 };
+use windows::core::w;
 
 use crate::interface::tray::{self, Tray, TrayCommand};
 use crate::presentation::{UiAction, UiCommand, UiDisplayModel};
@@ -22,7 +25,9 @@ use crate::window_protocol::{read_frame, write_frame};
 use crate::windows::session::OwnerIdentity;
 use crate::windows::window_channel;
 
-/// Réveille la boucle de messages : des événements attendent dans la file.
+/// Réveille la fenêtre de messages : des événements attendent dans la file. Un message de
+/// fenêtre, contrairement à un message de thread, est aussi distribué pendant une boucle
+/// modale, comme celle du menu de l'icône.
 const WM_WAKE: u32 = WM_APP + 1;
 
 /// Après `Quit`, la fenêtre a ce délai pour se fermer d'elle-même.
@@ -41,14 +46,20 @@ enum Event {
 #[derive(Clone)]
 pub struct Mailbox {
     events: mpsc::Sender<Event>,
-    thread: u32,
+    /// La fenêtre de messages du thread principal, gardée en entier : `HWND` n'est pas `Send`.
+    window: isize,
 }
 
 impl Mailbox {
     fn post(&self, event: Event) {
         if self.events.send(event).is_ok() {
-            let _ = unsafe { PostThreadMessageW(self.thread, WM_WAKE, WPARAM(0), LPARAM(0)) };
+            self.wake();
         }
+    }
+
+    fn wake(&self) {
+        let window = HWND(self.window as _);
+        let _ = unsafe { PostMessageW(Some(window), WM_WAKE, WPARAM(0), LPARAM(0)) };
     }
 
     pub fn command(&self, command: UiCommand) {
@@ -58,21 +69,82 @@ impl Mailbox {
 
 pub struct Inbox(mpsc::Receiver<Event>);
 
-/// Crée la file du thread courant ; [`run`] doit ensuite s'exécuter sur ce même thread.
-pub fn mailbox() -> (Mailbox, Inbox) {
-    let mut message = MSG::default();
-    // Une file de messages n'existe qu'après le premier appel qui la lit.
-    unsafe {
-        let _ = PeekMessageW(&mut message, None, 0, 0, PM_NOREMOVE);
+/// Crée la fenêtre de messages du thread courant ; [`run`] doit ensuite s'exécuter sur ce même
+/// thread.
+pub fn mailbox() -> Result<(Mailbox, Inbox), String> {
+    let class = WNDCLASSW {
+        lpfnWndProc: Some(wake_proc),
+        lpszClassName: w!("PowerPlanSync.Tracker"),
+        ..Default::default()
+    };
+    unsafe { RegisterClassW(&class) };
+    let window = unsafe {
+        CreateWindowExW(
+            WINDOW_EX_STYLE(0),
+            w!("PowerPlanSync.Tracker"),
+            None,
+            WINDOW_STYLE(0),
+            0,
+            0,
+            0,
+            0,
+            Some(HWND_MESSAGE),
+            None,
+            None,
+            None,
+        )
     }
+    .map_err(|error| format!("La boucle de l'icône ne peut pas démarrer : {error}"))?;
     let (events, inbox) = mpsc::channel();
-    (
+    Ok((
         Mailbox {
             events,
-            thread: unsafe { GetCurrentThreadId() },
+            window: window.0 as isize,
         },
         Inbox(inbox),
-    )
+    ))
+}
+
+struct Loop {
+    shell: Shell,
+    inbox: Inbox,
+    done: bool,
+}
+
+thread_local! { static LOOP: RefCell<Option<Loop>> = const { RefCell::new(None) }; }
+
+unsafe extern "system" fn wake_proc(
+    window: HWND,
+    message: u32,
+    wparam: WPARAM,
+    lparam: LPARAM,
+) -> LRESULT {
+    if message != WM_WAKE {
+        return unsafe { DefWindowProcW(window, message, wparam, lparam) };
+    }
+    LOOP.with(|slot| match slot.try_borrow_mut() {
+        Ok(mut slot) => {
+            if let Some(state) = slot.as_mut() {
+                drain(state);
+            }
+        }
+        // Réveillé pendant un traitement, par une boucle modale : la suite attend son tour.
+        Err(_) => {
+            let _ = unsafe { PostMessageW(Some(window), WM_WAKE, WPARAM(0), LPARAM(0)) };
+        }
+    });
+    LRESULT(0)
+}
+
+fn drain(state: &mut Loop) {
+    while !state.done
+        && let Ok(event) = state.inbox.0.try_recv()
+    {
+        if handle(&mut state.shell, event) {
+            state.done = true;
+            unsafe { PostQuitMessage(0) };
+        }
+    }
 }
 
 /// Un processus de fenêtre lancé, et la file de ses commandes, écrites par un thread.
@@ -108,8 +180,6 @@ struct Shell {
     /// seconde instance de la même session s'arrête sans fenêtre ni icône.
     started: bool,
     start_minimized: bool,
-    /// La raison d'un coordinateur qui n'a pas pu démarrer, rejouée à chaque fenêtre.
-    stopped: Option<String>,
     tray: Option<Tray>,
     window: Option<WindowProcess>,
     next_instance: u32,
@@ -126,11 +196,11 @@ pub fn run(
     inbox: Inbox,
     on_action: impl Fn(UiAction) + 'static,
 ) {
-    let mut shell = Shell {
+    let wake = mailbox.clone();
+    let shell = Shell {
         model: UiDisplayModel::default(),
         started: false,
         start_minimized,
-        stopped: None,
         tray: None,
         window: None,
         next_instance: 0,
@@ -138,24 +208,28 @@ pub fn run(
         mailbox,
         on_action: Box::new(on_action),
     };
+    LOOP.with(|slot| {
+        *slot.borrow_mut() = Some(Loop {
+            shell,
+            inbox,
+            done: false,
+        })
+    });
+    // Des événements ont pu arriver avant la boucle.
+    wake.wake();
     let mut message = MSG::default();
     while unsafe { GetMessageW(&mut message, None, 0, 0) }.as_bool() {
-        if message.hwnd.is_invalid() && message.message == WM_WAKE {
-            while let Ok(event) = inbox.0.try_recv() {
-                if handle(&mut shell, event) {
-                    if let Some(window) = shell.window.take() {
-                        window.close();
-                    }
-                    return;
-                }
-            }
-            continue;
-        }
         unsafe {
             let _ = TranslateMessage(&message);
             DispatchMessageW(&message);
         }
     }
+    if let Some(mut state) = LOOP.with(|slot| slot.borrow_mut().take())
+        && let Some(window) = state.shell.window.take()
+    {
+        window.close();
+    }
+    let _ = unsafe { DestroyWindow(HWND(wake.window as _)) };
 }
 
 /// Rend vrai quand le processus doit s'arrêter.
@@ -198,10 +272,18 @@ fn command_from_coordinator(shell: &mut Shell, command: UiCommand) -> bool {
         UiCommand::Open if !shell.started => shell.start_minimized = false,
         UiCommand::Open => open(shell),
         UiCommand::Quit => return true,
+        // Le coordinateur n'a pas pu démarrer et s'est arrêté : la raison s'affiche, et chaque
+        // fenêtre relancée la reçoit avec le modèle.
         UiCommand::QuitFailure(reason) => {
-            shell.stopped = Some(reason.clone());
+            shell.model.stop(reason);
+            if let Some(tray) = &mut shell.tray {
+                let _ = tray.update(tray::model(&shell.model));
+            }
             match &shell.window {
-                Some(window) => window.send(UiCommand::QuitFailure(reason)),
+                Some(window) => window.send(UiCommand::Update {
+                    model: Box::new(shell.model.clone()),
+                    alert: true,
+                }),
                 None if shell.started => open(shell),
                 None => start(shell, true),
             }
@@ -262,9 +344,6 @@ fn open(shell: &mut Shell) {
                 model: Box::new(shell.model.clone()),
                 alert: false,
             });
-            if let Some(reason) = &shell.stopped {
-                window.send(UiCommand::QuitFailure(reason.clone()));
-            }
             shell.window = Some(window);
         }
         Err(_) if shell.tray.is_none() => (shell.on_action)(UiAction::Quit),

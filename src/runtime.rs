@@ -96,8 +96,7 @@ fn empty_view(error: &str) -> ViewState {
 
 pub fn run(options: Options) -> Result<(), String> {
     if options.gpui {
-        run_gpui(options);
-        return Ok(());
+        return run_gpui(options);
     }
     let _ = UI_SINK.set(Box::new(|command| {
         let _ = slint::invoke_from_event_loop(move || {
@@ -145,9 +144,9 @@ pub fn run(options: Options) -> Result<(), String> {
 
 /// Interface GPUI (D18) : le processus de suivi garde le coordinateur sur son thread et
 /// l'icône sur le thread principal, sans GPUI. La fenêtre vit dans son propre processus.
-fn run_gpui(options: Options) {
+fn run_gpui(options: Options) -> Result<(), String> {
     let (tx, rx) = mpsc::channel();
-    let (mailbox, inbox) = crate::tracker::mailbox();
+    let (mailbox, inbox) = crate::tracker::mailbox()?;
     let sink = mailbox.clone();
     let _ = UI_SINK.set(Box::new(move |command| sink.command(command)));
     let start_minimized = options.start_minimized;
@@ -160,14 +159,17 @@ fn run_gpui(options: Options) {
         mailbox,
         inbox,
         move |action| {
-            // Sans coordinateur, plus rien ne peut répondre : le processus s'arrête.
-            if ui_tx.send(AppEvent::Ui(action)).is_err() {
+            // Sans coordinateur, seule **Quitter** agit encore : la fenêtre garde la raison
+            // de l'arrêt affichée jusque-là.
+            let quit = action == UiAction::Quit;
+            if ui_tx.send(AppEvent::Ui(action)).is_err() && quit {
                 send_ui(UiCommand::Quit);
             }
         },
     );
     let _ = tx.send(AppEvent::Stop);
     let _ = worker.join();
+    Ok(())
 }
 
 struct Worker {
