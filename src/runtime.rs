@@ -164,7 +164,7 @@ fn run_gpui(options: Options) {
     let exit_tx = tx.clone();
     crate::interface::app::run(
         initial,
-        start_minimized,
+        crate::interface::app::Host::Tray { start_minimized },
         receiver,
         move |action| {
             // Sans coordinateur, plus rien ne peut répondre : l'interface s'arrête.
