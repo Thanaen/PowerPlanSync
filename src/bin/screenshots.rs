@@ -163,6 +163,24 @@ mod shots {
         after_failed_quit(display(&view, false, false, None), &view)
     }
 
+    /// Blender vient d'être retiré : **Annuler** peut le remettre.
+    fn removed() -> UiDisplayModel {
+        let mut view = active();
+        view.configuration.rules.remove(1);
+        let mut model = display(&view, false, false, None);
+        model.removed = Some("Blender".into());
+        model
+    }
+
+    /// Le seul logiciel suivi vient d'être retiré : « Pour commencer » revient avec **Annuler**.
+    fn removed_last() -> UiDisplayModel {
+        let mut view = first_launch(true, true);
+        view.configuration.rules.clear();
+        let mut model = display(&view, false, false, None);
+        model.removed = Some("Battlefield 6".into());
+        model
+    }
+
     /// `config.json` illisible au lancement : sans contrôle ni liste.
     fn unreadable() -> UiDisplayModel {
         let view = ViewState {
@@ -557,6 +575,28 @@ mod shots {
                 420.,
                 760.,
                 quit_failed(),
+            ),
+            ("removed", WindowAppearance::Dark, 880., 620., removed()),
+            (
+                "removed-light",
+                WindowAppearance::Light,
+                880.,
+                620.,
+                removed(),
+            ),
+            (
+                "removed-narrow",
+                WindowAppearance::Dark,
+                420.,
+                760.,
+                removed(),
+            ),
+            (
+                "removed-last",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                removed_last(),
             ),
             (
                 "settings-unreadable",

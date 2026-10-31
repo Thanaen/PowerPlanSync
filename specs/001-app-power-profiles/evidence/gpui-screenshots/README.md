@@ -26,6 +26,10 @@ coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-da
 | `refused-light.png` | aucune | Mêmes constats en thème clair. |
 | `quit-failed.png` | `QuitFailed.png` | Conforme ; en-tête « Automatisation suspendue · retour échoué, le plan Haute performance reste actif ». |
 | `quit-failed-narrow.png` | aucune | Fenêtre étroite : les trois actions passent l'une sous l'autre. |
+| `removed.png` | `Idle.png` | Conforme : message de réussite sur une ligne, **Annuler** (Ctrl+Z) et × à droite. |
+| `removed-light.png` | aucune | Même message en thème clair. |
+| `removed-last.png` | aucune | Le seul logiciel suivi retiré : « Pour commencer » revient, **Annuler** reste sous les étapes. |
+| `removed-narrow.png` | aucune | Fenêtre étroite : **Annuler** passe sous le texte. |
 | `settings-unreadable.png` | `ConfigError.png` | Conforme, sauf la barre d'état, qui garde le mot-clé « Automatisation arrêtée ». |
 | `settings-unreadable-light.png` | aucune | Mêmes constats en thème clair. |
 | `unavailable-dark.png` | `Unavailable.png` | Maquette tirée de cette capture. |

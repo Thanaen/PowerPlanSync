@@ -32,6 +32,7 @@ pub const NO_RETURN: &str = "Aucun retour prévu pour ce cycle.";
 pub const ADD_SOFTWARE: &str = "Ajouter un logiciel";
 pub const ADD_KEYS: [&str; 2] = ["Ctrl", "N"];
 pub const PAUSE_KEYS: [&str; 3] = ["Ctrl", "Alt", "P"];
+pub const UNDO_KEYS: [&str; 2] = ["Ctrl", "Z"];
 pub const ASSOCIATED_SOFTWARE: &str = "Logiciels associés";
 pub const FOLLOW: &str = "Suivre";
 pub const MOVE_UP: &str = "Monter";
@@ -102,6 +103,29 @@ pub fn return_on_pause(plan: &str) -> String {
 /// Le nom accessible d'une action de ligne : « Monter Blender ».
 pub fn row_action(action: &str, label: &str) -> String {
     format!("{action} {label}")
+}
+
+/// Le message qui suit **Supprimer** : « Blender a été retiré de la liste. »
+pub fn removed(label: &str) -> String {
+    format!("{} a été retiré de la liste.", software_name(label))
+}
+
+/// L'annonce d'**Annuler** : « Blender est revenu à sa place. »
+pub fn restored(label: &str) -> String {
+    format!("{} est revenu à sa place.", software_name(label))
+}
+
+/// L'annonce d'un déplacement : « Blender déplacé en position 1 sur 3. », suivie du plan actif
+/// quand l'ordre l'a changé.
+pub fn moved(label: &str, rank: usize, count: usize, plan: Option<&str>) -> String {
+    let line = format!(
+        "{} déplacé en position {rank} sur {count}.",
+        software_name(label)
+    );
+    match plan {
+        Some(plan) => format!("{line} {ACTIVE_PLAN}\u{a0}: {}.", plan_name(plan)),
+        None => line,
+    }
 }
 
 pub fn status_line(automation: Automation, detail: &str) -> String {

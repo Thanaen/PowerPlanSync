@@ -180,7 +180,7 @@ L'interface GPUI s'ouvre avec l'option de développement `--gpui` jusqu'à T071.
 
 **Independent Test**: avec `--demo --gpui`, réordonner deux logiciels, retirer puis annuler le retrait.
 
-- [ ] T064 [US3] Ajouter dans `src/interface/software_page.rs` **Suivre**, **Monter**, **Descendre**, **Modifier** et **Supprimer** sans confirmation, le message de retrait avec **Annuler** (Ctrl+Z) qui réenregistre la configuration précédente à la même position, le texte changé au second retrait, l'annonce « Blender déplacé en position 1 sur 3. », suivie de « Plan actif : … » seulement si le plan actif change, et le focus passé au bouton opposé quand le bouton utilisé devient indisponible. Couvre FR-003, FR-006, FR-007, FR-019.
+- [x] T064 [US3] Ajouter dans `src/interface/software_page.rs` **Suivre**, **Monter**, **Descendre**, **Modifier** et **Supprimer** sans confirmation, le message de retrait avec **Annuler** (Ctrl+Z) qui réenregistre la configuration précédente à la même position, le texte changé au second retrait, l'annonce « Blender déplacé en position 1 sur 3. », suivie de « Plan actif dans Windows : … » seulement si le plan actif change, et le focus passé au bouton opposé quand le bouton utilisé devient indisponible. Couvre FR-003, FR-006, FR-007, FR-019. Le message ne suit que les retraits faits fenêtre ouverte : rouvrir la fenêtre, **×** ou tout autre réglage enregistré rendent le retrait définitif. Étroit, **Annuler** passe sous le texte. Le glissement du message et l'échange de lignes restent pour T069.
 
 ## Phase 12: User Story 4 · interface GPUI (Priority: P1)
 

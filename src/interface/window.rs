@@ -22,6 +22,7 @@ actions!(
         OpenCommands,
         AddSoftware,
         TogglePause,
+        UndoDelete,
         FocusNext,
         FocusPrevious
     ]
@@ -47,6 +48,7 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("ctrl-shift-p", OpenCommands, context),
         KeyBinding::new("ctrl-n", AddSoftware, context),
         KeyBinding::new("ctrl-alt-p", TogglePause, context),
+        KeyBinding::new("ctrl-z", UndoDelete, context),
         KeyBinding::new("tab", FocusNext, context),
         KeyBinding::new("shift-tab", FocusPrevious, context),
     ]);
@@ -96,6 +98,8 @@ pub enum ShellEvent {
     AddSoftware,
     /// Ctrl+Alt+P : **Mettre en pause** ou **Reprendre**, comme le bouton de la page.
     TogglePause,
+    /// Ctrl+Z : **Annuler** le dernier retrait, comme le bouton du message.
+    UndoDelete,
 }
 
 pub fn is_narrow(width: Pixels) -> bool {
@@ -554,6 +558,7 @@ impl Render for MainWindow {
             .on_action(cx.listener(|_, _: &OpenCommands, _, cx| cx.emit(ShellEvent::OpenCommands)))
             .on_action(cx.listener(|_, _: &AddSoftware, _, cx| cx.emit(ShellEvent::AddSoftware)))
             .on_action(cx.listener(|_, _: &TogglePause, _, cx| cx.emit(ShellEvent::TogglePause)))
+            .on_action(cx.listener(|_, _: &UndoDelete, _, cx| cx.emit(ShellEvent::UndoDelete)))
             .on_action(|_: &FocusNext, window, cx| window.focus_next(cx))
             .on_action(|_: &FocusPrevious, window, cx| window.focus_prev(cx))
             .relative()
