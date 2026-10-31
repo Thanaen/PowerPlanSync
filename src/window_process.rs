@@ -3,7 +3,7 @@
 //! repartent par la sortie standard, deux canaux que seul le processus de suivi a pu créer.
 
 use std::fs::File;
-use std::os::windows::io::{AsHandle as _, IntoRawHandle as _};
+use std::os::windows::io::{AsHandle as _, AsRawHandle as _, IntoRawHandle as _};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -12,6 +12,8 @@ use windows::Win32::Storage::FileSystem::{FILE_TYPE_PIPE, GetFileType};
 use windows::Win32::System::Console::{
     GetStdHandle, STD_HANDLE, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, SetStdHandle,
 };
+use windows::Win32::System::Pipes::GetNamedPipeServerProcessId;
+use windows::Win32::UI::WindowsAndMessaging::AllowSetForegroundWindow;
 
 use crate::interface::app;
 use crate::presentation::{UiAction, UiCommand};
@@ -31,6 +33,7 @@ pub fn run() -> i32 {
     let (Some(mut input), Some(output)) = (take(STD_INPUT_HANDLE), take(STD_OUTPUT_HANDLE)) else {
         return EXIT_NO_CHANNEL;
     };
+    let tracker = tracker_process_id(&input);
     let exit = Arc::new(AtomicI32::new(EXIT_CLOSED));
     let (commands, receiver) = futures::channel::mpsc::unbounded();
     let reader_exit = Arc::clone(&exit);
@@ -59,11 +62,23 @@ pub fn run() -> i32 {
     let output = Mutex::new(output);
     // Un canal coupé se constate aussi en lecture : l'écriture ne décide de rien.
     app::run(receiver, move |action: UiAction| {
+        // Une action peut faire apparaître une fenêtre du processus de suivi, comme le
+        // sélecteur de fichier : la fenêtre, qui a reçu la saisie, lui cède le premier plan.
+        if let Some(tracker) = tracker {
+            let _ = unsafe { AllowSetForegroundWindow(tracker) };
+        }
         if let Ok(mut output) = output.lock() {
             let _ = write_frame(&mut *output, &action);
         }
     });
     exit.load(Ordering::Relaxed)
+}
+
+/// Le processus de suivi est le serveur du canal des commandes.
+fn tracker_process_id(input: &File) -> Option<u32> {
+    let mut process_id = 0;
+    unsafe { GetNamedPipeServerProcessId(HANDLE(input.as_raw_handle()), &mut process_id) }.ok()?;
+    Some(process_id)
 }
 
 /// Reprend en propriété privée et non héritable le canal reçu en `which`, puis remplace ce

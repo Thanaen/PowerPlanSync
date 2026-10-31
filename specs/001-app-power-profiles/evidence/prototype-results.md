@@ -275,3 +275,17 @@ vit dans `src/window_life.rs`, testée ligne par ligne. Le journal est `activity
 | Délai de lancement de 15 s, trame refusée venant de la fenêtre, file de 64 commandes pleine | **Non exécutés sur Windows réel** : couverts par les tests de `src/window_life.rs` |
 | Notification de perte par l'icône | **Non exécuté** : aucun essai ne lit la notification |
 
+### Dialogues, sélecteur de fichier et démonstration (T080)
+
+Binaire release de la PR de T080, `--gpui --demo`, dossier isolé, pilotage par UI Automation
+(`scripts/uia-act.ps1`, `uia-inspect.ps1`) et `send-keys.ps1`. Aucun plan Windows n'a changé.
+
+| Essai | Résultat |
+| --- | --- |
+| **Ajouter un logiciel**, segment **Parcourir…** | Le sélecteur « Choisir un logiciel » (`#32770`) s'ouvre dans le processus de suivi, au premier plan. Ce premier plan ne prouve pas l'autorisation : sans saisie réelle depuis plus de 200 s, Windows le laisse à tout processus. Le processus de fenêtre appelle désormais `AllowSetForegroundWindow` pour le processus de suivi, serveur de son canal, avant chaque action |
+| Segment **Application ouverte** | `ChooseRunningApplication`, puis `RunningApps` en retour : la liste « Applications ouvertes » montre le logiciel témoin simulé |
+| Choix d'une application, plan, **Ajouter** | `SelectRunningApplication`, puis `EditorExecutable` en retour (**Nom affiché** rempli) ; `AddRule` enregistre une règle dans `simulation/config.json` ; `FinishEditorSave` ferme le dialogue ; l'étape 1 de « Pour commencer » est « terminée » |
+| Bandeau **Démonstration** | Présent dans le processus de fenêtre (`StatusBar` « Démonstration. Les logiciels et les changements de plan sont simulés… ») |
+| **Quitter** de la barre latérale | Les deux processus s'arrêtent (T077) |
+| **Modifier**, messages intégrés autres que la démonstration | **Non exécutés** ici : même chemin de commandes et d'actions que les essais ci-dessus |
+
