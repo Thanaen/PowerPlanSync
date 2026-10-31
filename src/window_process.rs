@@ -37,8 +37,10 @@ pub fn run() -> i32 {
     std::thread::spawn(move || {
         loop {
             match read_frame::<UiCommand>(&mut input) {
+                // Après `Quit`, la fin du canal ne dit plus rien : le code de sortie reste 0.
                 Ok(command) => {
-                    if commands.unbounded_send(command).is_err() {
+                    let quit = command == UiCommand::Quit;
+                    if commands.unbounded_send(command).is_err() || quit {
                         return;
                     }
                 }

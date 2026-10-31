@@ -114,6 +114,8 @@ fn it_opens_the_window_answers_and_stops_on_quit() {
         Ok(UiAction::WindowOpened)
     );
     write_frame(&mut window.to_window, &UiCommand::Quit).unwrap();
+    // Le processus de suivi qui quitte ferme aussitôt son canal : `Quit` reste une fermeture.
+    drop(window.to_window);
     assert_eq!(
         wait_exit(&mut window.child, Duration::from_secs(10)),
         Some(EXIT_CLOSED)
