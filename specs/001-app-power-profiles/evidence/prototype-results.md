@@ -250,5 +250,9 @@ changé ; plan Haute performance relu et rétabli dans un bloc `finally`). Le pr
 | Fenêtre fermée, second lancement | Un nouveau processus de fenêtre, au premier plan |
 | Signal d'ouverture 0 à 30 ms après `WindowPattern.Close` | **Défaut trouvé puis corrigé** : à 0 ms, le processus de fenêtre qui s'arrêtait traitait encore `Open`, répondait `WindowOpened`, puis quittait, et aucune fenêtre ne restait. Un processus de fenêtre qui se ferme ignore désormais toute commande ; le processus de suivi relance. Après correction : 6 fois sur 6, une nouvelle fenêtre |
 | Verrou `Global\PowerPlanSync.Controller` tenu par un autre processus | Le processus de suivi reste en lecture seule et ouvre le processus de fenêtre avec « Contrôle indisponible » (arbre UI Automation) |
-| Clic sur l'icône | **Non exécuté** : l'icône est dans le dépassement de la zone de notification, non piloté ici. Même chemin que le second lancement à partir de `TrayCommand::Open` |
+| Clic sur l'icône | Départ réduit, puis message de rappel de `tray-icon` (`WM_LBUTTONUP`) posté à sa fenêtre `tray_icon_app` : un processus de fenêtre s'ouvre |
+| **Ouvrir PowerPlanSync** dans le menu | Menu ouvert par `WM_RBUTTONUP`, élément lu dans le vrai menu (`MN_GETHMENU`, identifiant 1001), puis `WM_COMMAND` : un processus de fenêtre s'ouvre |
+| Menu de l'icône ouvert, puis second lancement | **Défaut trouvé par la revue, puis corrigé** : le réveil par message de thread était perdu dans la boucle modale du menu. Avant correction, aucune fenêtre, ni pendant le menu ni après ; après, la fenêtre s'ouvre pendant le menu |
+| Nouvelle erreur, fenêtre fermée | **Non exécuté** : aucun moyen de provoquer une erreur bloquante fenêtre fermée sur cette machine. Une règle visant un plan absent n'est pas suivie et ne produit pas d'erreur |
+| Notification « PowerPlanSync reste ouvert » au premier masquage seulement | **Non exécuté** : aucun essai ne lit la notification |
 

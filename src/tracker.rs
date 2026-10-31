@@ -285,11 +285,15 @@ fn command_from_coordinator(shell: &mut Shell, command: UiCommand) -> bool {
                 let _ = tray.update(tray::model(&model));
             }
             shell.model = (*model).clone();
-            match &shell.window {
-                // Une nouvelle erreur ramène la fenêtre au premier plan : elle s'en charge.
+            match &mut shell.window {
+                // Une nouvelle erreur ramène la fenêtre au premier plan : elle s'en charge et
+                // répond `WindowOpened`, comme à `Open`.
                 Some(window) => {
                     if alert {
                         window.allow_foreground();
+                        if window.phase == Phase::Shown {
+                            window.phase = Phase::Reopening;
+                        }
                     }
                     window.send(UiCommand::Update { model, alert })
                 }
