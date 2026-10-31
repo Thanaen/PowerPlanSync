@@ -6,9 +6,9 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnimationExt as _, AnyElement, App, ClickEvent, Context, Entity, EventEmitter, FontWeight,
-    IntoElement, ParentElement, Render, Role, SharedString, SpringAnimation, Styled, Subscription,
-    Window, div, prelude::*, px,
+    AnimationExt as _, AnyElement, App, ClickEvent, Context, Entity, EventEmitter, FocusHandle,
+    FontWeight, IntoElement, ParentElement, Render, Role, SharedString, SpringAnimation, Styled,
+    Subscription, Window, div, prelude::*, px,
 };
 
 use crate::interface::motion;
@@ -120,6 +120,10 @@ pub struct FirstLaunch {
     /// Les étapes validées pendant l'affichage : leur pastille entre avec un rebond. Celles
     /// déjà faites à l'ouverture paraissent au repos.
     fresh: [bool; 2],
+    /// **Confirmer** disparaît une fois l'étape validée : le focus passe à l'étape suivante
+    /// plutôt que de tomber sur la fenêtre.
+    add_focus: FocusHandle,
+    activate_focus: FocusHandle,
     _subscription: Subscription,
 }
 
@@ -144,6 +148,8 @@ impl FirstLaunch {
             plan,
             proposed: (Vec::new(), -1),
             fresh: [false; 2],
+            add_focus: cx.focus_handle(),
+            activate_focus: cx.focus_handle(),
             _subscription: subscription,
         };
         this.propose(&model, cx);
@@ -318,6 +324,7 @@ impl Render for FirstLaunch {
             Button::new("first-add", strings::ADD_SOFTWARE, ButtonStyle::Tinted)
                 .icon("plus")
                 .keys(strings::ADD_KEYS)
+                .focus(&self.add_focus)
                 .on_click(cx.listener(|_, event: &ClickEvent, _, cx| {
                     cx.emit(AddRequested {
                         keyboard: event.is_keyboard(),
@@ -336,6 +343,11 @@ impl Render for FirstLaunch {
         } else {
             let chosen = self.chosen_plan(cx);
             let on_action = Rc::clone(&self.on_action);
+            let next = if steps.software {
+                self.activate_focus.clone()
+            } else {
+                self.add_focus.clone()
+            };
             div()
                 .flex()
                 .items_center()
@@ -344,9 +356,10 @@ impl Render for FirstLaunch {
                 .child(
                     Button::new("confirm-return", strings::CONFIRM, ButtonStyle::Outlined)
                         .disabled(chosen.is_none())
-                        .on_click(move |_, _, cx| {
+                        .on_click(move |_, window, cx| {
                             if let Some(plan_id) = chosen.clone() {
                                 on_action(UiAction::SetReturnPlan { plan_id }, cx);
+                                window.focus(&next, cx);
                             }
                         }),
                 )
@@ -365,6 +378,7 @@ impl Render for FirstLaunch {
             },
         )
         .disabled(!can_activate)
+        .focus(&self.activate_focus)
         .on_click(move |_, _, cx| on_action(UiAction::SetAutomation(true), cx))
         .into_any_element();
 

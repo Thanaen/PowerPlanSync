@@ -4,6 +4,7 @@
 //! de `specs/001-app-power-profiles/design/README.md`. Chaque composant porte un rôle, un nom et
 //! un état accessibles ; les couleurs sont choisies par des fonctions pures, testées sans GPUI.
 
+use gpui::accesskit::Live;
 use gpui::{
     AnyElement, App, BoxShadow, ClickEvent, Context, ElementId, EventEmitter, FocusHandle,
     Focusable, FontWeight, Hsla, KeyBinding, MouseButton, MouseDownEvent, Pixels, Point, Role,
@@ -633,6 +634,8 @@ pub struct Message {
     note: Option<SharedString>,
     close: Option<AnyElement>,
     inline: bool,
+    icon: Option<&'static str>,
+    quiet: bool,
 }
 
 impl Message {
@@ -646,7 +649,23 @@ impl Message {
             note: None,
             close: None,
             inline: false,
+            icon: None,
+            quiet: false,
         }
+    }
+
+    /// Un message permanent, comme le bandeau de démonstration : il n'est pas relu à chaque
+    /// ouverture de la fenêtre.
+    pub fn quiet(mut self) -> Self {
+        self.quiet = true;
+        self
+    }
+
+    /// Une icône propre au message, comme la fiole de la démonstration, à la place de celle
+    /// de sa teinte.
+    pub fn icon(mut self, icon: &'static str) -> Self {
+        self.icon = Some(icon);
+        self
     }
 
     /// Une seule ligne : les actions passent à droite du texte, comme **Annuler** après un
@@ -690,6 +709,14 @@ impl RenderOnce for Message {
             None => self.text.clone(),
         };
         let inline = self.inline;
+        // GPUI n'a pas de setter `aria-live` : sans région active, le Narrateur ne lit pas un
+        // message qui paraît hors du focus. La région est un nœud caché qui porte le texte seul :
+        // posée sur le message, elle passerait à ses boutons, annoncés à leur tour.
+        let live = if self.kind == MessageKind::Error {
+            Live::Assertive
+        } else {
+            Live::Polite
+        };
         let (below, beside) = if inline {
             (Vec::new(), self.actions)
         } else {
@@ -702,10 +729,25 @@ impl RenderOnce for Message {
             } else {
                 Role::Status
             })
-            .aria_label(name)
+            .aria_label(name.clone())
             .when_some(self.note.clone(), |message, note| {
                 message.aria_description(note)
             })
+            .when(!self.quiet, |message| {
+                message.child(
+                    div()
+                        .id("live")
+                        .role(Role::Status)
+                        .aria_label(name)
+                        .a11y_synthetic_children(move |children| {
+                            children.parent_node().set_live(live)
+                        })
+                        .absolute()
+                        .size_0()
+                        .overflow_hidden(),
+                )
+            })
+            .relative()
             .flex()
             .when(inline, |message| message.items_center())
             .when(!inline, |message| message.items_start())
@@ -723,7 +765,10 @@ impl RenderOnce for Message {
                     .h(text::LABEL_MD.line_height)
                     .flex()
                     .items_center()
-                    .child(icon(message_icon(self.kind), colors.icon)),
+                    .child(icon(
+                        self.icon.unwrap_or(message_icon(self.kind)),
+                        colors.icon,
+                    )),
             )
             .child(
                 div()

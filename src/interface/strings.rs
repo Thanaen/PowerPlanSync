@@ -33,6 +33,11 @@ pub const ADD_SOFTWARE: &str = "Ajouter un logiciel";
 pub const ADD_KEYS: [&str; 2] = ["Ctrl", "N"];
 pub const PAUSE_KEYS: [&str; 3] = ["Ctrl", "Alt", "P"];
 pub const UNDO_KEYS: [&str; 2] = ["Ctrl", "Z"];
+pub const DEMO_TITLE: &str = "Démonstration";
+pub const DEMO_TEXT: &str =
+    "Les logiciels et les changements de plan sont simulés. Aucun réglage Windows n’est modifié.";
+pub const DEMO_START: &str = "Lancer le logiciel simulé";
+pub const DEMO_STOP: &str = "Arrêter le logiciel simulé";
 pub const ASSOCIATED_SOFTWARE: &str = "Logiciels associés";
 pub const FOLLOW: &str = "Suivre";
 pub const MOVE_UP: &str = "Monter";

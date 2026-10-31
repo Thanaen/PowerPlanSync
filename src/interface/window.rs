@@ -5,8 +5,8 @@
 
 use gpui::{
     AnyView, App, AppContext as _, Bounds, Context, EventEmitter, FocusHandle, Focusable, Global,
-    Hsla, KeyBinding, Pixels, Role, SharedString, Size, Window, WindowBounds, WindowControlArea,
-    WindowHandle, WindowOptions, actions, div, prelude::*, px, size,
+    Hsla, KeyBinding, Pixels, Role, SharedString, Size, Subscription, Window, WindowBounds,
+    WindowControlArea, WindowHandle, WindowOptions, actions, div, prelude::*, px, size,
 };
 
 use crate::domain::PowerSource;
@@ -227,6 +227,9 @@ pub struct MainWindow {
     pages: [Option<AnyView>; 3],
     /// Le dialogue ouvert, sous son voile, au-dessus de la fenêtre.
     dialog: Option<AnyView>,
+    /// Quand l'élément focalisé disparaît, plus rien n'a le focus : sans contexte de touches,
+    /// Tab et les raccourcis de la fenêtre ne répondraient plus. La fenêtre le reprend.
+    _focus_lost: Subscription,
 }
 
 impl EventEmitter<ShellEvent> for MainWindow {}
@@ -235,8 +238,19 @@ impl MainWindow {
     pub fn new(model: UiDisplayModel, window: &mut Window, cx: &mut Context<Self>) -> Self {
         let focus_handle = cx.focus_handle();
         window.focus(&focus_handle, cx);
+        let focus_lost = cx.on_focus_lost(window, |this: &mut Self, window, cx| {
+            window.focus(&this.focus_handle, cx);
+        });
+        // GPUI 0.3.9 sous Windows : une fenêtre détruite par `WM_CLOSE` (× de la barre de titre,
+        // Alt+F4) garde son rendu DirectX, environ 25 Mio de mémoire privée par fermeture.
+        // `remove_window` le libère : la demande native est refusée et remplacée par ce chemin.
+        window.on_window_should_close(cx, |window, _| {
+            window.remove_window();
+            false
+        });
         Self {
             focus_handle,
+            _focus_lost: focus_lost,
             model,
             page: Page::default(),
             pages: [None, None, None],
