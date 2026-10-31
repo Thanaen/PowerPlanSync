@@ -289,3 +289,35 @@ Binaire release de la PR de T080, `--gpui --demo`, dossier isolé, pilotage par 
 | **Quitter** de la barre latérale | Les deux processus s'arrêtent (T077) |
 | **Modifier**, messages intégrés autres que la démonstration | **Non exécutés** ici : même chemin de commandes et d'actions que les essais ci-dessus |
 
+## Vérification Windows du processus séparé (T081)
+
+Date : 31 octobre 2026, machine de référence. Binaire release du code de T080, SHA-256
+`9B097FF1D96C90EB298D9F334FE202F56CAE64D14717AE7FAE521A5FCED23591`. Aucun plan Windows n'a changé ;
+le plan Haute performance a été relu, puis rétabli dans un bloc `finally` après chaque essai en
+vrai mode. Battlefield n'a pas été lancé. Données dans
+[performance/split-20261031/](performance/split-20261031/).
+
+| Critère | Méthode | Mesure | Budget |
+| --- | --- | ---: | ---: |
+| SC-004, fenêtre fermée, vrai mode, 20 règles, 211 processus | `measure-prototype.ps1`, 10 s de stabilisation, 60 s | **3,6 Mio**, 0,028 % de CPU | 40 Mio, 0,1 % |
+| SC-004, fenêtre fermée, `--demo` | `measure-window-states.ps1`, 60 s | 2,8 Mio, 0 % de CPU, 197 → 195 handles, aucun processus de fenêtre | 40 Mio |
+| SC-004, fenêtre ouverte, `--demo` | idem, deux processus mesurés en même temps | suivi 3,1 + fenêtre 92,0 = **95,1 Mio** (somme des maxima) | 100 Mio |
+| SC-007, cent cycles | `measure-window-reopen.ps1 -Opens 100 -SettleSeconds 3`, vrai mode, dossier neuf, réouverture par un second lancement | suivi 3,0 → 3,0 Mio (2,9 à 3,1), 203 → 200 handles (200 à 204), **zéro** processus de fenêtre après chaque fermeture | 5 Mio, 10 handles |
+| Temps d'ouverture (informatif) | signal de réouverture, puis interrogation UI Automation toutes les 20 ms, 10 essais | médiane 227 ms, maximum 247 ms | aucun |
+
+**Clavier.** Dans le processus de fenêtre, Tab parcourt dans l'ordre la fenêtre, **Logiciels**,
+**Réglages**, **Aide et limites**, **Quitter**, **Ajouter un logiciel**, **Plan de retour** et
+**Confirmer** (`scripts/uia-focus.ps1` après chaque touche).
+
+**Narrateur.** Lancé pendant l'essai, ses fenêtres d'accueil fermées, focus sur **Logiciels**, puis
+Tab, Tab, Tab et Maj+Tab. Son récapitulatif (Insert + Alt + X) montre : « PowerPlanSync région,
+Navigation tabulation, Logiciels tab item, 1 sur 3, sélectionné, Réglages tab item, 2 sur 3, Aide et
+limites tab item, 3 sur 3, Quitter, Bouton, Navigation tabulation, Aide et limites tab item, 3 sur
+3 ». Capture : [split-narrator-recap.png](accessibility/gpui/split-narrator-recap.png). Le
+Narrateur a été arrêté ensuite ; aucun réglage d'affichage n'a été modifié.
+
+**Conclusion.** Avec la fenêtre dans son propre processus, SC-004 est tenu fenêtre fermée avec
+36 Mio de marge, et fenêtre ouverte avec 4,9 Mio de marge, sur mesures de 60 s. Les cent cycles de
+SC-007 ne laissent aucun processus de fenêtre ni dérive. La campagne de 30 minutes de SC-004
+(T039) n'a pas été exécutée, ni le parcours complet au Narrateur et en contraste élevé (T070).
+
