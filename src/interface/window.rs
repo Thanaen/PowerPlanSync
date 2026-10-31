@@ -241,6 +241,13 @@ impl MainWindow {
         let focus_lost = cx.on_focus_lost(window, |this: &mut Self, window, cx| {
             window.focus(&this.focus_handle, cx);
         });
+        // GPUI 0.3.9 sous Windows : une fenêtre détruite par `WM_CLOSE` (× de la barre de titre,
+        // Alt+F4) garde son rendu DirectX, environ 25 Mio de mémoire privée par fermeture.
+        // `remove_window` le libère : la demande native est refusée et remplacée par ce chemin.
+        window.on_window_should_close(cx, |window, _| {
+            window.remove_window();
+            false
+        });
         Self {
             focus_handle,
             _focus_lost: focus_lost,

@@ -48,7 +48,9 @@ pub struct SoftwarePage {
     /// **Annuler** du message de retrait : la ligne supprimée emporte son bouton, le focus
     /// passe à ce qui permet de la remettre, dès que le message paraît.
     undo_focus: Option<FocusHandle>,
-    focus_undo: bool,
+    /// Le logiciel que **Supprimer** vient de retirer : le focus attend son propre message,
+    /// pas celui d'un retrait précédent encore affiché.
+    focus_undo: Option<String>,
 }
 
 impl EventEmitter<SoftwareEvent> for SoftwarePage {}
@@ -63,7 +65,7 @@ impl SoftwarePage {
             moving: None,
             announcement: None,
             undo_focus: None,
-            focus_undo: false,
+            focus_undo: None,
         }
     }
 
@@ -283,37 +285,41 @@ impl SoftwarePage {
 
     /// En démonstration, le bandeau de la maquette `Demo.png` : rien n'est réel, et le logiciel
     /// simulé, le premier de la liste, se lance et s'arrête d'ici.
-    fn demo(&self, theme: &Theme) -> Message {
+    /// Avant l'activation, rien ne peut être simulé : le bandeau ne garde que son texte.
+    fn demo(&self, simulate: bool, theme: &Theme) -> Message {
         let backdrop = message_colors(MessageKind::Info, theme).background;
         let running = self.model.demo_process_running;
         let on_action = Rc::clone(&self.on_action);
-        Message::new("demo", MessageKind::Info, strings::DEMO_TEXT)
+        let banner = Message::new("demo", MessageKind::Info, strings::DEMO_TEXT)
             .title(strings::DEMO_TITLE)
             .quiet()
-            .icon("flask-conical")
-            .action(
-                Button::new(
-                    "demo-run",
-                    if running {
-                        strings::DEMO_STOP
-                    } else {
-                        strings::DEMO_START
-                    },
-                    ButtonStyle::Outlined,
-                )
-                .icon(if running { "square" } else { "play" })
-                .backdrop(backdrop)
-                .on_click(move |_, _, cx| {
-                    on_action(
-                        if running {
-                            UiAction::DemoStop
-                        } else {
-                            UiAction::DemoStart
-                        },
-                        cx,
-                    )
-                }),
+            .icon("flask-conical");
+        if !simulate {
+            return banner;
+        }
+        banner.action(
+            Button::new(
+                "demo-run",
+                if running {
+                    strings::DEMO_STOP
+                } else {
+                    strings::DEMO_START
+                },
+                ButtonStyle::Outlined,
             )
+            .icon(if running { "square" } else { "play" })
+            .backdrop(backdrop)
+            .on_click(move |_, _, cx| {
+                on_action(
+                    if running {
+                        UiAction::DemoStop
+                    } else {
+                        UiAction::DemoStart
+                    },
+                    cx,
+                )
+            }),
+        )
     }
 
     /// Le message sous la liste après **Supprimer** : **Annuler** ou Ctrl+Z remet le logiciel.
@@ -382,8 +388,9 @@ impl SoftwarePage {
             theme.text_muted
         };
         let on_action = Rc::clone(&self.on_action);
+        let deleted = rule.label.clone();
         let delete = cx.listener(move |page: &mut Self, _: &ClickEvent, _, cx| {
-            page.focus_undo = true;
+            page.focus_undo = Some(deleted.clone());
             (page.on_action)(UiAction::DeleteRule { rule_id: id }, cx);
         });
         let named = |action: &str| strings::row_action(action, &label);
@@ -643,8 +650,8 @@ impl Render for SoftwarePage {
             .as_deref()
             .filter(|_| self.model.can_undo())
             .map(|label| self.removal(label, &undo_focus, narrow, &theme));
-        if self.focus_undo && removal.is_some() {
-            self.focus_undo = false;
+        if removal.is_some() && self.focus_undo.is_some() && self.focus_undo == self.model.removed {
+            self.focus_undo = None;
             undo_focus.focus(window, cx);
         }
         let body = if self.model.read_only {
@@ -653,12 +660,14 @@ impl Render for SoftwarePage {
             // Retirer le dernier logiciel suivi ramène « Pour commencer » : **Annuler** reste.
             let steps = self.first_launch(window, cx);
             let list = first_launch::list_shown(&self.model).then(|| self.list(narrow, &theme, cx));
-            body.children(message)
+            let demo = self.model.demo_mode.then(|| self.demo(false, &theme));
+            body.children(demo)
+                .children(message)
                 .child(steps)
                 .children(list)
                 .children(removal)
         } else {
-            let demo = self.model.demo_mode.then(|| self.demo(&theme));
+            let demo = self.model.demo_mode.then(|| self.demo(true, &theme));
             body.child(self.actions(&theme, cx))
                 .children(demo)
                 .children(message)

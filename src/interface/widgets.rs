@@ -710,7 +710,8 @@ impl RenderOnce for Message {
         };
         let inline = self.inline;
         // GPUI n'a pas de setter `aria-live` : sans région active, le Narrateur ne lit pas un
-        // message qui paraît hors du focus.
+        // message qui paraît hors du focus. La région est un nœud caché qui porte le texte seul :
+        // posée sur le message, elle passerait à ses boutons, annoncés à leur tour.
         let live = if self.kind == MessageKind::Error {
             Live::Assertive
         } else {
@@ -728,14 +729,25 @@ impl RenderOnce for Message {
             } else {
                 Role::Status
             })
-            .aria_label(name)
+            .aria_label(name.clone())
             .when_some(self.note.clone(), |message, note| {
                 message.aria_description(note)
             })
             .when(!self.quiet, |message| {
-                message
-                    .a11y_synthetic_children(move |children| children.parent_node().set_live(live))
+                message.child(
+                    div()
+                        .id("live")
+                        .role(Role::Status)
+                        .aria_label(name)
+                        .a11y_synthetic_children(move |children| {
+                            children.parent_node().set_live(live)
+                        })
+                        .absolute()
+                        .size_0()
+                        .overflow_hidden(),
+                )
             })
+            .relative()
             .flex()
             .when(inline, |message| message.items_center())
             .when(!inline, |message| message.items_start())
