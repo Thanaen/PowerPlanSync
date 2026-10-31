@@ -1,0 +1,50 @@
+{
+  "executable": "D:\\Dev\\worktrees\\PowerPlanSync\\app-fenetre-processus-separe\\target\\release\\power-plan-sync.exe",
+  "sha256": "D130110D260AF2B720FA6FFF73725AF2278DA1023993E018DC9BA9DDFACBC6D6",
+  "settle_seconds": 5,
+  "per_open_mib": 0.0,
+  "rows": [
+    {
+      "opens": 1,
+      "closed_private_mib": 3.0,
+      "handles": 203,
+      "threads": 9,
+      "window_processes": 0
+    },
+    {
+      "opens": 2,
+      "closed_private_mib": 3.0,
+      "handles": 203,
+      "threads": 9,
+      "window_processes": 0
+    },
+    {
+      "opens": 3,
+      "closed_private_mib": 3.0,
+      "handles": 203,
+      "threads": 9,
+      "window_processes": 0
+    },
+    {
+      "opens": 4,
+      "closed_private_mib": 3.0,
+      "handles": 203,
+      "threads": 9,
+      "window_processes": 0
+    },
+    {
+      "opens": 5,
+      "closed_private_mib": 2.9,
+      "handles": 204,
+      "threads": 7,
+      "window_processes": 0
+    },
+    {
+      "opens": 6,
+      "closed_private_mib": 3.0,
+      "handles": 204,
+      "threads": 7,
+      "window_processes": 0
+    }
+  ]
+}

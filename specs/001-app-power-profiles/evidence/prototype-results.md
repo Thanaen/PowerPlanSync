@@ -212,3 +212,27 @@ sous SC-004. Le CPU du relevé (0,029 % sur 60 s) est proche de celui de la vers
 sur une autre durée). La faisabilité de l'option 1 de D17 est
 établie ; D18 en décrit la conception. Ce n'est pas la mesure de 30 minutes de SC-004 (T039), ni
 une mesure fenêtre ouverte, qui exige le processus de fenêtre (T077, T081).
+
+## Deux processus : suivi sans GPUI et fenêtre `--window` (T077)
+
+Date : 31 octobre 2026, même machine. Binaire release de la PR de T077 (SHA-256 `D130110D…`, champ
+`sha256` des fichiers). `--gpui` lance désormais le processus de suivi sans GPUI, qui ouvre la
+fenêtre dans `power-plan-sync.exe --window`. Données dans
+[performance/split-20261031/](performance/split-20261031/). Aucun plan Windows n'a changé ; le plan
+Haute performance a été relu, puis rétabli dans un bloc `finally` après les essais en vrai mode.
+
+| Mesure | Méthode | Résultat | Budget |
+| --- | --- | ---: | ---: |
+| Suivi, fenêtre jamais ouverte, vrai mode, 20 règles, 60 s | `measure-prototype.ps1` | **3,2 Mio**, 0,018 % de CPU, 202 handles | 40 Mio |
+| Suivi, fenêtre fermée, `--demo`, 60 s | `measure-window-states.ps1` | 2,9 Mio, 195 handles, aucun processus de fenêtre | 40 Mio |
+| Fenêtre ouverte, `--demo`, 60 s : suivi | idem, mesuré en même temps | 3,1 Mio | — |
+| Fenêtre ouverte, `--demo`, 60 s : processus de fenêtre | idem | 92,1 Mio, 0,095 % de CPU | — |
+| Fenêtre ouverte : somme des maxima | idem | **95,1 Mio** | 100 Mio |
+| Six fermetures et réouvertures par un second lancement, vrai mode, dossier neuf | `measure-window-reopen.ps1` | 3,0 → 3,0 Mio, 203 → 204 handles, zéro processus de fenêtre après chaque fermeture | 5 Mio, 10 handles |
+
+La somme des maxima est une borne supérieure du maximum de la somme. Fenêtre ouverte, la marge
+est de 4,9 Mio : le processus de fenêtre seul coûte presque autant que GPUI dans un seul processus
+(92,5 Mio). Ce n'est pas la campagne de 30 minutes de SC-004, ni les cent cycles de SC-007 (T081).
+
+**Quitter** dans la barre latérale du processus de fenêtre arrête aussi le processus de suivi
+(code 0) ; aucun processus ne reste.

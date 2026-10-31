@@ -1,0 +1,23 @@
+{
+  "sha256": "D130110D260AF2B720FA6FFF73725AF2278DA1023993E018DC9BA9DDFACBC6D6",
+  "commit": "e7fc035",
+  "os_process_count": 220,
+  "rule_count": 20,
+  "window_processes": 0,
+  "plan_before": "GUID du mode de gestion de l’alimentation : 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (Haute performance)",
+  "summary": {
+    "process_id": 23744,
+    "process_name": "power-plan-sync",
+    "process_started_utc": "2026-10-31T17:13:51.3998962Z",
+    "measured_utc": "2026-10-31T17:15:01.8251202Z",
+    "duration_seconds": 60.38,
+    "logical_processors": 16,
+    "samples": 61,
+    "cpu_percent_machine": 0.01779,
+    "private_mib_max": 3.176,
+    "working_set_mib_max": 16.203,
+    "handles_first": 201,
+    "handles_last": 202,
+    "threads_last": 6
+  }
+}
