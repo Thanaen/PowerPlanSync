@@ -484,7 +484,9 @@ données** restent des `UiAction` exécutées par le processus de suivi.
 objet JSON `{"version": 1, "message": …}`. Le processus de fenêtre reçoit les `UiCommand`
 existantes et renvoie les `UiAction` existantes, rendues sérialisables par `serde` dans
 `src/presentation.rs`. Une trame est refusée si sa version diffère, si son message est inconnu,
-si un champ manque ou s'ajoute (`deny_unknown_fields`), ou si elle dépasse 1 Mio. Un refus ferme
+si un champ manque ou s'ajoute, ou si elle dépasse 1 Mio. Un champ manque ou s'ajoute quand le
+message lu, sérialisé à nouveau, diffère du JSON reçu : la règle vaut aussi pour un champ
+`Option`, que `serde` remplirait sinon par `None`. Un refus ferme
 le canal : le processus de fenêtre s'arrête, et le processus de suivi traite la fenêtre comme
 perdue. La version change à chaque modification de ces types. Les deux rôles viennent du même
 exécutable : un écart de version ne survient qu'après un remplacement du fichier pendant
@@ -511,7 +513,10 @@ l'exécution.
   une fermeture : au premier masquage, l'icône affiche « PowerPlanSync reste ouvert ». Un autre
   code, une trame refusée ou un arrêt forcé est une perte, notée dans le journal de diagnostic.
   L'icône l'explique par une notification : « La fenêtre de PowerPlanSync s'est fermée. Le suivi
-  continue ; cliquez sur l'icône pour la rouvrir. » Le suivi continue dans les deux cas.
+  continue ; cliquez sur l'icône pour la rouvrir. » Le suivi continue dans les deux cas. Quand le
+  processus de suivi remplace lui-même la fenêtre après un `Open` sans réponse, la perte n'est
+  notée qu'au journal. La fin de canal d'une instance déjà arrêtée ou remplacée est ignorée. La
+  table d'états complète est dans `contracts/runtime.md`.
 - À l'arrêt du processus de suivi, `UiCommand::Quit` ferme la fenêtre ; après 2 s, le processus de
   fenêtre est arrêté. S'il perd son canal de commandes, le processus de fenêtre s'arrête de
   lui-même : le processus de suivi peut disparaître sans laisser de fenêtre orpheline.

@@ -57,14 +57,26 @@ n'interrompt jamais le suivi.
 | État de la fenêtre | Événement | État suivant |
 | --- | --- | --- |
 | Absente | Demande d'ouverture | Lancement, délai de 15 s |
+| Lancement | Demande d'ouverture | Lancement, délai inchangé |
 | Lancement | `WindowOpened` | Ouverte |
 | Lancement | Délai dépassé | Absente, processus arrêté, perte notifiée |
-| Ouverte | Demande d'ouverture | `Open` envoyé, délai de 5 s |
+| Lancement | Fin du canal, quel que soit le code | Absente, perte notifiée |
+| Ouverte | Demande d'ouverture | `Open` en attente, `Open` envoyé, délai de 5 s |
+| Ouverte | Fin du canal, code nul | Absente ; « PowerPlanSync reste ouvert » au premier masquage |
+| Ouverte | Fin du canal, autre code ou trame refusée | Absente, perte notifiée |
+| `Open` en attente | Demande d'ouverture | `Open` en attente, délai inchangé |
 | `Open` en attente | `WindowOpened` | Ouverte |
-| `Open` en attente | Délai dépassé | Processus arrêté, un nouveau lancement |
-| Ouverte ou en attente | Fin du canal, code nul | Absente ; une demande en attente relance |
-| Ouverte ou en attente | Fin du canal, autre code ou trame refusée | Absente, perte notifiée |
-| Toute | `Quit` du coordinateur | Fermeture demandée, arrêt après 2 s |
+| `Open` en attente | Délai dépassé | Processus arrêté, perte notée au journal seulement, nouveau lancement |
+| `Open` en attente | Fin du canal, code nul | Nouveau lancement : la fenêtre se fermait |
+| `Open` en attente | Fin du canal, autre code ou trame refusée | Perte notée au journal seulement, nouveau lancement |
+| Lancement, Ouverte ou `Open` en attente | `Quit` du coordinateur | Fermeture demandée, arrêt après 2 s |
+
+Un nouveau lancement issu d'un `Open` en attente part avec le délai de 15 s, et ses propres
+issues suivent les lignes « Lancement » : il n'est jamais relancé. Chaque processus de fenêtre
+porte un numéro d'instance, celui de ses canaux. Le processus de suivi ignore la fin de canal
+et le code de sortie d'une instance qu'il a déjà arrêtée ou remplacée : ils ne changent jamais
+l'état du processus suivant. Un remplacement n'affiche pas la notification de perte, puisqu'une
+nouvelle fenêtre s'ouvre.
 
 ## Modes d'essai prévus
 
