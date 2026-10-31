@@ -59,6 +59,21 @@ function Wait-ForPlan([string]$Expected, [datetime]$Since, [int]$TimeoutMs = $tr
     throw "Le plan $Expected n'a pas été observé dans le délai de ${TimeoutMs} ms. Dernier plan : $observed."
 }
 
+# Attend `Expected` en échouant sur tout autre plan observé que `From` : une transition entre
+# deux gagnants ne passe par aucun plan intermédiaire.
+function Wait-ForPlanDirect([string]$From, [string]$Expected, [datetime]$Since, [int]$TimeoutMs = $transitionTimeoutMs) {
+    $deadline = $Since.AddMilliseconds($TimeoutMs)
+    do {
+        $observed = Read-ActivePlan
+        if ($observed -eq $Expected) {
+            return [math]::Round(((Get-Date) - $Since).TotalMilliseconds, 3)
+        }
+        if ($observed -ne $From) { throw "Plan intermédiaire $observed observé entre $From et $Expected." }
+        Start-Sleep -Milliseconds $PollMilliseconds
+    } while ((Get-Date) -le $deadline)
+    throw "Le plan $Expected n'a pas été observé dans le délai de ${TimeoutMs} ms. Dernier plan : $observed."
+}
+
 function Assert-PlanStays([string]$Expected, [int]$DurationMs) {
     $started = Get-Date
     do {
@@ -82,17 +97,26 @@ function Convert-PathToUnits([string]$Path) {
 }
 
 function Write-Configuration([string]$DataDirectory, [string]$Executable, [string]$ReturnPlan) {
+    Write-RulesConfiguration $DataDirectory @(@{ Executable = $Executable; Plan = $script:targetPlan }) $ReturnPlan
+}
+
+# `Rules` dans l'ordre de priorité : la première règle ouverte décide du plan.
+function Write-RulesConfiguration([string]$DataDirectory, [object[]]$Rules, [string]$ReturnPlan) {
     [IO.Directory]::CreateDirectory($DataDirectory) | Out-Null
-    $targetId = Convert-GuidToPlanId $script:targetPlan
+    $targetId = Convert-GuidToPlanId $Rules[0].Plan
     $returnId = Convert-GuidToPlanId $ReturnPlan
+    $index = 0
     $configuration = [ordered]@{
         schema_version = 1
-        rules = @([ordered]@{
-            id = 1
-            label = 'behavior verification target'
-            executable = Convert-PathToUnits $Executable
-            plan = $targetId
-            enabled = $true
+        rules = @($Rules | ForEach-Object {
+            $index++
+            [ordered]@{
+                id = $index
+                label = "behavior verification target $index"
+                executable = Convert-PathToUnits $_.Executable
+                plan = Convert-GuidToPlanId $_.Plan
+                enabled = $true
+            }
         })
         return_plan = $returnId
         automation_enabled = $true
@@ -342,6 +366,32 @@ try {
         $measurements.recovery_ms = Wait-ForPlan $script:initialPlan $restartTime
         $measurements.recovered_plan = Read-ActivePlan
     }
+
+    Invoke-Case 'two-rules-priority' {
+        param($measurements)
+        $data = Join-Path $script:currentCasePath 'data'
+        $first = Join-Path $script:currentCasePath 'first\demo_target.exe'
+        $second = Join-Path $script:currentCasePath 'second\demo_target.exe'
+        foreach ($copy in @($first, $second)) {
+            [IO.Directory]::CreateDirectory((Split-Path -Parent $copy)) | Out-Null
+            Copy-Item -LiteralPath $script:fixture -Destination $copy
+        }
+        Write-RulesConfiguration $data @(
+            @{ Executable = $first; Plan = $script:targetPlan },
+            @{ Executable = $second; Plan = $script:externalPlan }
+        ) $script:initialPlan
+        Start-Application $data | Out-Null
+        $low = Start-Owned $second @('--sleep-ms', '30000') 'second-rule'
+        $measurements.second_rule_activation_ms = Wait-ForPlan $script:externalPlan $low.StartTime
+        $high = Start-Owned $first @('--sleep-ms', '10000') 'first-rule'
+        $measurements.first_rule_takeover_ms = Wait-ForPlanDirect $script:externalPlan $script:targetPlan $high.StartTime
+        $high.WaitForExit(); $high.Refresh()
+        $measurements.back_to_second_rule_ms = Wait-ForPlanDirect $script:targetPlan $script:externalPlan $high.ExitTime
+        $record = $script:activeOwned | Where-Object { $_.Process.Id -eq $low.Id } | Select-Object -First 1
+        Stop-Owned $record
+        $low.Refresh()
+        $measurements.return_ms = Wait-ForPlanDirect $script:externalPlan $script:initialPlan $low.ExitTime
+    }
 } catch {
     $failure = $_.Exception.Message
 } finally {
@@ -365,8 +415,9 @@ try {
             forced_fixture_stop = 'initial after forced target exit'
             manual_external_override = 'external after last target exit'
             crash_restart_recovery = 'initial recovery plan captured before the crash'
+            two_rules_priority = 'second rule, first rule, second rule after grace, then initial, never an intermediate plan'
         }
-        passed = -not $failure -and $results.Count -eq 6 -and @($results | Where-Object { -not $_.passed }).Count -eq 0
+        passed = -not $failure -and $results.Count -eq 7 -and @($results | Where-Object { -not $_.passed }).Count -eq 0
         failure = $failure
         cases = $results
     }

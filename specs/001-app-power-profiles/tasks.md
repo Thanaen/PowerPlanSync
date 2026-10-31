@@ -72,7 +72,7 @@ Les résultats inconnus restent marqués.
 - [x] T016 [US1] Implémenter dans `src/runtime.rs` et `src/coordinator.rs` la boucle d'une seconde, l'acquisition journalisée, une seule transaction en vol, la relecture avant et après écriture et l'arrêt du timer quand inutile. Couvre FR-008, FR-010, FR-011, FR-025, SC-002, SC-004.
 - [x] T017 [P] [US1] ~~Créer l'éditeur minimal de fichier et plan dans `ui/rule-editor.slint`, avec validation et annulation. Couvre FR-002, FR-003, FR-025.~~ → remplacée par T059.
 - [x] T018 [US1] ~~Relier retour confirmé, activation explicite, état réel, fenêtre et notification dans `src/ui.rs`, `ui/main.slint` et `ui/tray.slint`. Couvre FR-002, FR-008, FR-018, FR-024, FR-025.~~ → remplacée par T054, T055, T056, T058 et T060.
-- [ ] T019 [US1] Vérifier le cycle sur Windows avec le témoin, le nom homonyme et plusieurs instances dans `tests/windows_integration.rs`, mesurer les délais depuis création et sortie réelles jusqu'au GUID confirmé, puis conserver les résultats dans `specs/001-app-power-profiles/evidence/us1.md`. Couvre FR-004, FR-005, FR-008, FR-026, SC-002, SC-003.
+- [x] T019 [US1] Vérifier le cycle sur Windows avec le témoin, le nom homonyme et plusieurs instances dans `scripts/verify-behaviors.ps1` et `scripts/verify-windows.ps1` (un test Cargo changerait le plan de toute machine qui lance `cargo test`), mesurer les délais depuis création et sortie réelles jusqu'au GUID confirmé, puis conserver les résultats dans `specs/001-app-power-profiles/evidence/us1.md`. Couvre FR-004, FR-005, FR-008, FR-026, SC-002, SC-003.
 
 **Checkpoint**: démonstration du besoin principal. Cette étape seule n'est pas une version distribuable.
 
@@ -89,7 +89,7 @@ Les résultats inconnus restent marqués.
 - [x] T024 [US2] Intégrer source secteur, batterie et reprise de veille dans `src/windows/power.rs` et `src/coordinator.rs`. Couvre FR-014, FR-015.
 - [x] T025 [US2] Intégrer déconnexion, changement de session et arrêt de Windows dans `src/windows/session.rs` et `src/coordinator.rs`, en distinguant verrouillage d'écran et perte de session active. Couvre FR-015, FR-016.
 - [x] T026 [US2] ~~Présenter erreurs, choix de sortie malgré échec et explication des limites de récupération dans `ui/main.slint`, `ui/tray.slint` et `ui/strings-fr.slint`. Couvre FR-009, FR-012, FR-013, FR-018.~~ → remplacée par T062.
-- [ ] T027 [US2] Exécuter la matrice de récupération, batterie, veille, sessions et erreurs du guide, puis consigner chaque résultat dans `specs/001-app-power-profiles/evidence/us2.md`. Couvre FR-009, FR-010, FR-011, FR-012, FR-013, FR-014, FR-015, FR-016, FR-017, FR-023, FR-026, SC-003.
+- [ ] T027 [US2] Exécuter la matrice de récupération, batterie, veille, sessions et erreurs du guide, puis consigner chaque résultat dans `specs/001-app-power-profiles/evidence/us2.md`. Couvre FR-009, FR-010, FR-011, FR-012, FR-013, FR-014, FR-015, FR-016, FR-017, FR-023, FR-026, SC-003. État du 2026-10-31 dans `evidence/us2.md` : batterie, veille et changement de session restent à exécuter sur un portable ou devant le PC.
 
 **Checkpoint**: les erreurs restent visibles et les écritures respectent la révocation observée.
 
@@ -118,7 +118,7 @@ Les résultats inconnus restent marqués.
 - [x] T035 [US3] Ajouter les scénarios de priorité, réordonnancement, désactivation et suppression active dans `tests/engine_scenarios.rs`. Couvre FR-003, FR-006, FR-007, FR-024.
 - [x] T036 [US3] Compléter l'arbitrage ordonné et le recalcul immédiat des actions explicites dans `src/engine.rs`. Couvre FR-003, FR-006, FR-007.
 - [x] T037 [US3] ~~Ajouter activation, modification, suppression, Monter et Descendre dans `ui/main.slint` et `src/ui.rs`, sans exiger de glisser-déposer. Couvre FR-003, FR-006, FR-019.~~ → remplacée par T064.
-- [ ] T038 [US3] Vérifier les transitions entre gagnants sans plan intermédiaire et les logiciels déplacés, puis conserver les preuves dans `specs/001-app-power-profiles/evidence/us3.md`. Couvre FR-003, FR-004, FR-006, FR-007, SC-003.
+- [x] T038 [US3] Vérifier les transitions entre gagnants sans plan intermédiaire et les logiciels déplacés, puis conserver les preuves dans `specs/001-app-power-profiles/evidence/us3.md`. Couvre FR-003, FR-004, FR-006, FR-007, SC-003.
 
 **Checkpoint**: toutes les règles sont testables séparément et ensemble.
 
