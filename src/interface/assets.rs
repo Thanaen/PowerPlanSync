@@ -25,6 +25,7 @@ const ICONS: &[(&str, &[u8])] = icons![
     "command",
     "copy",
     "external-link",
+    "flask-conical",
     "folder-open",
     "info",
     "log-out",

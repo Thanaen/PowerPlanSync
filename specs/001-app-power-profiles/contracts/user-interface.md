@@ -120,7 +120,10 @@ plan Haute performance, appliqué », avec le chemin complet en description. Le 
 une modification de statut sans déplacer le focus. Après **Monter** ou **Descendre**, il annonce
 « Blender déplacé en position 1 sur 3. Plan actif : Performances optimales. » (la seconde phrase
 seulement si le plan actif change). Si le bouton utilisé devient indisponible, le focus passe au
-bouton opposé de la même ligne. Fermer un dialogue rend le focus au bouton qui l'a ouvert. Échap
+bouton opposé de la même ligne. Fermer un dialogue rend le focus au bouton qui l'a ouvert.
+Quand le bouton utilisé disparaît, le focus passe à la suite : **Activer l'automatisation** après
+**Confirmer**, **Annuler** du message après **Supprimer**. Sinon la fenêtre le reprend, et Tab
+repart du début : le focus ne se perd jamais. Échap
 annule un dialogue et Entrée active son action principale. Un dialogue invalide explique le champ
 à corriger et conserve sa saisie.
 
