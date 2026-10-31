@@ -201,6 +201,9 @@ struct Worker {
     quit_requested: bool,
     /// `config.json` n'a pas pu être lu au dernier essai de prise du contrôle.
     settings_unreadable: bool,
+    /// Le dernier logiciel retiré, son rang et l'automatisation d'alors, tant qu'aucun autre
+    /// réglage n'a été enregistré : **Annuler** le remet.
+    removed: Option<(usize, AppRule, bool)>,
     notifications_ready: bool,
     sender: Option<Sender<AppEvent>>,
     /// Vrai tant qu'un sélecteur de fichier est ouvert.
@@ -469,11 +472,17 @@ impl Worker {
     fn action(&mut self, action: UiAction) -> Result<(), String> {
         match action {
             UiAction::WindowOpened => {
+                // Le message de retrait ne suit que les retraits faits fenêtre ouverte.
+                self.removed = None;
                 if self.controller.is_none() {
                     self.refresh_read_only();
                 } else {
                     self.command(Command::Refresh);
                 }
+                return Ok(());
+            }
+            UiAction::DismissRemoval => {
+                self.removed = None;
                 return Ok(());
             }
             UiAction::OpenWindowsSettings => {
@@ -640,6 +649,7 @@ impl Worker {
             UiAction::AddRule { .. } | UiAction::UpdateRule { .. }
         );
         let mut startup_change = None;
+        let mut removed = None;
         match action {
             UiAction::AddRule {
                 label,
@@ -679,7 +689,15 @@ impl Worker {
             }
             UiAction::DeleteRule { rule_id } => {
                 let index = position(rule_id)?;
-                config.rules.remove(index);
+                let rule = config.rules.remove(index);
+                removed = Some((index, rule, config.automation_enabled));
+            }
+            UiAction::UndoDelete => {
+                let Some((index, rule, automation)) = self.removed.clone() else {
+                    return Ok(());
+                };
+                config.rules.insert(index.min(config.rules.len()), rule);
+                config.automation_enabled |= automation;
             }
             UiAction::SetRuleEnabled { rule_id, enabled } => {
                 let index = position(rule_id)?;
@@ -726,6 +744,10 @@ impl Worker {
         config.validate().map_err(|e| error_message(&e))?;
         self.observe(true);
         let saved = self.command(Command::SaveConfiguration(config));
+        // Tout autre enregistrement rend le retrait définitif.
+        if saved {
+            self.removed = removed;
+        }
         if !saved
             && self.view().configuration.start_at_login == view.configuration.start_at_login
             && let Some(previous) = startup_change
@@ -848,6 +870,7 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
         running: vec![],
         quit_requested: false,
         settings_unreadable: false,
+        removed: None,
         notifications_ready: true,
         sender: None,
         choosing: Arc::default(),
@@ -896,6 +919,12 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
             };
         } else if worker.quit_requested && matches!(view.status, Status::Blocked(_)) {
             display = presentation::after_failed_quit(display, &view);
+        }
+        if worker.controller.is_some() {
+            display.removed = worker
+                .removed
+                .as_ref()
+                .map(|(_, rule, _)| rule.label.clone());
         }
         if previous.as_ref() != Some(&display) {
             if let Some(log) = &mut worker.diagnostics {
@@ -1086,6 +1115,7 @@ mod tests {
             running: vec![],
             quit_requested: false,
             settings_unreadable: false,
+            removed: None,
             notifications_ready: true,
             sender: None,
             choosing: Arc::default(),
@@ -1134,6 +1164,61 @@ mod tests {
                 .is_file()
         );
         assert!(!worker.options.data_directory.join("config.json").exists());
+        cleanup(worker);
+    }
+    #[test]
+    fn undo_puts_the_removed_rule_back_until_another_change_is_saved() {
+        let mut worker = demo();
+        worker.acquire().unwrap();
+        let directory = worker.options.data_directory.clone();
+        for label in ["Premier", "Deuxième", "Troisième"] {
+            let path = directory.join(format!("{label}.exe"));
+            std::fs::write(&path, b"").unwrap();
+            worker
+                .action(UiAction::AddRule {
+                    label: label.into(),
+                    path: path.to_string_lossy().into_owned(),
+                    plan_id: PlanId(2).to_string(),
+                })
+                .unwrap();
+        }
+        let labels = |worker: &Worker| {
+            worker
+                .view()
+                .configuration
+                .rules
+                .iter()
+                .map(|rule| rule.label.clone())
+                .collect::<Vec<_>>()
+        };
+        let saved = worker.view().configuration.rules;
+        let id = |index: usize| saved[index].id.0 as i32;
+        worker
+            .action(UiAction::DeleteRule { rule_id: id(1) })
+            .unwrap();
+        assert_eq!(labels(&worker), ["Premier", "Troisième"]);
+        worker.action(UiAction::UndoDelete).unwrap();
+        assert_eq!(worker.view().configuration.rules, saved);
+        assert!(worker.removed.is_none());
+
+        worker
+            .action(UiAction::DeleteRule { rule_id: id(0) })
+            .unwrap();
+        worker
+            .action(UiAction::SetRuleEnabled {
+                rule_id: id(2),
+                enabled: false,
+            })
+            .unwrap();
+        worker.action(UiAction::UndoDelete).unwrap();
+        assert_eq!(labels(&worker), ["Deuxième", "Troisième"]);
+
+        worker
+            .action(UiAction::DeleteRule { rule_id: id(1) })
+            .unwrap();
+        worker.action(UiAction::WindowOpened).unwrap();
+        worker.action(UiAction::UndoDelete).unwrap();
+        assert_eq!(labels(&worker), ["Troisième"]);
         cleanup(worker);
     }
     #[test]

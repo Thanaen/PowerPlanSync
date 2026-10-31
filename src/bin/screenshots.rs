@@ -163,6 +163,15 @@ mod shots {
         after_failed_quit(display(&view, false, false, None), &view)
     }
 
+    /// Blender vient d'être retiré : **Annuler** peut le remettre.
+    fn removed() -> UiDisplayModel {
+        let mut view = active();
+        view.configuration.rules.remove(1);
+        let mut model = display(&view, false, false, None);
+        model.removed = Some("Blender".into());
+        model
+    }
+
     /// `config.json` illisible au lancement : sans contrôle ni liste.
     fn unreadable() -> UiDisplayModel {
         let view = ViewState {
@@ -557,6 +566,21 @@ mod shots {
                 420.,
                 760.,
                 quit_failed(),
+            ),
+            ("removed", WindowAppearance::Dark, 880., 620., removed()),
+            (
+                "removed-light",
+                WindowAppearance::Light,
+                880.,
+                620.,
+                removed(),
+            ),
+            (
+                "removed-narrow",
+                WindowAppearance::Dark,
+                420.,
+                760.,
+                removed(),
             ),
             (
                 "settings-unreadable",

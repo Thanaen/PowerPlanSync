@@ -265,12 +265,10 @@ fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App, notify: bool) -> bool {
     let send = Arc::clone(&on_action);
     let page = cx.new(|_| SoftwarePage::new(model, move |action, _| send(action)));
     let opened = Rc::clone(shell);
-    // Le retrait annulable arrive avec T064.
     cx.subscribe(&page, move |_, event: &SoftwareEvent, cx| match *event {
         SoftwareEvent::Add { keyboard } => open_dialog(&opened, None, !keyboard, cx),
         // Seule l'ouverture d'**Ajouter un logiciel** au clic est animée.
         SoftwareEvent::Edit(rule_id) => open_dialog(&opened, Some(rule_id), false, cx),
-        SoftwareEvent::Delete(_) => {}
     })
     .detach();
     let Ok(main) = handle.update(cx, |main, _, cx| {
@@ -297,6 +295,16 @@ fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App, notify: bool) -> bool {
             };
             if let Some(action) = toggle {
                 on_action(action);
+            }
+        }
+        // Comme **Annuler**, seulement tant que le message est là.
+        ShellEvent::UndoDelete => {
+            let undo = {
+                let state = opened.borrow();
+                state.dialog.is_none() && state.model.can_undo()
+            };
+            if undo {
+                on_action(UiAction::UndoDelete);
             }
         }
         // La palette de commandes arrive avec T067.

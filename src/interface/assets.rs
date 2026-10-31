@@ -41,6 +41,7 @@ const ICONS: &[(&str, &[u8])] = icons![
     "square",
     "trash-2",
     "triangle-alert",
+    "undo-2",
     "x",
     "zap",
 ];

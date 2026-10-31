@@ -2,12 +2,13 @@
 //! actions, le message intégré et la liste **Logiciels associés** (FR-001, FR-006, FR-018,
 //! FR-024). Sans contrôle, actions et liste laissent place au seul message (FR-016).
 
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use gpui::{
-    App, ClickEvent, Context, Entity, EventEmitter, FontWeight, HighlightStyle, Hsla, IntoElement,
-    ParentElement, Render, Role, SharedString, Styled, StyledText, Subscription, Window, div,
-    prelude::*, px,
+    App, ClickEvent, Context, Entity, EventEmitter, FocusHandle, FontWeight, HighlightStyle, Hsla,
+    IntoElement, ParentElement, Render, Role, SharedString, Styled, StyledText, Subscription,
+    Window, div, prelude::*, px,
 };
 
 use crate::interface::first_launch::{self, AddRequested, FirstLaunch};
@@ -15,12 +16,13 @@ use crate::interface::messages;
 use crate::interface::strings;
 use crate::interface::theme::spacing::*;
 use crate::interface::theme::{Theme, TypeStyled as _, radius, size as token, text};
-use crate::interface::widgets::{self, Button, ButtonStyle, Switch, Tooltip};
+use crate::interface::widgets::{
+    self, Button, ButtonStyle, Message, MessageKind, Switch, Tooltip, message_colors,
+};
 use crate::interface::window::{is_narrow, needs_action, status_dot};
 use crate::presentation::{Automation, RuleDisplay, UiAction, UiDisplayModel};
 
-/// Les demandes qui ouvrent un dialogue ou un message, reliées avec leurs tâches : dialogues
-/// (T059), retrait annulable (T064).
+/// Les demandes qui ouvrent un dialogue.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SoftwareEvent {
     /// `keyboard` : pressé à Entrée ou Espace, le dialogue paraît sans animation.
@@ -28,7 +30,6 @@ pub enum SoftwareEvent {
         keyboard: bool,
     },
     Edit(i32),
-    Delete(i32),
 }
 
 type OnAction = Rc<dyn Fn(UiAction, &mut App)>;
@@ -38,6 +39,12 @@ pub struct SoftwarePage {
     on_action: OnAction,
     /// « Pour commencer », créé au premier affichage qui en a besoin.
     first_launch: Option<(Entity<FirstLaunch>, Subscription)>,
+    /// **Monter** et **Descendre** de chaque logiciel, pour passer le focus de l'un à l'autre.
+    arrows: HashMap<i32, (FocusHandle, FocusHandle)>,
+    /// Le logiciel que **Monter** ou **Descendre** vient de déplacer, jusqu'à la liste suivante.
+    moving: Option<i32>,
+    /// La dernière phrase pour les lecteurs d'écran : déplacement ou retrait.
+    announcement: Option<String>,
 }
 
 impl EventEmitter<SoftwareEvent> for SoftwarePage {}
@@ -48,11 +55,31 @@ impl SoftwarePage {
             model,
             on_action: Rc::new(on_action),
             first_launch: None,
+            arrows: HashMap::new(),
+            moving: None,
+            announcement: None,
         }
     }
 
     pub fn set_model(&mut self, model: UiDisplayModel, cx: &mut Context<Self>) {
         if self.model != model {
+            match (&self.model.removed, &model.removed) {
+                (_, Some(label)) if model.removed != self.model.removed => {
+                    self.announcement = Some(strings::removed(label));
+                }
+                (Some(label), None) if model.rules.len() > self.model.rules.len() => {
+                    self.announcement = Some(strings::restored(label));
+                }
+                _ => {}
+            }
+            if let Some(rule_id) = self.moving
+                && order(&model) != order(&self.model)
+            {
+                self.moving = None;
+                if let Some(line) = move_announcement(&self.model, &model, rule_id) {
+                    self.announcement = Some(line);
+                }
+            }
             if let Some((steps, _)) = &self.first_launch {
                 let model = model.clone();
                 steps.update(cx, |steps, cx| steps.set_model(model, cx));
@@ -200,7 +227,8 @@ impl SoftwarePage {
         let count = self.model.rules.len();
         let mut rows = Vec::with_capacity(count);
         for rule in &self.model.rules {
-            rows.push(self.row(rule, count, narrow, theme, cx));
+            let arrows = &self.arrows[&rule.id];
+            rows.push(self.row(rule, count, arrows, narrow, theme, cx));
         }
         div()
             .flex()
@@ -241,10 +269,51 @@ impl SoftwarePage {
             })
     }
 
+    /// Le message sous la liste après **Supprimer** : **Annuler** ou Ctrl+Z remet le logiciel.
+    /// Étroite, **Annuler** passe sous le texte, comme dans les autres messages.
+    fn removal(&self, label: &str, narrow: bool, theme: &Theme) -> Message {
+        let backdrop = message_colors(MessageKind::Success, theme).background;
+        let (undo, dismiss) = (Rc::clone(&self.on_action), Rc::clone(&self.on_action));
+        let message = Message::new("removed", MessageKind::Success, strings::removed(label));
+        if narrow { message } else { message.inline() }
+            .action(
+                Button::new("undo", strings::CANCEL, ButtonStyle::Outlined)
+                    .icon("undo-2")
+                    .keys(strings::UNDO_KEYS)
+                    .backdrop(backdrop)
+                    .on_click(move |_, _, cx| undo(UiAction::UndoDelete, cx)),
+            )
+            .close(
+                Button::icon_only("dismiss", "x", strings::CLOSE)
+                    .backdrop(backdrop)
+                    .on_click(move |_, _, cx| dismiss(UiAction::DismissRemoval, cx)),
+            )
+    }
+
+    /// Le bouton utilisé devient indisponible en haut ou en bas de la liste : le focus passe à
+    /// l'autre flèche plutôt que de rester sur un bouton qui ne fait plus rien.
+    fn keep_arrow_focus(&self, window: &mut Window, cx: &mut App) {
+        let count = self.model.rules.len();
+        if count < 2 {
+            return;
+        }
+        for rule in &self.model.rules {
+            let Some((up, down)) = self.arrows.get(&rule.id) else {
+                continue;
+            };
+            if rule.rank == 1 && up.is_focused(window) {
+                down.focus(window, cx);
+            } else if rule.rank == count && down.is_focused(window) {
+                up.focus(window, cx);
+            }
+        }
+    }
+
     fn row(
         &self,
         rule: &RuleDisplay,
         count: usize,
+        (up, down): &(FocusHandle, FocusHandle),
         narrow: bool,
         theme: &Theme,
         cx: &mut Context<Self>,
@@ -262,6 +331,12 @@ impl SoftwarePage {
         };
         let on_action = Rc::clone(&self.on_action);
         let named = |action: &str| strings::row_action(action, &label);
+        let arrow = |action: UiAction| {
+            cx.listener(move |page: &mut Self, _: &ClickEvent, _, cx| {
+                page.moving = Some(id);
+                (page.on_action)(action.clone(), cx);
+            })
+        };
         let rank = div()
             .w(BASE_12)
             .flex_none()
@@ -325,8 +400,9 @@ impl SoftwarePage {
             .child(
                 Button::icon_only(("up", id as u64), "chevron-up", named(strings::MOVE_UP))
                     .backdrop(theme.surface)
+                    .focus(up)
                     .disabled(rule.rank == 1)
-                    .on_click(send(UiAction::MoveRuleUp { rule_id: id })),
+                    .on_click(arrow(UiAction::MoveRuleUp { rule_id: id })),
             )
             .child(
                 Button::icon_only(
@@ -335,8 +411,9 @@ impl SoftwarePage {
                     named(strings::MOVE_DOWN),
                 )
                 .backdrop(theme.surface)
+                .focus(down)
                 .disabled(rule.rank == count)
-                .on_click(send(UiAction::MoveRuleDown { rule_id: id })),
+                .on_click(arrow(UiAction::MoveRuleDown { rule_id: id })),
             )
             .child(
                 Button::icon_only(("edit", id as u64), "pencil", named(strings::EDIT))
@@ -346,7 +423,7 @@ impl SoftwarePage {
             .child(
                 Button::icon_only(("delete", id as u64), "trash-2", named(strings::DELETE))
                     .backdrop(theme.surface)
-                    .on_click(cx.listener(move |_, _, _, cx| cx.emit(SoftwareEvent::Delete(id)))),
+                    .on_click(send(UiAction::DeleteRule { rule_id: id })),
             );
         let row = div()
             .id(("rule", id as u64))
@@ -391,6 +468,35 @@ impl SoftwarePage {
             .child(follow)
             .child(actions)
     }
+}
+
+/// L'ordre de la liste, par identifiant.
+fn order(model: &UiDisplayModel) -> Vec<i32> {
+    model.rules.iter().map(|rule| rule.id).collect()
+}
+
+/// « Blender déplacé en position 1 sur 3. », suivi du plan actif s'il a changé ; rien si le
+/// logiciel n'a pas bougé ou n'est plus là.
+pub fn move_announcement(
+    before: &UiDisplayModel,
+    after: &UiDisplayModel,
+    rule_id: i32,
+) -> Option<String> {
+    fn find(model: &UiDisplayModel, rule_id: i32) -> Option<&RuleDisplay> {
+        model.rules.iter().find(|rule| rule.id == rule_id)
+    }
+    let (was, rule) = (find(before, rule_id)?, find(after, rule_id)?);
+    if was.rank == rule.rank {
+        return None;
+    }
+    let plan =
+        (after.observed_plan != before.observed_plan).then_some(after.observed_plan.as_str());
+    Some(strings::moved(
+        &rule.label,
+        rule.rank,
+        after.rules.len(),
+        plan,
+    ))
 }
 
 /// L'état en gras et en couleur, puis « · » et le détail.
@@ -451,6 +557,14 @@ impl Render for SoftwarePage {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = Theme::of(window, cx);
         let narrow = is_narrow(window.viewport_size().width);
+        let ids = order(&self.model);
+        self.arrows.retain(|id, _| ids.contains(id));
+        for id in ids {
+            self.arrows
+                .entry(id)
+                .or_insert_with(|| (cx.focus_handle(), cx.focus_handle()));
+        }
+        self.keep_arrow_focus(window, cx);
         let body = div()
             .px(if narrow { BASE_16 } else { BASE_24 })
             .pt(BASE_16)
@@ -470,15 +584,37 @@ impl Render for SoftwarePage {
             let list = first_launch::list_shown(&self.model).then(|| self.list(narrow, &theme, cx));
             body.children(message).child(steps).children(list)
         } else {
+            let removal = self
+                .model
+                .removed
+                .as_deref()
+                .map(|label| self.removal(label, narrow, &theme));
             body.child(self.actions(&theme, cx))
                 .children(message)
                 .child(self.list(narrow, &theme, cx))
+                .children(removal)
         };
+        // Hors de l'écran, la région vivante dit ce que la liste ne montre qu'en bougeant.
+        let live = self.announcement.clone().unwrap_or_default();
         div()
             .flex()
             .flex_col()
             .child(self.header(narrow, &theme))
             .child(body)
+            .child(
+                div()
+                    .id("announcement")
+                    .role(Role::Status)
+                    .aria_label(live)
+                    .a11y_synthetic_children(|children| {
+                        children
+                            .parent_node()
+                            .set_live(gpui::accesskit::Live::Polite)
+                    })
+                    .absolute()
+                    .size_0()
+                    .overflow_hidden(),
+            )
     }
 }
 
@@ -498,6 +634,46 @@ mod tests {
         );
         model.automation_enabled = true;
         assert_eq!(note(&model).as_deref(), Some("Plan de retour : Équilibré"));
+    }
+
+    fn rules(labels: &[&str]) -> Vec<RuleDisplay> {
+        labels
+            .iter()
+            .enumerate()
+            .map(|(index, label)| RuleDisplay {
+                id: *label.as_bytes().first().unwrap() as i32,
+                rank: index + 1,
+                label: (*label).into(),
+                ..RuleDisplay::default()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn a_move_says_where_the_software_went_and_the_plan_only_when_it_changed() {
+        let before = UiDisplayModel {
+            observed_plan: "Équilibré".into(),
+            rules: rules(&["Atom", "Blender", "Cubase"]),
+            ..UiDisplayModel::default()
+        };
+        let mut after = UiDisplayModel {
+            rules: rules(&["Blender", "Atom", "Cubase"]),
+            ..before.clone()
+        };
+        let blender = 'B' as i32;
+        assert_eq!(
+            move_announcement(&before, &after, blender).as_deref(),
+            Some("Blender déplacé en position 1 sur 3.")
+        );
+        after.observed_plan = "Haute performance".into();
+        assert_eq!(
+            move_announcement(&before, &after, blender).as_deref(),
+            Some(
+                "Blender déplacé en position 1 sur 3. Plan actif dans Windows\u{a0}: Haute\u{a0}performance."
+            )
+        );
+        assert_eq!(move_announcement(&before, &before, blender), None);
+        assert_eq!(move_announcement(&before, &after, 'Z' as i32), None);
     }
 
     #[test]

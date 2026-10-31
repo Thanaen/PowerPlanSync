@@ -208,6 +208,7 @@ pub struct Button {
     toggled: Option<bool>,
     backdrop: Option<Hsla>,
     disabled: bool,
+    focus: Option<FocusHandle>,
     on_click: Option<OnClick>,
 }
 
@@ -227,6 +228,7 @@ impl Button {
             toggled: None,
             backdrop: None,
             disabled: false,
+            focus: None,
             on_click: None,
         }
     }
@@ -269,6 +271,12 @@ impl Button {
 
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
+        self
+    }
+
+    /// Un focus tenu par la page, qui peut le déplacer : sans cela, le bouton garde le sien.
+    pub fn focus(mut self, handle: &FocusHandle) -> Self {
+        self.focus = Some(handle.clone());
         self
     }
 
@@ -333,10 +341,13 @@ impl RenderOnce for Button {
                 };
                 button.child(tinted_keys(self.keys, key_color, &theme))
             });
+        // Avec un focus tenu, GPUI ignore l'index posé sur l'élément : il va sur le focus.
+        let base = match self.focus {
+            Some(handle) => base.track_focus(&handle.tab_index(0).tab_stop(!self.disabled)),
+            None => base.tab_index(0).tab_stop(!self.disabled),
+        };
         if self.disabled {
             return base
-                .tab_index(0)
-                .tab_stop(false)
                 // GPUI n'a pas de setter pour cet état, seulement ce crochet sur le nœud.
                 .a11y_synthetic_children(|children| children.parent_node().set_disabled())
                 .focus_visible(move |style| ring.apply(style))
@@ -345,8 +356,7 @@ impl RenderOnce for Button {
         }
         let (hover_background, hover_border) = (colors.hover_background, colors.hover_border);
         let pressed = colors.pressed_background;
-        base.tab_index(0)
-            .cursor_pointer()
+        base.cursor_pointer()
             .hover(move |style| style.bg(hover_background).border_color(hover_border))
             .active(move |style| style.bg(pressed))
             .focus_visible(move |style| ring.apply(style))
@@ -621,6 +631,8 @@ pub struct Message {
     text: SharedString,
     actions: Vec<AnyElement>,
     note: Option<SharedString>,
+    close: Option<AnyElement>,
+    inline: bool,
 }
 
 impl Message {
@@ -632,7 +644,22 @@ impl Message {
             text: text.into(),
             actions: Vec::new(),
             note: None,
+            close: None,
+            inline: false,
         }
+    }
+
+    /// Une seule ligne : les actions passent à droite du texte, comme **Annuler** après un
+    /// retrait.
+    pub fn inline(mut self) -> Self {
+        self.inline = true;
+        self
+    }
+
+    /// Le bouton × au bout de la première ligne, qui retire le message.
+    pub fn close(mut self, close: impl IntoElement) -> Self {
+        self.close = Some(close.into_any_element());
+        self
     }
 
     /// La conséquence d'une action, sous les boutons : « Quitter quand même laisse… ».
@@ -662,6 +689,12 @@ impl RenderOnce for Message {
             Some(title) => SharedString::from(format!("{title}. {}", self.text)),
             None => self.text.clone(),
         };
+        let inline = self.inline;
+        let (below, beside) = if inline {
+            (Vec::new(), self.actions)
+        } else {
+            (self.actions, Vec::new())
+        };
         div()
             .id(self.id)
             .role(if self.kind == MessageKind::Error {
@@ -674,7 +707,8 @@ impl RenderOnce for Message {
                 message.aria_description(note)
             })
             .flex()
-            .items_start()
+            .when(inline, |message| message.items_center())
+            .when(!inline, |message| message.items_start())
             .gap(BASE_08)
             .py(BASE_08)
             .px(BASE_12)
@@ -703,14 +737,14 @@ impl RenderOnce for Message {
                             .map(|title| div().font_weight(FontWeight::SEMIBOLD).child(title)),
                     )
                     .child(self.text)
-                    .when(!self.actions.is_empty(), |content| {
+                    .when(!below.is_empty(), |content| {
                         content.child(
                             div()
                                 .mt(BASE_06)
                                 .flex()
                                 .flex_wrap()
                                 .gap(BASE_08)
-                                .children(self.actions),
+                                .children(below),
                         )
                     })
                     .when_some(self.note, |content, note| {
@@ -723,6 +757,21 @@ impl RenderOnce for Message {
                         )
                     }),
             )
+            .when(!beside.is_empty(), |message| {
+                message.child(div().flex_none().flex().gap(BASE_08).children(beside))
+            })
+            // Le bouton déborde sur sa marge à droite ; sur plusieurs lignes, il se centre aussi
+            // sur la première sans la grandir.
+            .when_some(self.close, |message, close| {
+                let overhang = (token::BUTTON_MEDIUM - text::LABEL_MD.line_height) / 2.;
+                message.child(
+                    div()
+                        .flex_none()
+                        .mr(px(-8.))
+                        .when(!inline, |close| close.my(-overhang))
+                        .child(close),
+                )
+            })
     }
 }
 

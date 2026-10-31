@@ -21,7 +21,7 @@ pub enum Badge {
     Refused,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct RuleDisplay {
     pub id: i32,
     pub rank: usize,
@@ -85,9 +85,16 @@ pub struct UiDisplayModel {
     pub plans: Vec<PlanDisplay>,
     /// Le message intégré de la page **Logiciels**, s'il y a quelque chose à signaler.
     pub notice: Option<Notice>,
+    /// Le nom du dernier logiciel retiré, tant que **Annuler** peut le remettre.
+    pub removed: Option<String>,
 }
 
 impl UiDisplayModel {
+    /// **Annuler** est offert : un retrait vient d'avoir lieu et le contrôle est là.
+    pub fn can_undo(&self) -> bool {
+        self.removed.is_some() && !self.read_only
+    }
+
     /// Ce que font le bouton de la page et Ctrl+Alt+P : **Reprendre** en pause, sinon
     /// **Mettre en pause**. Un plan choisi dans Windows a son propre **Reprendre
     /// l'automatisation** : la page garde **Mettre en pause**. Sans contrôle, rien.
@@ -187,6 +194,10 @@ pub enum UiAction {
     OpenDataFolder,
     /// **Ouvrir le guide**, à la section « Réglages illisibles ».
     OpenGuide,
+    /// **Annuler** (Ctrl+Z) : remet le dernier logiciel retiré à sa position.
+    UndoDelete,
+    /// × sur le message de retrait : le retrait devient définitif.
+    DismissRemoval,
     WindowOpened,
 }
 
@@ -380,6 +391,7 @@ pub fn display(
             })
             .collect(),
         notice,
+        removed: None,
     }
 }
 
