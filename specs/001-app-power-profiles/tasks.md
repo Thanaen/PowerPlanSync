@@ -14,8 +14,8 @@ portent sur Windows réel, pas uniquement sur les tests automatisés.
 
 **Organization**: fondations communes puis parcours indépendamment démontrables, dans l'ordre P1 puis P2.
 Les phases 1 à 6 décrivent la version Slint ; leurs cases cochées reflètent ce code et ses preuves.
-Les phases 7 à 13 migrent l'interface vers GPUI (D12 à D16 de `research.md`). La phase 14 valide
-la livraison sur l'interface GPUI.
+Les phases 7 à 14 migrent l'interface vers GPUI (D12 à D18 de `research.md`). La phase 13 place
+la fenêtre dans un processus séparé (D17, D18). La phase 15 valide la livraison sur l'interface GPUI.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -130,7 +130,7 @@ Voir D12 à D16 dans `research.md`. Ces tâches remplacent T003, T004 et T006 po
 - [x] T046 Épingler dans `Cargo.toml` et `Cargo.lock` `gpui` `=0.3.9` (paquet `gpui-pre`), `gpui_platform` `=0.3.9` (paquet `gpui-pre-platform`), `tray-icon` 0.26 sans fonctionnalités par défaut, `image` 0.25 sans fonctionnalités par défaut (`ico`, `png`), `futures` 0.3, `raw-window-handle` 0.6 (`tray-icon`, `futures` et `raw-window-handle` sous `cfg(windows)`) et la fonctionnalité `screenshots` (`gpui/test-support`, `gpui_platform/test-support`, `gpui_wgpu` `=0.3.9` sous Linux), sans retirer Slint. Ajouter `components = ["rustfmt", "clippy"]` à `rust-toolchain.toml`. Vérifier `cargo fmt --check` et `cargo clippy --locked --all-targets --target x86_64-pc-windows-msvc -- -D warnings` avec Rust 1.98.1, puis consigner versions et résultats dans `specs/001-app-power-profiles/evidence/toolchain.md`. Couvre FR-026.
 - [x] T047 Construire `examples/gpui_probe.rs` : fenêtre à barre de titre dessinée, ouverte par `cx.open_window` et détruite par `remove_window`, bouton, interrupteur, liste et statut avec `Role` et `aria_label`, icône `tray-icon` avec menu `muda`, `cx.set_reduce_motion` relié à `SPI_GETCLIENTAREAANIMATION`, une animation `with_spring`, et sélection d'un `.exe` par `cx.prompt_for_paths` puis par `src/windows/file_dialog.rs`. Consigner les API confirmées, les manques et les licences publiées dans `specs/001-app-power-profiles/evidence/gpui-probe.md`. Couvre FR-019, SC-007.
 - [ ] T048 Vérifier la sonde sur Windows réel : clavier, Narrateur, arbre UI Automation, annonce d'un statut sans déplacer le focus, thèmes clair, sombre et contrastés, échelles 100 %, 150 % et 200 %, texte agrandi, changement d'écran et « Effets d'animation » désactivé. Mesurer mémoire privée, handles et CPU fenêtre ouverte, fenêtre fermée et après cent cycles de fenêtre. Ajouter une section GPUI à `specs/001-app-power-profiles/evidence/prototype-results.md` et les captures dans `specs/001-app-power-profiles/evidence/accessibility/gpui/`. Couvre FR-019, SC-004, SC-005, SC-007. Avancement du 2026-10-31 : clavier, Narrateur, arbre UI Automation, annonces, thèmes, échelles et mesures faits (D17). Restent le changement d'écran (un seul écran sur la machine), « Effets d'animation » désactivé et le texte agrandi, non pris en charge par GPUI (T068). SC-004 est dépassé fenêtre fermée.
-- [ ] T049 Conclure les essais GPUI dans `specs/001-app-power-profiles/research.md` (D12 à D16) et ajuster `specs/001-app-power-profiles/plan.md` et ce fichier : risques levés, contournements retenus, ou proposition explicite d'amendement de la spec si SC-004 ou SC-005 échoue. Couvre FR-026, SC-004, SC-005. La proposition est écrite dans D17 et attend la décision du responsable produit ; T071 l'attend aussi.
+- [x] T049 Conclure les essais GPUI dans `specs/001-app-power-profiles/research.md` (D12 à D16) et ajuster `specs/001-app-power-profiles/plan.md` et ce fichier : risques levés, contournements retenus, ou proposition explicite d'amendement de la spec si SC-004 ou SC-005 échoue. Couvre FR-026, SC-004, SC-005. La proposition est écrite dans D17. Le responsable produit a retenu l'option 1 le 2026-10-31 : la fenêtre passe dans un processus séparé (D18, phase 13).
 
 **Checkpoint**: GPUI est prouvé sur Windows, ou la décision revient au responsable produit avec les mesures.
 
@@ -197,16 +197,34 @@ L'interface GPUI s'ouvre avec l'option de développement `--gpui` jusqu'à T071.
 
 **Checkpoint**: le parcours GPUI est accessible sur la machine cible, sans se limiter à une capture.
 
-## Phase 13: Retrait de Slint et documentation
+## Phase 13: Fenêtre dans un processus séparé
+
+**Purpose**: tenir SC-004 et SC-007 sans amendement (D17, option 1 retenue le 2026-10-31). Le processus de suivi garde le coordinateur, le contrôle unique, la fenêtre cachée des notifications et l'icône, sans initialiser GPUI. La fenêtre vit dans `power-plan-sync.exe --window`, qui s'arrête à sa fermeture. Conception dans D18 de `research.md`. Pendant cette phase, `--gpui` reste l'option de développement de l'interface GPUI ; à partir de T077, il lance le processus de suivi sans GPUI.
+
+**Independent Test**: avec `--gpui --demo`, ouvrir et fermer la fenêtre depuis l'icône et par un second lancement : le processus de fenêtre apparaît puis disparaît, le processus de suivi reste sous 40 Mio fenêtre fermée.
+
+- [x] T073 Mesurer un prototype du processus de suivi sans GPUI (coordinateur, fenêtre cachée des notifications, icône `tray-icon` sur une boucle de messages Win32), fenêtre fermée, avec 20 règles et environ 200 processus, par `scripts/measure-prototype.ps1`. Au-delà de 40 Mio, arrêter la phase et consigner. Résultat et correctif du prototype dans `specs/001-app-power-profiles/evidence/prototype-results.md`, section « Processus de suivi sans GPUI », et `specs/001-app-power-profiles/evidence/performance/tracker-20261031/`. Couvre SC-004. Fait le 2026-10-31 : 3,6 Mio, 0,029 % de CPU sur 60 s.
+- [ ] T074 Écrire d'abord les tests du protocole, puis `src/window_protocol.rs` : trame de longueur et JSON `{"version", "message"}`, `UiCommand` et `UiAction` sérialisables dans `src/presentation.rs`, refus d'une autre version, d'un message ou d'un champ inconnu, d'un champ manquant, d'une trame tronquée ou de plus de 1 Mio. Couvre FR-026.
+- [ ] T075 Écrire d'abord les tests, puis créer dans `src/windows/window_channel.rs` les deux canaux nommés d'un processus de fenêtre : nom avec session, PID et compteur, une seule instance, `FILE_FLAG_FIRST_PIPE_INSTANCE`, `PIPE_REJECT_REMOTE_CLIENTS`, DACL du seul compte courant, extrémité cliente ouverte par le processus de suivi et transmise comme entrée et sortie standard. Tester qu'un second client par le nom est refusé et qu'un nom déjà pris n'est pas réutilisé. Couvre FR-016, FR-026.
+- [ ] T076 Créer le processus de fenêtre `power-plan-sync.exe --window` dans `src/window_process.rs`, `src/app_args.rs` et `src/main.rs`, et le mode sans icône de `src/interface/app.rs` : commandes lues sur l'entrée standard, actions écrites sur la sortie standard, arrêt à la fermeture de la fenêtre, à la fin du canal de commandes et à une trame refusée. Sans canal, l'option s'arrête sans rien afficher. Vérifier par un essai qui lance le processus, attend `WindowOpened`, puis la fin du processus après `Quit`. Couvre FR-012, SC-007.
+- [ ] T077 Faire de `src/tracker.rs` le processus de suivi de `--gpui` : boucle de messages Win32 du thread principal, icône `src/interface/tray.rs` sans GPUI, lancement du processus de fenêtre avec le dernier modèle, transmission des `UiCommand` et retour des `UiAction` au coordinateur de `src/runtime.rs`. Retirer de `src/runtime.rs` et `src/interface/app.rs` l'interface GPUI dans le même processus. Mesurer fenêtre fermée et ouverte (somme des deux processus). Couvre FR-012, SC-004.
+- [ ] T078 Rouvrir la fenêtre depuis l'icône, **Ouvrir PowerPlanSync**, une nouvelle erreur et un second lancement (FR-016) : un seul processus de fenêtre, `UiCommand::Open` s'il existe, `AllowSetForegroundWindow` du processus de suivi et du second lancement, notification « PowerPlanSync reste ouvert » au premier masquage seulement. Couvre FR-012, FR-016.
+- [ ] T079 Écrire d'abord les tests, puis gérer un processus de fenêtre perdu ou sans réponse dans `src/tracker.rs` : fin du canal et code de sortie, trame refusée, `WindowOpened` absent après 15 s au lancement ou 5 s après `Open`, file de 64 commandes pleine, `TerminateProcess`, une seule relance pour une demande `Open`, aucune relance d'elle-même, ligne du journal de diagnostic, arrêt de la fenêtre 2 s après `Quit` et arrêt du processus de fenêtre qui perd son canal. Couvre FR-012, FR-026.
+- [ ] T080 Vérifier à travers les deux processus les dialogues **Ajouter un logiciel** et **Modifier**, **Parcourir…** (sélecteur de `src/windows/file_dialog.rs` au premier plan, autorisé par le processus de fenêtre), **Application ouverte**, les messages intégrés, **Quitter** et la démonstration `--demo` avec son bandeau. Adapter `scripts/measure-window-states.ps1` et `scripts/measure-window-reopen.ps1` aux deux processus. Couvre FR-002, FR-012, FR-023.
+- [ ] T081 Vérifier sur Windows réel, en binaire release : mémoire privée fenêtre fermée (processus de suivi) et ouverte (somme), cent cycles de fenêtre sans processus de fenêtre restant ni dérive du processus de suivi, temps d'ouverture, parcours clavier et Narrateur. Ajouter les résultats à `specs/001-app-power-profiles/evidence/prototype-results.md` et `specs/001-app-power-profiles/evidence/performance/`. Couvre FR-019, SC-004, SC-005, SC-007.
+
+**Checkpoint**: fenêtre fermée, aucun code GPUI ne s'exécute ; SC-004 et SC-007 sont mesurés sur le binaire release.
+
+## Phase 14: Retrait de Slint et documentation
 
 **Purpose**: faire de GPUI l'unique interface, puis préparer la documentation livrée.
 
-- [ ] T071 Rendre GPUI l'interface par défaut et retirer Slint : supprimer `ui/`, `src/ui.rs`, `build.rs`, `slint` et `slint-build` de `Cargo.toml`, l'option `--gpui`, `examples/ui_probe.rs` et `examples/ui_candidate.rs`. Porter `examples/window_lifecycle.rs` vers GPUI pour `scripts/verify-window-lifecycle.ps1`, retirer toute mention de Slint de `THIRD_PARTY_NOTICES.md` (section Slint et paragraphe des ressources intégrées) et de `docs/guide-utilisateur.md` (mention de **À propos**), régénérer `notices/THIRD_PARTY_LICENSES.txt`, mettre à jour la section prototype de `README.md` et retirer la boucle d'événements et l'icône de notification Slint de `src/runtime.rs`, mettre à jour les mentions Slint de `.agents/skills/verify/SKILL.md` et les fiches `.agents/skills/verify/features/*.md` avec les libellés de `contracts/user-interface.md`. Couvre FR-019, SC-007.
+- [ ] T071 Rendre GPUI, avec son processus de fenêtre (phase 13), l'interface par défaut et retirer Slint : supprimer `ui/`, `src/ui.rs`, `build.rs`, `slint` et `slint-build` de `Cargo.toml`, l'option `--gpui`, `examples/ui_probe.rs` et `examples/ui_candidate.rs`. Porter `examples/window_lifecycle.rs` vers GPUI pour `scripts/verify-window-lifecycle.ps1`, retirer toute mention de Slint de `THIRD_PARTY_NOTICES.md` (section Slint et paragraphe des ressources intégrées) et de `docs/guide-utilisateur.md` (mention de **À propos**), régénérer `notices/THIRD_PARTY_LICENSES.txt`, mettre à jour la section prototype de `README.md` et retirer la boucle d'événements et l'icône de notification Slint de `src/runtime.rs`, mettre à jour les mentions Slint de `.agents/skills/verify/SKILL.md` et les fiches `.agents/skills/verify/features/*.md` avec les libellés de `contracts/user-interface.md`. Couvre FR-019, SC-007.
 - [ ] T072 À la livraison de l'interface GPUI, avec T044, remplacer `docs/guide-utilisateur.md` par le texte de `specs/001-app-power-profiles/design/guide-gpui.md` : retirer l'encadré de brouillon, reprendre les chemins des notices du paquet et le numéro de version dans le titre, puis laisser dans `design/guide-gpui.md` un renvoi vers `docs/guide-utilisateur.md`. Couvre FR-018, FR-020.
 
 **Checkpoint**: aucun fichier ni dépendance Slint ne reste, et les contrôles Cargo passent.
 
-## Phase 14: Polish & Cross-Cutting Concerns
+## Phase 15: Polish & Cross-Cutting Concerns
 
 **Purpose**: produire les preuves qui autorisent une première livraison, sur le binaire GPUI
 issu de T071.
@@ -234,7 +252,13 @@ fichiers sont disjoints. T013 les assemble. Toute modification de Cargo reste s�
 Migration GPUI : T046 précède T047. T048 dépend de T047, T049 de T048. T049 autorise T051 à T057. T050 ne dépend pas du cadre graphique et a précédé T048.
 T050 précède les pages. T051, T052 et T055 sont disjoints. T053 attend T051, T054 attend T053,
 T056 attend T054, T055 et T012, qui fournit l'ouverture de la fenêtre dans la même session. T057 attend T056. Les phases 9 à 12 attendent T056. T061 précède T062.
-T064 précède T069, qui anime aussi l'échange de lignes. T070 attend T058 à T069. T071 attend T070.
+T064 précède T069, qui anime aussi l'échange de lignes. T070 attend T058 à T069. T071 attend T070 et T081.
+
+Processus séparé (phase 13) : T073 a précédé la conception de D18 et autorise la phase. T074 précède
+T075, qui précède T076. T077 attend T076. T078 et T079 attendent T077 et touchent tous deux
+`src/tracker.rs` : ils restent séquentiels, T078 d'abord. T080 attend T078 et T079. T081 attend T080.
+La phase 13 ne touche `src/interface/` que dans `app.rs` (T076, T077) : T065 à T069 avancent en
+parallèle. T070 vérifie la réouverture depuis l'icône sur le binaire de T078.
 T039 à T045 portent sur le binaire de T071. T072 accompagne T044 à la livraison.
 
 ### User Story Dependencies

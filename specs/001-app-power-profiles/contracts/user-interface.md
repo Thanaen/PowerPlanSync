@@ -106,7 +106,7 @@ Le menu natif de l'icône contient l'état (« Automatisation active · Battlefi
 clic ouvre la fenêtre. L'infobulle donne le plan actif et sa raison. La couleur de l'icône suit
 l'état : bleu pour un plan de logiciel appliqué, gris quand aucun plan de logiciel n'est appliqué,
 orange pour une automatisation suspendue par un choix fait dans Windows, rouge quand une action est nécessaire. Fermer la fenêtre
-conserve l'icône et libère les ressources de la fenêtre. Au premier masquage, une notification
+conserve l'icône et libère les ressources de la fenêtre : son processus s'arrête (D18). Au premier masquage, une notification
 l'explique une seule fois : « PowerPlanSync reste ouvert ».
 
 Les bascules normales ne génèrent pas de notifications à répétition. Les erreurs persistantes

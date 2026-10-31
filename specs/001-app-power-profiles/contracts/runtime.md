@@ -33,6 +33,25 @@ Au démarrage, traiter la récupération avant la règle courante. La session in
 le contrôle. La sortie de session libère le contrôle après une tentative de retour et la
 persistance de son résultat. Le changement de compte ne transfère aucun journal privé.
 
+## Processus de fenêtre
+
+Décidé le 2026-10-31, voir D18 de `research.md`. La fenêtre s'exécute dans
+`power-plan-sync.exe --window`, lancé par le processus de suivi seul. Ce processus ne prend pas
+le contrôle, n'ouvre aucun dossier de données et ne lit ni n'écrit aucun plan.
+
+| Sens | Message | Effet |
+| --- | --- | --- |
+| Suivi → fenêtre | `UiCommand` versionnée | Afficher un modèle, ouvrir, fermer, compléter un dialogue |
+| Fenêtre → suivi | `UiAction` versionnée | Commande typée du coordinateur, comme depuis l'icône |
+| Fenêtre → suivi | `WindowOpened` | Fenêtre affichée : preuve que le processus répond |
+| Fin d'un canal | Aucun | Fenêtre fermée (code nul) ou perdue (autre code) |
+
+Les canaux sont nommés, à une seule instance, refusent les clients distants et n'accordent l'accès
+qu'au compte courant. Le processus de suivi les connecte avant le lancement et les transmet au seul
+processus de fenêtre. Une trame d'une autre version, d'un type inconnu ou de plus de 1 Mio ferme
+le canal. Une fenêtre sans réponse est arrêtée ; elle n'est relancée qu'à la demande suivante,
+une seule fois. La perte du processus de fenêtre n'interrompt jamais le suivi.
+
 ## Modes d'essai prévus
 
 - `--demo` fournit des plans et processus simulés. Ce mode n'appelle aucune écriture de plan réel.

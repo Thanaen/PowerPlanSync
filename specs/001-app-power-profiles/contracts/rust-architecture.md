@@ -90,7 +90,16 @@ le coordinateur ni les adaptateurs.
   chemin, comme dans Bientôt.
 - La fenêtre est créée à la demande et détruite à sa fermeture. L'icône, le coordinateur et la
   fenêtre cachée des notifications Windows vivent sans elle.
+- Depuis la décision du 2026-10-31 (D17, D18), GPUI ne s'exécute que dans le processus de fenêtre,
+  `power-plan-sync.exe --window` (`src/window_process.rs`). Le processus de suivi (`src/tracker.rs`)
+  pompe les messages Windows sur son thread principal pour l'icône de `src/interface/tray.rs`, qui
+  n'utilise pas GPUI. Il lance le processus de fenêtre, lui transmet les `UiCommand` et rend ses
+  `UiAction` au coordinateur, comme le canal de T056 le faisait dans un seul processus.
+- `src/window_protocol.rs` sérialise ces messages en trames versionnées et refuse tout message
+  inconnu. `src/windows/window_channel.rs` crée les canaux nommés. Le processus de fenêtre ne
+  reçoit aucun accès au coordinateur, au stockage ni à Windows au-delà de sa fenêtre.
 - `reduce_motion` est une donnée de GPUI, mise à jour depuis `src/windows/preferences.rs` à chaque
   `WM_SETTINGCHANGE`. Aucune vue ne lit le registre ni n'appelle Win32 directement.
 - Jusqu'à T071, l'interface GPUI s'ouvre seulement avec `--gpui`. Les deux interfaces utilisent le
-  même `Controller` et ne s'exécutent jamais ensemble.
+  même `Controller` et ne s'exécutent jamais ensemble. À partir de T077, `--gpui` lance le
+  processus de suivi sans GPUI ; l'interface GPUI dans le même processus disparaît.

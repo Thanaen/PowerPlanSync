@@ -415,8 +415,8 @@ agrandi exigent un vrai Windows. Les cycles réels utilisent l'exécutable témo
 - Cent cycles fermés par `remove_window()` : +23,2 Mio et +88 handles entre les marqueurs, en un
   palier au premier cycle, au-dessus du seuil de 5 Mio et 10 handles calibré sur Slint.
 
-**Proposition d'amendement, en attente du responsable produit.** Comme le prévoit le plan, un
-dépassement de SC-004 arrête ce point et revient au responsable produit avec les mesures.
+**Proposition d'amendement.** Comme le prévoit le plan, un dépassement de SC-004 arrête ce point
+et revient au responsable produit avec les mesures.
 
 1. **Recommandée : fenêtre dans un processus séparé.** Le processus de suivi garde le moteur, le
    coordinateur, le contrôle unique et l'icône `tray-icon`, sans initialiser GPUI. Ouvrir la
@@ -434,5 +434,98 @@ dépassement de SC-004 arrête ce point et revient au responsable produit avec l
    la dépasser. SC-007 demanderait aussi un seuil propre à GPUI.
 3. **Revenir à Slint** : rejeté sauf avis contraire, la décision D12 reposant sur le design system.
 
-D'ici la décision, T065 à T070 peuvent avancer : l'option 1 garde tout `src/interface/`.
-T071, qui fait de GPUI l'interface par défaut et retire Slint, attend la décision.
+**Décision du 2026-10-31 : option 1.** Le responsable produit retient la fenêtre dans un
+processus séparé. SC-004 et SC-007 ne sont pas amendés. Le prototype du processus de suivi sans
+GPUI occupe 3,6 Mio de mémoire privée avec 20 règles (T073, section « Processus de suivi sans
+GPUI » de [prototype-results.md](evidence/prototype-results.md)). La mise en œuvre suit D18.
+T065 à T070 continuent dans `src/interface/`. T071 attend T081.
+
+## D18. Fenêtre dans un processus séparé
+
+**Décision.** Deux rôles d'un même exécutable.
+
+- **Le processus de suivi** est `power-plan-sync.exe`. Il garde le coordinateur, le contrôle
+  unique, la fenêtre cachée des notifications, le sélecteur de fichier et l'icône `tray-icon`. Son
+  thread principal pompe les messages Windows pour l'icône. Il n'initialise jamais GPUI.
+- **Le processus de fenêtre** est `power-plan-sync.exe --window`. Il est lancé par le processus de
+  suivi, et par lui seul. Il exécute GPUI et `src/interface/` sans icône, sans verrou de contrôle,
+  sans dossier de données ni accès aux plans Windows. Fermer sa fenêtre l'arrête.
+
+Le nom `--window` est confirmé. L'option n'apparaît pas dans `--help`. Lancée sans le canal du
+processus de suivi, elle s'arrête aussitôt sans rien afficher.
+
+**Canal.** Le processus de suivi crée deux canaux nommés à sens unique pour chaque processus de
+fenêtre : commandes vers la fenêtre, actions vers le suivi. Chaque canal a :
+
+- un nom `\\.\pipe\PowerPlanSync.Window.<session>.<pid>.<compteur>.<sens>` ;
+- une seule instance, créée avec `FILE_FLAG_FIRST_PIPE_INSTANCE`, et `PIPE_REJECT_REMOTE_CLIENTS` ;
+- une DACL protégée qui n'accorde l'accès qu'au SID du compte courant, comme le signal de
+  réouverture de `src/windows/session.rs`.
+
+Le processus de suivi ouvre lui-même l'extrémité cliente avant le lancement, puis la transmet au
+seul processus de fenêtre comme entrée et sortie standard. Le processus de fenêtre n'ouvre aucun
+canal par son nom. Aucun autre processus, du même compte ou non, ne peut donc s'y connecter : le
+nom est déjà pris, sa seule instance est connectée, et la DACL écarte les autres comptes. L'enfant
+est créé dans la session du processus de suivi.
+
+**Messages.** Chaque message est une trame : longueur sur 4 octets en petit-boutiste, puis un
+objet JSON `{"version": 1, "message": …}`. Le processus de fenêtre reçoit les `UiCommand`
+existantes et renvoie les `UiAction` existantes, rendues sérialisables par `serde` dans
+`src/presentation.rs`. Une trame est refusée si sa version diffère, si son message est inconnu,
+si un champ manque ou s'ajoute (`deny_unknown_fields`), ou si elle dépasse 1 Mio. Un refus ferme
+le canal : le processus de fenêtre s'arrête, et le processus de suivi traite la fenêtre comme
+perdue. La version change à chaque modification de ces types. Les deux rôles viennent du même
+exécutable : un écart de version ne survient qu'après un remplacement du fichier pendant
+l'exécution.
+
+**Cycle de vie.** Au plus un processus de fenêtre existe.
+
+- Ouvrir la fenêtre (clic sur l'icône, **Ouvrir PowerPlanSync**, second lancement, nouvelle
+  erreur) lance le processus de fenêtre, ou lui envoie `UiCommand::Open` s'il existe. Le processus
+  de suivi lui transmet d'abord le dernier modèle, puis chaque nouveau modèle.
+- Le processus de fenêtre répond `UiAction::WindowOpened` après chaque affichage. Sans cette
+  réponse dans le délai, le processus de suivi l'arrête par `TerminateProcess`. Après `Open`
+  (5 s), il lance un nouveau processus pour la même demande, une seule fois. Au lancement (15 s),
+  il ne relance pas. Il ne relance jamais de lui-même : une fenêtre perdue reste fermée jusqu'à
+  la demande suivante. Aucune boucle de tentatives n'est possible.
+- Une file de 64 commandes en attente vers une fenêtre qui ne lit plus arrête aussi ce processus.
+  Le coordinateur n'attend jamais l'écriture.
+- La fin du canal des actions signale l'arrêt du processus de fenêtre. Un code de sortie nul est
+  une fermeture : au premier masquage, l'icône affiche « PowerPlanSync reste ouvert ». Un autre
+  code, une trame refusée ou un arrêt forcé est une perte, notée dans le journal de diagnostic.
+  Le suivi continue dans les deux cas.
+- À l'arrêt du processus de suivi, `UiCommand::Quit` ferme la fenêtre ; après 2 s, le processus de
+  fenêtre est arrêté. S'il perd son canal de commandes, le processus de fenêtre s'arrête de
+  lui-même : le processus de suivi peut disparaître sans laisser de fenêtre orpheline.
+- Windows n'accorde le premier plan qu'au processus qui a reçu la dernière saisie. Le processus de
+  suivi appelle `AllowSetForegroundWindow` pour le processus de fenêtre avant `Open`. Un second
+  lancement l'autorise de même avant de signaler l'instance existante. Avant de demander le
+  sélecteur de fichier, le processus de fenêtre autorise le processus de suivi.
+
+**Budgets.** Fenêtre fermée, SC-004 porte sur le processus de suivi seul : le processus de fenêtre
+n'existe plus. Fenêtre ouverte, il porte sur la somme des deux processus. SC-007 vérifie après
+cent cycles qu'aucun processus de fenêtre ne reste, et mesure la dérive du processus de suivi.
+
+**Raison.** La mesure T073 place le processus de suivi à 3,6 Mio, contre 91,1 Mio pour GPUI dans
+le même processus. Fermer la fenêtre libère réellement GPUI, comme le promet le contrat
+d'interface. La fuite de GPUI à chaque `WM_CLOSE` ne s'accumule plus : chaque fenêtre a son
+processus. Le contournement de `MainWindow::new` reste, pour une fenêtre rouverte dans le même
+processus de fenêtre. Le découpage existant s'y prête : `UiCommand` et `UiAction` passaient déjà
+par un canal entre le coordinateur et l'interface (T056).
+
+**Alternatives.**
+
+- Canaux anonymes de la bibliothèque standard (`Stdio::piped`) : sûrs, car connectés avant le
+  lancement, mais avec la DACL par défaut. Rejetés au profit d'une DACL explicite du compte.
+- Un canal nommé que le processus de fenêtre ouvre par son nom : rejeté. Un autre processus du
+  même compte pourrait l'ouvrir le premier, et il faudrait vérifier son identité après coup.
+- Un objet tâche (`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`) pour arrêter la fenêtre avec le suivi :
+  inutile, la fin du canal de commandes suffit.
+- Un battement de cœur périodique : rejeté. Il réveillerait les deux processus sans demande. La
+  réponse à `Open` suffit, puisque la vivacité ne compte qu'au moment où l'utilisateur demande la
+  fenêtre.
+- Le sélecteur de fichier dans le processus de fenêtre, avec la fenêtre pour propriétaire : à
+  réévaluer en T080 si l'autorisation de premier plan ne suffit pas.
+
+**Risques.** L'ouverture coûte un démarrage de GPUI, à mesurer en T081. Fenêtre ouverte, la
+valeur cible de 100 Mio s'applique désormais à deux processus, à mesurer aussi en T081.

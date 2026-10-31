@@ -1,0 +1,188 @@
+diff --git a/src/lib.rs b/src/lib.rs
+index b447f1b..659682a 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -15,3 +15,5 @@ pub mod ui;
+ pub mod runtime;
+ #[cfg(windows)]
+ pub mod runtime_power;
++#[cfg(windows)]
++pub mod tracker;
+diff --git a/src/runtime.rs b/src/runtime.rs
+index d7398f0..4422b07 100644
+--- a/src/runtime.rs
++++ b/src/runtime.rs
+@@ -95,6 +95,10 @@ fn empty_view(error: &str) -> ViewState {
+ }
+ 
+ pub fn run(options: Options) -> Result<(), String> {
++    if options.gpui && std::env::var_os("POWERPLANSYNC_TRACKER_PROBE").is_some() {
++        run_tracker(options);
++        return Ok(());
++    }
+     if options.gpui {
+         run_gpui(options);
+         return Ok(());
+@@ -143,6 +147,27 @@ pub fn run(options: Options) -> Result<(), String> {
+     result
+ }
+ 
++fn run_tracker(options: Options) {
++    let (tx, rx) = mpsc::channel();
++    let (mailbox, inbox) = crate::tracker::mailbox();
++    let sink = mailbox.clone();
++    let _ = UI_SINK.set(Box::new(move |command| sink.command(command)));
++    let initial = presentation::display(
++        &empty_view("Initialisation en cours"),
++        options.demo,
++        false,
++        None,
++    );
++    let worker_tx = tx.clone();
++    let worker = std::thread::spawn(move || worker(options, worker_tx, rx));
++    let ui_tx = tx.clone();
++    crate::tracker::run(initial, mailbox, inbox, move |action| {
++        let _ = ui_tx.send(AppEvent::Ui(action));
++    });
++    let _ = tx.send(AppEvent::Stop);
++    let _ = worker.join();
++}
++
+ /// Interface GPUI : le coordinateur garde son thread, l'interface prend le thread principal.
+ fn run_gpui(options: Options) {
+     let (tx, rx) = mpsc::channel();
+diff --git a/src/tracker.rs b/src/tracker.rs
+new file mode 100644
+index 0000000..8cd690e
+--- /dev/null
++++ b/src/tracker.rs
+@@ -0,0 +1,129 @@
++//! Processus de suivi sans GPUI (D17, option 1) : l'icône de notification vit sur le thread
++//! principal, qui pompe les messages Windows. Le coordinateur garde son thread et envoie des
++//! [`UiCommand`] ; l'icône lui renvoie des [`UiAction`].
++
++use std::sync::mpsc;
++
++use windows::Win32::Foundation::{LPARAM, WPARAM};
++use windows::Win32::System::Threading::GetCurrentThreadId;
++use windows::Win32::UI::WindowsAndMessaging::{
++    DispatchMessageW, GetMessageW, MSG, PM_NOREMOVE, PeekMessageW, PostThreadMessageW,
++    TranslateMessage, WM_APP,
++};
++
++use crate::interface::tray::{self, Tray, TrayCommand};
++use crate::presentation::{UiAction, UiCommand, UiDisplayModel};
++
++/// Réveille la boucle de messages : des événements attendent dans la file.
++const WM_WAKE: u32 = WM_APP + 1;
++
++enum Event {
++    Ui(UiCommand),
++    Tray(TrayCommand),
++}
++
++/// Dépose des événements pour le thread principal, depuis n'importe quel thread.
++#[derive(Clone)]
++pub struct Mailbox {
++    events: mpsc::Sender<Event>,
++    thread: u32,
++}
++
++impl Mailbox {
++    fn post(&self, event: Event) {
++        if self.events.send(event).is_ok() {
++            let _ = unsafe { PostThreadMessageW(self.thread, WM_WAKE, WPARAM(0), LPARAM(0)) };
++        }
++    }
++
++    pub fn command(&self, command: UiCommand) {
++        self.post(Event::Ui(command));
++    }
++}
++
++/// Crée la file du thread courant ; `run` doit ensuite s'exécuter sur ce même thread.
++pub fn mailbox() -> (Mailbox, Inbox) {
++    let mut message = MSG::default();
++    // Une file de messages n'existe qu'après le premier appel qui la lit.
++    unsafe {
++        let _ = PeekMessageW(&mut message, None, 0, 0, PM_NOREMOVE);
++    }
++    let (events, inbox) = mpsc::channel();
++    (
++        Mailbox {
++            events,
++            thread: unsafe { GetCurrentThreadId() },
++        },
++        Inbox(inbox),
++    )
++}
++
++pub struct Inbox(mpsc::Receiver<Event>);
++
++struct Shell {
++    model: UiDisplayModel,
++    started: bool,
++    tray: Option<Tray>,
++    on_action: Box<dyn Fn(UiAction)>,
++}
++
++/// Rend la main quand le coordinateur demande [`UiCommand::Quit`].
++pub fn run(
++    initial: UiDisplayModel,
++    mailbox: Mailbox,
++    inbox: Inbox,
++    on_action: impl Fn(UiAction) + 'static,
++) {
++    let mut shell = Shell {
++        model: initial,
++        started: false,
++        tray: None,
++        on_action: Box::new(on_action),
++    };
++    let mut message = MSG::default();
++    while unsafe { GetMessageW(&mut message, None, 0, 0) }.as_bool() {
++        if message.hwnd.is_invalid() && message.message == WM_WAKE {
++            while let Ok(event) = inbox.0.try_recv() {
++                if handle(&mut shell, &mailbox, event) {
++                    return;
++                }
++            }
++            continue;
++        }
++        unsafe {
++            let _ = TranslateMessage(&message);
++            DispatchMessageW(&message);
++        }
++    }
++}
++
++/// Rend vrai quand le processus doit s'arrêter.
++fn handle(shell: &mut Shell, mailbox: &Mailbox, event: Event) -> bool {
++    match event {
++        Event::Tray(TrayCommand::Open) => {}
++        Event::Tray(TrayCommand::Pause) if !shell.model.read_only => {
++            (shell.on_action)(UiAction::Pause)
++        }
++        Event::Tray(TrayCommand::Resume) if !shell.model.read_only => {
++            (shell.on_action)(UiAction::Resume)
++        }
++        Event::Tray(TrayCommand::Pause | TrayCommand::Resume) => {}
++        Event::Tray(TrayCommand::Quit) => (shell.on_action)(UiAction::Quit),
++        Event::Ui(UiCommand::Update { model, .. }) => {
++            if !shell.started {
++                shell.started = true;
++                let sender = mailbox.clone();
++                shell.tray = Tray::new(tray::model(&model), move |command| {
++                    sender.post(Event::Tray(command))
++                })
++                .ok();
++            } else if let Some(tray) = &mut shell.tray {
++                let _ = tray.update(tray::model(&model));
++            }
++            shell.model = *model;
++        }
++        Event::Ui(UiCommand::Quit) => return true,
++        Event::Ui(_) => {}
++    }
++    false
++}
