@@ -24,4 +24,9 @@ Rapport : [behaviors/20261031-162909-fa4c40fa/result.json](behaviors/20261031-16
 Un exécutable du même nom dans un autre dossier ne déclenche pas la règle : cas
 `homonym-other-path`, dix secondes sans changement de plan. Le réordonnancement des règles
 et la désactivation sont couverts par `ordered_rules_recompute_immediately_for_explicit_edits`
-(`tests/engine_scenarios.rs`) ; leurs commandes GPUI viennent de T064 et sont vérifiées sur Windows en T070.
+(`tests/engine_scenarios.rs`).
+
+**Non exécuté** : le scénario 4 d'US3 dans [spec.md](../spec.md). Quand l'ancienne règle ne
+trouve plus le programme, **Modifier** propose de choisir le nouveau fichier
+(`src/interface/rule_dialog.rs`, mode `Edit { missing: true }`), et le plan doit rester. Aucun
+test ni essai réel ne le prouve encore. T038 reste ouverte pour ce point.

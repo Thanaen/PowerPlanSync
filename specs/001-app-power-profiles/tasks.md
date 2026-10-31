@@ -118,7 +118,7 @@ Les résultats inconnus restent marqués.
 - [x] T035 [US3] Ajouter les scénarios de priorité, réordonnancement, désactivation et suppression active dans `tests/engine_scenarios.rs`. Couvre FR-003, FR-006, FR-007, FR-024.
 - [x] T036 [US3] Compléter l'arbitrage ordonné et le recalcul immédiat des actions explicites dans `src/engine.rs`. Couvre FR-003, FR-006, FR-007.
 - [x] T037 [US3] ~~Ajouter activation, modification, suppression, Monter et Descendre dans `ui/main.slint` et `src/ui.rs`, sans exiger de glisser-déposer. Couvre FR-003, FR-006, FR-019.~~ → remplacée par T064.
-- [x] T038 [US3] Vérifier les transitions entre gagnants sans plan intermédiaire et les logiciels déplacés, puis conserver les preuves dans `specs/001-app-power-profiles/evidence/us3.md`. Couvre FR-003, FR-004, FR-006, FR-007, SC-003.
+- [ ] T038 [US3] Vérifier les transitions entre gagnants sans plan intermédiaire et les logiciels déplacés, puis conserver les preuves dans `specs/001-app-power-profiles/evidence/us3.md`. Couvre FR-003, FR-004, FR-006, FR-007, SC-003. État du 2026-10-31 : transitions entre gagnants vérifiées ; reste le choix du nouveau fichier d'un logiciel déplacé (US3, scénario 4).
 
 **Checkpoint**: toutes les règles sont testables séparément et ensemble.
 
