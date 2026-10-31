@@ -6,6 +6,8 @@ Ouvre puis ferme la fenêtre de PowerPlanSync plusieurs fois dans le même proce
 fenêtre fermée, la mémoire privée, les handles et les threads. La fenêtre est rouverte comme
 par un second lancement, qui demande à l'instance en cours de s'afficher. Le dossier de données
 est neuf : l'automatisation reste désactivée et aucun plan Windows ne change.
+La fenêtre vit dans un processus `--window` enfant (D18) : chaque ligne relève le processus de
+suivi et compte les processus de fenêtre restants, qui doivent être zéro fenêtre fermée.
 #>
 [CmdletBinding()]
 param(
@@ -28,11 +30,24 @@ $arguments = @('--gpui', '--data-dir', ('"' + $data + '"'))
 $planBefore = (& powercfg.exe /getactivescheme) -join "`n"
 $automation = [System.Windows.Automation.AutomationElement]
 
+function Get-WindowProcessIds([int]$TrackerId) {
+    @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $TrackerId AND Name = 'power-plan-sync.exe'" |
+        ForEach-Object { [int]$_.ProcessId })
+}
+
+function Find-Window([int]$TrackerId) {
+    foreach ($id in @($TrackerId) + @(Get-WindowProcessIds $TrackerId)) {
+        $condition = [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, $id)
+        $found = $automation::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Children, $condition)
+        if ($found) { return $found }
+    }
+    $null
+}
+
 function Wait-Window([int]$ProcessId, [bool]$Present) {
-    $condition = [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, $ProcessId)
     $deadline = [DateTime]::UtcNow.AddSeconds(15)
     do {
-        $window = $automation::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Children, $condition)
+        $window = Find-Window $ProcessId
         if ([bool]$window -eq $Present) { return $window }
         Start-Sleep -Milliseconds 250
     } while ([DateTime]::UtcNow -lt $deadline)
@@ -56,6 +71,7 @@ try {
             closed_private_mib = [math]::Round($process.PrivateMemorySize64 / 1MB, 1)
             handles = $process.HandleCount
             threads = $process.Threads.Count
+            window_processes = @(Get-WindowProcessIds $process.Id).Count
         })
         if ($open -lt $Opens) {
             Start-Process -FilePath $executable -ArgumentList $arguments -Wait -WindowStyle Hidden

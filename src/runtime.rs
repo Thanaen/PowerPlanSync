@@ -143,40 +143,26 @@ pub fn run(options: Options) -> Result<(), String> {
     result
 }
 
-/// Interface GPUI : le coordinateur garde son thread, l'interface prend le thread principal.
+/// Interface GPUI (D18) : le processus de suivi garde le coordinateur sur son thread et
+/// l'icône sur le thread principal, sans GPUI. La fenêtre vit dans son propre processus.
 fn run_gpui(options: Options) {
     let (tx, rx) = mpsc::channel();
-    let (commands, receiver) = futures::channel::mpsc::unbounded();
-    let quit = commands.clone();
-    let _ = UI_SINK.set(Box::new(move |command| {
-        let _ = commands.unbounded_send(command);
-    }));
-    let initial = presentation::display(
-        &empty_view("Initialisation en cours"),
-        options.demo,
-        false,
-        None,
-    );
+    let (mailbox, inbox) = crate::tracker::mailbox();
+    let sink = mailbox.clone();
+    let _ = UI_SINK.set(Box::new(move |command| sink.command(command)));
     let start_minimized = options.start_minimized;
     let worker_tx = tx.clone();
     let worker = std::thread::spawn(move || worker(options, worker_tx, rx));
     let ui_tx = tx.clone();
-    let exit_tx = tx.clone();
-    crate::interface::app::run(
-        initial,
-        crate::interface::app::Host::Tray { start_minimized },
-        receiver,
+    crate::tracker::run(
+        start_minimized,
+        session::current_owner().ok(),
+        mailbox,
+        inbox,
         move |action| {
-            // Sans coordinateur, plus rien ne peut répondre : l'interface s'arrête.
+            // Sans coordinateur, plus rien ne peut répondre : le processus s'arrête.
             if ui_tx.send(AppEvent::Ui(action)).is_err() {
-                let _ = quit.unbounded_send(UiCommand::Quit);
-            }
-        },
-        // Même délai que pour la fin de session vue par les notifications Windows.
-        move || {
-            let (ack, done) = mpsc::sync_channel(1);
-            if exit_tx.send(AppEvent::Shutdown(ack)).is_ok() {
-                let _ = done.recv_timeout(Duration::from_millis(1500));
+                send_ui(UiCommand::Quit);
             }
         },
     );
