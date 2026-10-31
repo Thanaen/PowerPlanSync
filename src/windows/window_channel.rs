@@ -70,6 +70,7 @@ pub fn create(owner: &OwnerIdentity) -> io::Result<WindowChannels> {
 }
 
 /// Un nom pris par un autre processus n'est jamais réutilisé : le compteur passe au suivant.
+/// Un client inconnu déjà connecté fait échouer l'ouverture : le lancement est abandonné.
 fn channel(owner: &OwnerIdentity, direction: Direction) -> io::Result<(File, File)> {
     static NEXT: AtomicU32 = AtomicU32::new(0);
     for _ in 0..16 {
@@ -80,9 +81,10 @@ fn channel(owner: &OwnerIdentity, direction: Direction) -> io::Result<(File, Fil
             NEXT.fetch_add(1, Ordering::Relaxed),
             direction.suffix()
         );
-        match connected_pair(&name, owner, direction) {
+        match create_server(&name, owner, direction) {
             Err(error) if is_taken(&error) => continue,
-            result => return result,
+            Err(error) => return Err(error),
+            Ok(server) => return connect(server, &name, direction),
         }
     }
     Err(io::Error::other("aucun nom de canal libre"))
@@ -94,13 +96,8 @@ fn is_taken(error: &io::Error) -> bool {
         .any(|code| error.raw_os_error() == Some(code.0 as i32))
 }
 
-/// Crée la seule instance de `name`, puis s'y connecte comme client.
-fn connected_pair(
-    name: &str,
-    owner: &OwnerIdentity,
-    direction: Direction,
-) -> io::Result<(File, File)> {
-    let server = create_server(name, owner, direction)?;
+/// Se connecte comme seul client de `server`, déjà créé sous `name`.
+fn connect(server: OwnedHandle, name: &str, direction: Direction) -> io::Result<(File, File)> {
     let wide = wide_nul(name);
     let access = match direction {
         Direction::ToWindow => GENERIC_READ,
@@ -265,9 +262,21 @@ mod tests {
     fn a_connected_channel_refuses_any_other_client() {
         let owner = current_owner().unwrap();
         let name = unique_name("busy");
-        let _pair = connected_pair(&name, &owner, Direction::ToWindow).unwrap();
+        let server = create_server(&name, &owner, Direction::ToWindow).unwrap();
+        let _pair = connect(server, &name, Direction::ToWindow).unwrap();
         let error = open_by_name(&name, GENERIC_READ.0).unwrap_err();
         assert_eq!(error.raw_os_error(), Some(ERROR_PIPE_BUSY.0 as i32));
+    }
+
+    #[test]
+    fn an_intruder_connected_first_aborts_the_channel() {
+        let owner = current_owner().unwrap();
+        let name = unique_name("intruder");
+        let server = create_server(&name, &owner, Direction::ToWindow).unwrap();
+        let intruder = open_by_name(&name, GENERIC_READ.0).unwrap();
+        let error = connect(server, &name, Direction::ToWindow).err().unwrap();
+        assert_eq!(error.raw_os_error(), Some(ERROR_PIPE_BUSY.0 as i32));
+        drop(owned(intruder));
     }
 
     #[test]
@@ -284,7 +293,7 @@ mod tests {
     fn only_the_current_account_is_granted_access() {
         let owner = current_owner().unwrap();
         let name = unique_name("dacl");
-        let (server, _client) = connected_pair(&name, &owner, Direction::ToWindow).unwrap();
+        let server = create_server(&name, &owner, Direction::ToWindow).unwrap();
         let mut descriptor = PSECURITY_DESCRIPTOR::default();
         let status = unsafe {
             GetSecurityInfo(
