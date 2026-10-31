@@ -13,8 +13,8 @@ use windows::Win32::System::Console::{
     GetStdHandle, STD_HANDLE, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, SetStdHandle,
 };
 
-use crate::interface::app::{self, Host};
-use crate::presentation::{UiAction, UiCommand, UiDisplayModel};
+use crate::interface::app;
+use crate::presentation::{UiAction, UiCommand};
 use crate::window_protocol::{ProtocolError, read_frame, write_frame};
 
 /// Fenêtre fermée, par l'utilisateur ou à la demande du processus de suivi.
@@ -57,18 +57,12 @@ pub fn run() -> i32 {
         }
     });
     let output = Mutex::new(output);
-    app::run(
-        UiDisplayModel::default(),
-        Host::WindowProcess,
-        receiver,
-        // Un canal coupé se constate aussi en lecture : l'écriture ne décide de rien.
-        move |action: UiAction| {
-            if let Ok(mut output) = output.lock() {
-                let _ = write_frame(&mut *output, &action);
-            }
-        },
-        || {},
-    );
+    // Un canal coupé se constate aussi en lecture : l'écriture ne décide de rien.
+    app::run(receiver, move |action: UiAction| {
+        if let Ok(mut output) = output.lock() {
+            let _ = write_frame(&mut *output, &action);
+        }
+    });
     exit.load(Ordering::Relaxed)
 }
 

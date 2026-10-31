@@ -91,6 +91,14 @@ pub struct UiDisplayModel {
 }
 
 impl UiDisplayModel {
+    /// Le coordinateur n'a pas pu démarrer : la raison s'affiche, sans contrôle ni retour.
+    pub fn stop(&mut self, reason: String) {
+        self.notice = Some(Notice::Stopped(reason.clone()));
+        self.error_message = Some(reason);
+        self.return_line.clear();
+        self.read_only = true;
+    }
+
     /// **Annuler** est offert : un retrait vient d'avoir lieu et le contrôle est là.
     pub fn can_undo(&self) -> bool {
         self.removed.is_some() && !self.read_only

@@ -1,49 +1,28 @@
-//! Application GPUI derrière `--gpui` (T056) : boucle sur le thread principal, fenêtre créée
-//! à la demande et icône de notification. Le coordinateur, sur son thread, envoie des
-//! [`UiCommand`] ; l'interface lui renvoie des [`UiAction`].
+//! Application GPUI du processus de fenêtre `--window` (D18) : boucle sur le thread principal
+//! et une fenêtre, sans icône. Le processus de suivi envoie des [`UiCommand`] ; l'interface lui
+//! renvoie des [`UiAction`]. Fermer la fenêtre arrête le processus.
 
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
 
 use futures::StreamExt as _;
-use futures::channel::mpsc::{UnboundedReceiver, UnboundedSender, unbounded};
+use futures::channel::mpsc::UnboundedReceiver;
 use gpui::{App, AppContext as _, Context, Entity, FocusHandle, Focusable as _, QuitMode, Window};
 
 use crate::interface::rule_dialog::{self, RuleDialog, RuleDialogEvent, RuleDialogMode};
 use crate::interface::software_page::{SoftwareEvent, SoftwarePage};
 use crate::interface::theme::{self, HighContrast};
-use crate::interface::tray::{self, Tray, TrayCommand};
 use crate::interface::window::{self, MainWindow, Page, ShellEvent};
 use crate::interface::{text_input, widgets};
-use crate::presentation::{Notice, UiAction, UiCommand, UiDisplayModel};
+use crate::presentation::{UiAction, UiCommand, UiDisplayModel};
 
 type OnAction = Arc<dyn Fn(UiAction) + Send + Sync>;
 
-enum Event {
-    Ui(Box<UiCommand>),
-    Tray(TrayCommand),
-}
-
-/// Où vit l'interface.
-#[derive(Clone, Copy)]
-pub enum Host {
-    /// `--gpui` dans le processus du coordinateur, avec l'icône, jusqu'à T077.
-    Tray { start_minimized: bool },
-    /// Processus de fenêtre `--window` (D18) : aucune icône, et fermer la fenêtre arrête le
-    /// processus.
-    WindowProcess,
-}
-
 struct Shell {
     model: UiDisplayModel,
-    window_process: bool,
-    /// Vrai dès le premier état du coordinateur : avant lui, rien ne s'affiche, pour qu'une
-    /// seconde instance de la même session s'arrête sans fenêtre ni icône.
+    /// Vrai dès le premier état reçu : avant lui, rien ne s'affiche.
     started: bool,
-    start_minimized: bool,
-    tray_sender: UnboundedSender<TrayCommand>,
-    tray: Option<Tray>,
     page: Option<Entity<SoftwarePage>>,
     dialog: Option<Entity<RuleDialog>>,
     /// Ce qui avait le focus avant le dialogue : il le retrouve à la fermeture.
@@ -51,19 +30,14 @@ struct Shell {
     on_action: OnAction,
 }
 
-/// Rend la main quand le coordinateur demande [`UiCommand::Quit`]. `before_exit` attend que
-/// le coordinateur ait rendu le plan de retour : à la fin de session, GPUI arrête le
-/// processus juste après ses observateurs de sortie.
+/// Rend la main à la fermeture de la fenêtre ou sur [`UiCommand::Quit`].
 pub fn run(
-    initial: UiDisplayModel,
-    host: Host,
     commands: UnboundedReceiver<UiCommand>,
     on_action: impl Fn(UiAction) + Send + Sync + 'static,
-    before_exit: impl Fn() + 'static,
 ) {
     gpui_platform::application()
         .with_assets(crate::interface::assets::Assets)
-        // Fermer la fenêtre laisse l'application dans la zone de notification.
+        // La fenêtre n'existe qu'après le premier état : l'application ne s'arrête pas avant.
         .with_quit_mode(QuitMode::Explicit)
         .run(move |cx: &mut App| {
             let _ = theme::load_fonts(cx);
@@ -72,58 +46,23 @@ pub fn run(
             text_input::bind_keys(cx);
             rule_dialog::bind_keys(cx);
             apply_preferences(cx);
-            cx.on_app_quit(move |_| {
-                before_exit();
-                async {}
-            })
-            .detach();
 
             let on_action: OnAction = Arc::new(on_action);
-            let (tray_sender, tray_commands) = unbounded();
-            let (window_process, start_minimized) = match host {
-                Host::Tray { start_minimized } => (false, start_minimized),
-                Host::WindowProcess => (true, false),
-            };
             let shell = Rc::new(RefCell::new(Shell {
-                model: initial,
-                window_process,
+                model: UiDisplayModel::default(),
                 started: false,
-                start_minimized,
-                tray_sender,
-                tray: None,
                 page: None,
                 dialog: None,
                 opener: None,
                 on_action: Arc::clone(&on_action),
             }));
 
-            let hidden = Rc::clone(&shell);
-            cx.on_window_closed(move |cx, _| {
-                let mut state = hidden.borrow_mut();
-                state.dialog = None;
-                state.opener = None;
-                if state.window_process {
-                    drop(state);
-                    cx.quit();
-                    return;
-                }
-                match &mut state.tray {
-                    Some(tray) => {
-                        let _ = tray.explain_hidden();
-                    }
-                    // Sans icône, une fenêtre fermée laisserait un processus invisible.
-                    None => (state.on_action)(UiAction::Quit),
-                }
-            })
-            .detach();
+            cx.on_window_closed(|cx, _| cx.quit()).detach();
 
-            let mut events = futures::stream::select(
-                commands.map(|command| Event::Ui(Box::new(command))),
-                tray_commands.map(Event::Tray),
-            );
+            let mut commands = commands;
             cx.spawn(async move |cx| {
-                while let Some(event) = events.next().await {
-                    let quit = cx.update(|cx| handle(&shell, event, cx));
+                while let Some(command) = commands.next().await {
+                    let quit = cx.update(|cx| handle(&shell, command, cx));
                     if quit {
                         break;
                     }
@@ -135,31 +74,17 @@ pub fn run(
 }
 
 /// Rend vrai quand l'application doit s'arrêter.
-fn handle(shell: &Rc<RefCell<Shell>>, event: Event, cx: &mut App) -> bool {
-    let command = match event {
-        Event::Tray(TrayCommand::Open) => {
-            show(shell, cx, true);
-            return false;
-        }
-        Event::Tray(TrayCommand::Pause) => return act(shell, UiAction::Pause),
-        Event::Tray(TrayCommand::Resume) => return act(shell, UiAction::Resume),
-        // Le coordinateur rend d'abord le plan de retour, puis demande `UiCommand::Quit`.
-        Event::Tray(TrayCommand::Quit) => return act(shell, UiAction::Quit),
-        Event::Ui(command) => *command,
-    };
+fn handle(shell: &Rc<RefCell<Shell>>, command: UiCommand, cx: &mut App) -> bool {
     let started = shell.borrow().started;
     match command {
-        UiCommand::Update { model, alert } if !started => {
+        UiCommand::Update { model, .. } if !started => {
             shell.borrow_mut().model = *model;
-            start(shell, alert, true, cx);
+            start(shell, true, cx);
         }
         UiCommand::Update { model, alert } => {
             let model = *model;
             let (page, dialog) = {
                 let mut state = shell.borrow_mut();
-                if let Some(tray) = &mut state.tray {
-                    let _ = tray.update(tray::model(&model));
-                }
                 state.model = model.clone();
                 (state.page.clone(), state.dialog.clone())
             };
@@ -176,8 +101,8 @@ fn handle(shell: &Rc<RefCell<Shell>>, event: Event, cx: &mut App) -> bool {
                 show(shell, cx, true);
             }
         }
-        // Avant le premier état, la demande attend que la fenêtre puisse s'ouvrir.
-        UiCommand::Open if !started => shell.borrow_mut().start_minimized = false,
+        // Le premier état ouvre la fenêtre.
+        UiCommand::Open if !started => {}
         UiCommand::Open => {
             show(shell, cx, true);
         }
@@ -189,17 +114,11 @@ fn handle(shell: &Rc<RefCell<Shell>>, event: Event, cx: &mut App) -> bool {
         // Le coordinateur n'a pas pu démarrer : la raison s'affiche, sans contrôle. Il est
         // arrêté : la fenêtre ne lui signale pas son ouverture.
         UiCommand::QuitFailure(reason) => {
-            {
-                let mut state = shell.borrow_mut();
-                state.model.notice = Some(Notice::Stopped(reason.clone()));
-                state.model.error_message = Some(reason);
-                state.model.return_line.clear();
-                state.model.read_only = true;
-            }
+            shell.borrow_mut().model.stop(reason);
             if started {
                 show(shell, cx, false);
             } else {
-                start(shell, true, false, cx);
+                start(shell, false, cx);
             }
         }
         UiCommand::EditorExecutable { text, label } => with_dialog(shell, cx, |dialog, cx| {
@@ -221,51 +140,16 @@ fn handle(shell: &Rc<RefCell<Shell>>, event: Event, cx: &mut App) -> bool {
     false
 }
 
-/// Crée l'icône, puis ouvre la fenêtre si on la demande ou si l'icône manque. Sans aucune
-/// des deux, le processus serait invisible : il s'arrête.
-fn start(shell: &Rc<RefCell<Shell>>, force_show: bool, notify: bool, cx: &mut App) {
-    if shell.borrow().window_process {
-        shell.borrow_mut().started = true;
-        if !show(shell, cx, notify) {
-            cx.quit();
-        }
-        return;
-    }
-    let (model, sender, start_minimized) = {
-        let mut state = shell.borrow_mut();
-        state.started = true;
-        (
-            state.model.clone(),
-            state.tray_sender.clone(),
-            state.start_minimized,
-        )
-    };
-    // L'icône appelle depuis la boucle de messages : la commande est postée, jamais traitée
-    // dans le rappel.
-    let tray = Tray::new(tray::model(&model), move |command| {
-        let _ = sender.unbounded_send(command);
-    })
-    .ok();
-    let has_tray = tray.is_some();
-    shell.borrow_mut().tray = tray;
-    if (force_show || !start_minimized || !has_tray) && !show(shell, cx, notify) && !has_tray {
-        let on_action = Arc::clone(&shell.borrow().on_action);
-        on_action(UiAction::Quit);
+/// Ouvre la fenêtre au premier état. Si elle ne peut pas s'ouvrir, le processus s'arrête.
+fn start(shell: &Rc<RefCell<Shell>>, notify: bool, cx: &mut App) {
+    shell.borrow_mut().started = true;
+    if !show(shell, cx, notify) {
+        cx.quit();
     }
 }
 
-fn act(shell: &Rc<RefCell<Shell>>, action: UiAction) -> bool {
-    let state = shell.borrow();
-    // Sans contrôle, suspendre ou reprendre remplacerait le refus par une autre erreur.
-    let refused = matches!(action, UiAction::Pause | UiAction::Resume) && state.model.read_only;
-    if !refused {
-        (state.on_action)(action);
-    }
-    false
-}
-
-/// Ouvre la fenêtre, ou ramène au premier plan celle qui est ouverte : un double clic sur
-/// l'icône n'en crée pas une seconde. `notify` signale l'ouverture au coordinateur. Rend
+/// Ouvre la fenêtre, ou ramène au premier plan celle qui est ouverte. `notify` signale
+/// l'ouverture au coordinateur. Rend
 /// faux si la fenêtre n'a pas pu s'ouvrir.
 fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App, notify: bool) -> bool {
     let (model, on_action, page) = {
