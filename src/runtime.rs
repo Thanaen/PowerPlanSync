@@ -815,7 +815,12 @@ fn lease_refusal(error: session::LeaseError) -> &'static str {
     }
 }
 
+/// Ce second lancement a reçu la saisie de l'utilisateur : il cède le premier plan, que
+/// l'instance existante transmet à son processus de fenêtre. Il ne connaît pas son PID.
 fn request_existing_open(owner: &session::OwnerIdentity) -> bool {
+    const ASFW_ANY: u32 = u32::MAX;
+    let _ =
+        unsafe { ::windows::Win32::UI::WindowsAndMessaging::AllowSetForegroundWindow(ASFW_ANY) };
     for _ in 0..20 {
         if session::signal_existing_window(owner).is_ok() {
             return true;
