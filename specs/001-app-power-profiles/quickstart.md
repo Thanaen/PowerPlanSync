@@ -128,6 +128,8 @@ Calculer le CPU du processus depuis le delta de temps processeur, divisé par le
 le nombre de processeurs logiques, multiplié par 100. Collecter la mémoire privée engagée,
 le working set, les handles et les threads toutes les cinq secondes. La mémoire privée maximale
 après stabilisation doit respecter 40 Mio en notification seule et 100 Mio fenêtre ouverte.
+Fenêtre ouverte, additionner le processus de suivi et le processus de fenêtre `--window` (D18).
+En notification seule, vérifier aussi qu'aucun processus de fenêtre ne reste.
 La moyenne CPU du suivi doit rester ≤ 0,1 % de la capacité totale.
 
 Après cent cycles de fenêtre, comparer au premier état stabilisé. Échouer au-delà de 5 Mio

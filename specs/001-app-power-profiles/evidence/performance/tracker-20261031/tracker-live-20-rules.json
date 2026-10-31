@@ -1,0 +1,33 @@
+{
+  "executable": "target/release/power-plan-sync.exe (prototype, voir prototype.patch)",
+  "sha256": "15DA064044B88CC59AB4FA8728F2815169314B684464CC9C7DAE605C0C17EA67",
+  "base_commit": "107ffbf8b5a03643feb78ed1b5e8089a644485c3",
+  "arguments": [
+    "--gpui",
+    "--start-minimized",
+    "--data-dir",
+    "<dossier neuf>"
+  ],
+  "environment": "POWERPLANSYNC_TRACKER_PROBE=1 (prototype seulement)",
+  "rule_count": 20,
+  "rules": "exécutables témoins absents, aucune bascule possible",
+  "os_process_count": 225,
+  "stabilization_seconds": 10,
+  "plan_before": "GUID du mode de gestion de l’alimentation : 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (Haute performance)",
+  "plan_after_restored": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c (Haute performance), relu",
+  "summary": {
+    "process_id": 23764,
+    "process_name": "power-plan-sync",
+    "process_started_utc": "2026-10-31T16:42:51.1354998Z",
+    "measured_utc": "2026-10-31T16:44:01.5061687Z",
+    "duration_seconds": 60.325,
+    "logical_processors": 16,
+    "samples": 61,
+    "cpu_percent_machine": 0.02914,
+    "private_mib_max": 3.551,
+    "working_set_mib_max": 16.738,
+    "handles_first": 201,
+    "handles_last": 200,
+    "threads_last": 6
+  }
+}

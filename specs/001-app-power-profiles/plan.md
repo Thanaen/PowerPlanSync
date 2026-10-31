@@ -1,7 +1,7 @@
 # Implementation Plan: Associer un plan d'alimentation à un logiciel
 
 **Branch**: `main`, premier lot intégré, migration GPUI planifiée | **Date**: 2026-09-20,
-mise à jour le 2026-10-25 | **Spec**: [spec.md](spec.md)
+mise à jour le 2026-10-25 et le 2026-10-31 | **Spec**: [spec.md](spec.md)
 
 **Input**: `specs/001-app-power-profiles/spec.md`
 
@@ -19,6 +19,11 @@ maquettes de [design/README.md](design/README.md) et la session de clarification
 Ce plan remplace la seule couche d'interface. Le moteur, le coordinateur, le stockage, la
 récupération, le suivi des processus et les adaptateurs Windows restent en place.
 Les décisions sont D12 à D16 dans [research.md](research.md).
+
+Le 2026-10-31, le responsable produit a retenu l'option 1 de D17 : la fenêtre GPUI vit dans un
+processus séparé, `power-plan-sync.exe --window`, qui s'arrête à sa fermeture. Le processus de
+suivi garde le coordinateur, le contrôle unique, les notifications Windows et l'icône, sans
+initialiser GPUI. SC-004 et SC-007 restent inchangés. La conception est D18.
 
 ## Technical Context
 
@@ -53,13 +58,16 @@ le crate dépend de `windows`. Les tests s'exécutent sous Windows, puis dans la
 Une seule session interactive active contrôle la machine. ARM64 et Windows 10 hors périmètre.
 
 **Project Type**: application de bureau et de zone de notification, un binaire utilisateur.
+Ce binaire s'exécute en deux processus : le suivi et, tant qu'elle est ouverte, la fenêtre (D18).
 
 **Performance Goals**: activation p95 ≤ 2 s, retour p95 ≤ 5 s avec délai de grâce de 3 s.
 Ces délais partent de la création ou de la fermeture réelle, pas du snapshot qui les constate.
 T002 mesure la marge restante pour l'appel Windows et sa confirmation. Si la cible échoue,
 revoir la détection avant de poursuivre, ou proposer explicitement une modification de la spec.
 CPU moyen ≤ 0,1 % total machine et mémoire privée ≤ 40 Mio en arrière-plan.
-Mémoire privée ≤ 100 Mio fenêtre ouverte au repos. Méthode dans [quickstart.md](quickstart.md).
+Mémoire privée ≤ 100 Mio fenêtre ouverte au repos. Fenêtre fermée, la mesure porte sur le
+processus de suivi seul ; fenêtre ouverte, sur la somme du processus de suivi et du processus de
+fenêtre (D18). Méthode dans [quickstart.md](quickstart.md).
 
 **Constraints**: aucune élévation permanente, aucun accès mémoire du jeu, aucun pilote, réseau
 ou navigateur embarqué. Aucune création ou modification interne d'un plan Windows.
@@ -93,8 +101,10 @@ déplacement du focus et des thèmes de contraste, non prouvés par Bientôt (D1
 
 Mesure T048 du 2026-10-31 (D17) : les annonces et les thèmes de contraste fonctionnent sur
 Windows réel, avec les contournements notés en D17. SC-004 est dépassé fenêtre fermée (91,1 Mio
-pour 40 Mio). Conformément au paragraphe précédent, ce point s'arrête : D17 propose de placer la
-fenêtre dans un processus séparé, ou à défaut d'amender SC-004. T071 attend cette décision.
+pour 40 Mio). Conformément au paragraphe précédent, ce point s'est arrêté et D17 a proposé deux
+issues. Décision du 2026-10-31 : option 1, la fenêtre dans un processus séparé (D18). Le prototype
+du processus de suivi sans GPUI occupe 3,6 Mio (T073). Le principe III reste conforme sur
+conception ; T081 le vérifie sur le binaire release. Aucune exception constitutionnelle.
 
 ## Project Structure
 
@@ -146,6 +156,9 @@ src/
 ├── presentation.rs   modèle d'affichage sans type graphique
 ├── runtime.rs
 ├── runtime_power.rs
+├── tracker.rs        processus de suivi : boucle Win32, icône, hôte du processus de fenêtre
+├── window_protocol.rs trames versionnées entre les deux processus
+├── window_process.rs processus de fenêtre `--window`
 ├── bin/
 │   └── screenshots.rs
 ├── interface/
@@ -172,7 +185,8 @@ src/
     ├── preferences.rs
     ├── processes.rs
     ├── session.rs
-    └── startup.rs
+    ├── startup.rs
+    └── window_channel.rs canaux nommés du processus de fenêtre
 tests/
 ├── engine_scenarios.rs
 ├── presentation.rs
@@ -193,8 +207,11 @@ scripts/
 **Structure Decision**: un seul package Rust. Le domaine et la décision ne dépendent pas de GPUI
 ni de Win32. `src/presentation.rs` produit un modèle d'affichage sans type graphique, testable
 sans fenêtre. Seul `src/interface/` dépend de GPUI. Le module ne s'appelle pas `gpui` pour ne pas
-masquer la dépendance. Les effets système passent par les adaptateurs ciblés. Pas de workspace de multiples
-crates, de serveur local, de protocole web ni de framework de plugins.
+masquer la dépendance. Seul `src/window_process.rs` l'exécute ; le processus de suivi n'utilise de
+`src/interface/` que `tray.rs`, sans GPUI. Les effets système passent par les adaptateurs ciblés.
+Pas de workspace de multiples crates, de serveur local, de protocole web ni de framework de
+plugins. Le protocole entre les deux processus reste privé : deux canaux nommés hérités par le
+seul processus de fenêtre (D18).
 
 ## Phases et conditions de passage
 
@@ -225,9 +242,13 @@ crates, de serveur local, de protocole web ni de framework de plugins.
 12. **US4 en GPUI, T065 à T070.** Réglages, aide, palette, accessibilité, thèmes, mouvement et
     vérification Windows complète. US3 passe avant US4 dans cette vague, car T069 et T070
     vérifient aussi l'échange de lignes de T064.
-13. **Retrait de Slint, T071 et T072.** GPUI devient l'interface par défaut, Slint et `--gpui`
+13. **Fenêtre dans un processus séparé, T073 à T081.** Mesure du processus de suivi sans GPUI,
+    protocole et canaux, processus de fenêtre, processus de suivi sans GPUI, réouverture, fenêtre
+    perdue ou sans réponse, dialogues et démonstration, puis vérification Windows. `--gpui` passe
+    au processus de suivi avec T077. T071 attend T081.
+14. **Retrait de Slint, T071 et T072.** GPUI devient l'interface par défaut, Slint et `--gpui`
     disparaissent. Le guide GPUI remplace `docs/guide-utilisateur.md` à la livraison.
-14. **Validation, T039 à T045.** Ressources, essais d'usage, exécutable témoin, conditionnement et
+15. **Validation, T039 à T045.** Ressources, essais d'usage, exécutable témoin, conditionnement et
     revue finale, sur le binaire GPUI.
 
 Les tâches Slint terminées restent cochées comme historique et portent la mention de leur
@@ -263,6 +284,7 @@ Une architecture différente exige une preuve de besoin dans `research.md` avant
 | Complexité temporaire | Pourquoi | Alternative plus simple rejetée |
 | --- | --- | --- |
 | Slint et GPUI dans le même binaire de T050 à T071, GPUI derrière `--gpui` | Garder une application utilisable et vérifiable pendant la migration | Bascule d'un seul bloc : aucune version utilisable avant la fin, revue impossible par étapes |
+| Deux processus du même exécutable et un protocole privé (D18) | GPUI occupe 59,7 Mio sans fenêtre : SC-004 fenêtre fermée exige qu'il ne tourne pas dans le processus de suivi | Amender SC-004 à 100 Mio : rejeté par le responsable produit le 2026-10-31 (D17) |
 
 ## Provenance du processus
 
@@ -274,3 +296,9 @@ afficher son identifiant comme `BRANCH` même si Git est encore sur `main`.
 La mise à jour GPUI du 2026-10-25 a suivi `speckit-plan`, `speckit-tasks` puis une passe
 `speckit-analyze`, à la main : les scripts PowerShell ne s'exécutent pas dans le conteneur Linux
 utilisé et `.specify/feature.json` y était absent.
+La mise à jour du 2026-10-31 (D18) a exécuté `setup-plan.ps1 -Json` et `check-prerequisites.ps1`
+sous Windows ; le plan existant est conservé et complété à la main, de même que les tâches. Une
+passe `speckit-analyze` indépendante a suivi : 17 constats, aucun critique. Ses constats sur le
+passage des handles, la vue « Contrôle indisponible », la règle d'arrêt fenêtre ouverte, la file
+de commandes, la perte visible, les dépendances et les déductions présentées comme des mesures
+sont repris dans D18, `contracts/runtime.md` et ce fichier.

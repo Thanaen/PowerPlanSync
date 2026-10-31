@@ -24,7 +24,8 @@ La sonde compile pour `x86_64-pc-windows-msvc` : `cargo clippy --locked --all-ta
 --target x86_64-pc-windows-msvc -- -D warnings` réussit le 26 octobre 2026, dans le conteneur Linux
 de la routine. Le 31 octobre 2026, elle a été exécutée sur Windows réel (T048) : résultats dans
 [prototype-results.md](prototype-results.md), section « Sonde GPUI sur Windows réel », et
-décision en attente dans D17 de [research.md](../research.md).
+décision dans D17 de [research.md](../research.md) : option 1, la fenêtre dans un processus
+séparé (D18).
 
 ## API confirmées dans les sources
 

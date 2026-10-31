@@ -175,3 +175,40 @@ Aucune boucle de rendu ne reste après la fermeture : le CPU fenêtre fermée es
 GPUI fonctionne sur Windows réel pour la fenêtre, l'icône, le clavier, l'échelle, les thèmes et
 le Narrateur, avec des contournements documentés pour les annonces et pour la fuite à la
 fermeture. SC-004 échoue fenêtre fermée, même sans fuite. La décision revient au responsable produit : voir D17 dans [research.md](../research.md).
+Décision du 2026-10-31 : option 1, la fenêtre dans un processus séparé. Voir la section suivante
+et D18.
+
+## Processus de suivi sans GPUI (T073)
+
+Date : 31 octobre 2026, même machine de référence que la section précédente. La question de T073
+est de faisabilité : un processus de suivi sans GPUI tient-il les 40 Mio de SC-004 fenêtre fermée ?
+
+Le prototype est le correctif [prototype.patch](performance/tracker-20261031/prototype.patch),
+appliqué au commit `107ffbf` et non fusionné. Il ajoute `src/tracker.rs` : l'icône `tray-icon` de
+`src/interface/tray.rs` sur une boucle de messages Win32 du thread principal, sans aucune fenêtre
+GPUI. Le coordinateur, son thread et la fenêtre cachée des notifications sont ceux de
+`src/runtime.rs`. La variable `POWERPLANSYNC_TRACKER_PROBE` choisit ce chemin avec `--gpui`. Le
+binaire release est le même que celui de l'interface GPUI : GPUI est lié, mais pas initialisé.
+
+Conditions de SC-004 : vrai mode, pas `--demo`, car la démonstration ne relève pas les processus.
+Dossier de données neuf avec la configuration de 20 règles de la mesure Slint du 20 septembre.
+Ses exécutables témoins `TARGET-01.EXE` à `TARGET-20.EXE` ne tournaient pas : aucune bascule
+n'était possible. 225 processus sur la machine. Automatisation active, relevé chaque seconde.
+Lancement `--gpui --start-minimized --data-dir <dossier>`, 10 s de stabilisation, puis
+`scripts/measure-prototype.ps1` pendant 60 s. La fenêtre `tray_icon_app` du processus confirme
+l'icône. Le plan Haute performance a été rétabli puis relu dans un bloc `finally`.
+
+| Processus et état | CPU moyen machine | Mémoire privée max | Working set max | Handles | Threads |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Prototype de suivi, icône seule, 20 règles | 0,0291 % | **3,6 Mio** | 16,7 Mio | 201 → 200 | 6 |
+| Rappel : GPUI dans le même processus, fenêtre fermée (`--demo`) | 0,0178 % | 91,1 Mio | — | 649 | 64 |
+| Rappel : application Slint, fenêtre fermée, 20 règles (20 sept.) | 0,0277 % | 3,1 Mio | — | 189 | — |
+
+Données : [tracker-live-20-rules.json](performance/tracker-20261031/tracker-live-20-rules.json) et
+[tracker-live-20-rules-samples.csv](performance/tracker-20261031/tracker-live-20-rules-samples.csv).
+
+**Conclusion.** Le prototype du processus de suivi sans GPUI occupe 3,6 Mio, soit 36 Mio de marge
+sous SC-004. Le CPU du relevé (0,029 % sur 60 s) est proche de celui de la version Slint (0,028 %,
+sur une autre durée). La faisabilité de l'option 1 de D17 est
+établie ; D18 en décrit la conception. Ce n'est pas la mesure de 30 minutes de SC-004 (T039), ni
+une mesure fenêtre ouverte, qui exige le processus de fenêtre (T077, T081).

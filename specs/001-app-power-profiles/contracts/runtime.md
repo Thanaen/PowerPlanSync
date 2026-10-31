@@ -33,6 +33,51 @@ Au démarrage, traiter la récupération avant la règle courante. La session in
 le contrôle. La sortie de session libère le contrôle après une tentative de retour et la
 persistance de son résultat. Le changement de compte ne transfère aucun journal privé.
 
+## Processus de fenêtre
+
+Décidé le 2026-10-31, voir D18 de `research.md`. La fenêtre s'exécute dans
+`power-plan-sync.exe --window`, lancé par le processus de suivi seul. Ce processus ne prend pas
+le contrôle, n'ouvre aucun dossier de données et ne lit ni n'écrit aucun plan.
+
+| Sens | Message | Effet |
+| --- | --- | --- |
+| Suivi → fenêtre | `UiCommand` versionnée | Afficher un modèle, ouvrir, fermer, compléter un dialogue |
+| Fenêtre → suivi | `UiAction` versionnée | Commande typée du coordinateur, comme depuis l'icône |
+| Fenêtre → suivi | `WindowOpened` | Fenêtre affichée : preuve que le processus répond |
+| Fin d'un canal | Aucun | Fenêtre fermée (code nul) ou perdue (autre code) |
+
+Les canaux sont nommés, à une seule instance, refusent les clients distants et n'accordent l'accès
+qu'au compte courant. Le processus de suivi les connecte avant le lancement et les transmet au seul
+processus de fenêtre. Une trame d'une autre version, d'un type inconnu ou de plus de 1 Mio ferme
+le canal. Une fenêtre qui ne répond pas à `Open` dans les 5 s est arrêtée, puis relancée une
+seule fois pour cette demande ; au lancement, sans réponse en 15 s, elle est arrêtée sans
+relance. Le processus de suivi ne relance jamais de lui-même. La perte du processus de fenêtre
+n'interrompt jamais le suivi.
+
+| État de la fenêtre | Événement | État suivant |
+| --- | --- | --- |
+| Absente | Demande d'ouverture | Lancement, délai de 15 s |
+| Lancement | Demande d'ouverture | Lancement, délai inchangé |
+| Lancement | `WindowOpened` | Ouverte |
+| Lancement | Délai dépassé | Absente, processus arrêté, perte notifiée |
+| Lancement | Fin du canal, quel que soit le code | Absente, perte notifiée |
+| Ouverte | Demande d'ouverture | `Open` en attente, `Open` envoyé, délai de 5 s |
+| Ouverte | Fin du canal, code nul | Absente ; « PowerPlanSync reste ouvert » au premier masquage |
+| Ouverte | Fin du canal, autre code ou trame refusée | Absente, perte notifiée |
+| `Open` en attente | Demande d'ouverture | `Open` en attente, délai inchangé |
+| `Open` en attente | `WindowOpened` | Ouverte |
+| `Open` en attente | Délai dépassé | Processus arrêté, perte notée au journal seulement, nouveau lancement |
+| `Open` en attente | Fin du canal, code nul | Nouveau lancement : la fenêtre se fermait |
+| `Open` en attente | Fin du canal, autre code ou trame refusée | Perte notée au journal seulement, nouveau lancement |
+| Lancement, Ouverte ou `Open` en attente | `Quit` du coordinateur | Fermeture demandée, arrêt après 2 s |
+
+Un nouveau lancement issu d'un `Open` en attente part avec le délai de 15 s, et ses propres
+issues suivent les lignes « Lancement » : il n'est jamais relancé. Chaque processus de fenêtre
+porte un numéro d'instance, celui de ses canaux. Le processus de suivi ignore la fin de canal
+et le code de sortie d'une instance qu'il a déjà arrêtée ou remplacée : ils ne changent jamais
+l'état du processus suivant. Un remplacement n'affiche pas la notification de perte, puisqu'une
+nouvelle fenêtre s'ouvre.
+
 ## Modes d'essai prévus
 
 - `--demo` fournit des plans et processus simulés. Ce mode n'appelle aucune écriture de plan réel.
