@@ -91,6 +91,17 @@ Pour un champ éditable observé, utiliser `sky.set_value({window: ppsWindow, el
 
 Les panneaux et listes Slint peuvent finir leur animation après l'action. Si la première capture montre cet état transitoire observé, attendre 200 ms puis recapturer. Ce délai ne prouve pas la disponibilité. La capture suivante doit montrer le contrôle attendu avant son activation.
 
+Sans le plugin Computer Use, par exemple sous Claude Code, piloter avec `agent-desktop` (lire `agent-desktop skills get desktop` puis `platform`) et les scripts du dépôt, sans autre client UI Automation :
+
+- `scripts/uia-inspect.ps1 -ProcessId $pid -OutputPrefix …` écrit l'arbre (rôles, noms, états, position dans l'ensemble) et une capture ;
+- `scripts/uia-focus.ps1` décrit le focus entre deux touches ;
+- `scripts/uia-act.ps1 -ProcessId $pid -Name '<regex>' -Action Invoke|Toggle|Select|Focus` agit sur un élément nommé ;
+- `scripts/send-keys.ps1 -Keys 0x09` envoie des touches virtuelles par `SendInput` à la fenêtre au premier plan ;
+- `scripts/uia-events.ps1` enregistre régions actives, notifications, noms et focus pendant une action ;
+- `scripts/windows-appearance.ps1` et `scripts/display-scale.ps1` changent thème, contraste et échelle ; rétablir la valeur lue avant l'essai dans un bloc `finally`.
+
+Ce que le Narrateur prononce se lit dans **Récapitulatif de la reconnaissance vocale** : `send-keys.ps1 -Keys 0x2D,0x12,0x58` (Insert + Alt + X), puis une capture de cette fenêtre. Fermer ce récapitulatif avant de reprendre le pilotage : il garde sinon le premier plan.
+
 **Parcourir les fichiers** ouvre la fenêtre native **Choisir un logiciel**. Réexécuter `sky.list_windows()`, sélectionner la fenêtre retournée de ce dialogue, puis lire son arbre. Saisir uniquement le chemin de `$ppsFixture` dans son champ de fichier observé. Ne pas y saisir une commande shell. Revenir à une nouvelle observation de la fenêtre principale après validation.
 
 ## Evidence

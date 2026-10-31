@@ -69,3 +69,92 @@ ui_probe.exe       98FA45B0DD0AC07457C6D0690547A476C4499041F2A599D9C3B0B4FD70181
 windows_probe.exe  07A88A5107CAA9F9571FA20AEE65948FEAC6179252A36BB3A38764B6CA82BA08
 demo_target.exe    DD74F02F001D2FDACD727174EED5D8F7703037B4CC8F30CD0905C0E6C860438C
 ```
+
+## Sonde GPUI sur Windows réel (T048)
+
+Date : 31 octobre 2026. Machine de référence : Ryzen 7 9800X3D, 16 processeurs logiques, 32 Go,
+GeForce RTX 3080 et Radeon intégrée, Windows 11 Pro 26H2 build 26300.9711, un seul écran
+2560 × 1440 réglé à 125 %. Binaires release compilés sur la machine avec Rust 1.98.1 et MSVC :
+
+```text
+gpui_probe.exe       58E07D5714B83305F8865C915C0EF28E3991A52953FE434C4B5204EB8C08DDE4
+power-plan-sync.exe  mesuré : voir app-gpui-window-states.json (champ sha256)
+```
+
+Aucun plan Windows n'a été modifié : la sonde n'en touche aucun et l'application tournait en
+`--demo` avec un dossier isolé. Le plan actif a été relu identique après chaque mesure.
+Battlefield n'a pas été lancé. Les preuves sont dans [accessibility/gpui/](accessibility/gpui/)
+et [performance/gpui-20261031/](performance/gpui-20261031/).
+Les mesures de coût portent sur l'application de `main`. Les captures et journaux `app-*` viennent
+de l'application avec les correctifs d'interface du même jour (focus, régions actives et bandeau
+de démonstration), livrés séparément.
+
+### Méthode
+
+Le pilotage n'utilise pas le plugin Computer Use de Codex, absent de cette session. Il passe par
+des scripts du dépôt, en lecture d'UI Automation, et par `agent-desktop` pour les captures :
+`scripts/uia-inspect.ps1` (arbre et capture), `uia-events.ps1` (régions actives, notifications,
+changements de nom et de focus), `uia-focus.ps1`, `uia-act.ps1`, `send-keys.ps1` (touches par
+`SendInput`), `windows-appearance.ps1` et `display-scale.ps1` (thème, contraste et échelle,
+rétablis dans un bloc `finally`). Ce que le Narrateur a réellement prononcé est lu dans sa
+fenêtre **Récapitulatif de la reconnaissance vocale** (Insert + Alt + X), pas déduit de l'arbre.
+
+### Accessibilité
+
+| Contrôle | Résultat | Preuve |
+| --- | --- | --- |
+| Arbre UI Automation | Rôles et noms publiés ; l'interrupteur est un bouton à bascule (« Suivre, Bouton, activé ») | `probe-tree-after-fix.txt` |
+| Position dans une liste | **Défaut corrigé** : la sonde passait `index + 1` et le Narrateur aurait dit « 2 sur ? » pour le premier élément. AccessKit compte à partir de 0 et lit la taille sur le conteneur. Après correction, le Narrateur dit « 2. Blender, 2 sur 3, sélectionné » | `probe-tree-before-fix.txt`, `probe-narrator-recap-positions.png` |
+| Clavier | Tab et Maj+Tab parcourent boutons, interrupteur et éléments de liste | idem |
+| Statut sans déplacer le focus | **Échec sans contournement** : un `Role::Status` sans région active ne lève qu'un `NameChanged`, que le Narrateur ne lit pas | `probe-events-status-without-live.txt` |
+| Contournement 1 : région active | Le crochet `a11y_synthetic_children` pose `Live::Polite` sur le nœud ; AccessKit lève alors `LiveRegionChanged`. L'application l'utilise pour ses annonces | journaux d'événements de l'application |
+| Contournement 2 : notification UIA | Un fournisseur UIA minimal dont l'hôte est le HWND lève `UiaRaiseNotificationEvent` ; le Narrateur a dit « Annonce de test 3 » et « Annonce de test 4 » sans déplacement du focus. Levée sur le seul fournisseur hôte de `UiaHostProviderFromHwnd`, la notification n'atteint aucun client | `probe-events-uia-notification.txt`, `probe-narrator-recap-notifications.png` |
+| Échelles 100, 150 et 200 % | Changement d'échelle de l'écran pendant l'exécution : la sonde et l'application se redessinent nettes, sans débordement | `probe-scale-*.png`, `app-scale-*.png` |
+| Thèmes clair, sombre et contraste élevé | Bascule pendant l'exécution, suivie par l'application ; le contraste élevé remplace les jetons par les couleurs système. La sonde a des couleurs fixes et ne sert pas à ce contrôle | `app-theme-*.png` |
+| Texte agrandi | **Non pris en charge** : ni GPUI ni `src/interface/` ne lisent la taille du texte de Windows, que l'interface Slint appliquait (`text_scale_percent`). À traiter en T068 | recherche dans les sources |
+| Changement d'écran | **Non exécuté** : un seul écran sur la machine | — |
+| « Effets d'animation » désactivé | **Non exécuté** sur la sonde, qui lit le réglage au démarrage seulement | — |
+
+### Coût
+
+Mesure par `scripts/measure-prototype.ps1` : échantillon chaque seconde, CPU normalisé sur les 16
+processeurs logiques, mémoire privée `PrivateMemorySize64`. Dix secondes de stabilisation avant
+chaque état. Une minute par état, donc pas la campagne de trente minutes de SC-004 (T039).
+
+| Processus et état | CPU moyen machine | Mémoire privée max | Handles | Threads |
+| --- | ---: | ---: | ---: | ---: |
+| Sonde, jamais de fenêtre (`--tray-only`, 30 s) | 0,0065 % | 59,7 Mio | 454 | 44 |
+| Application `--gpui --demo`, fenêtre ouverte | 0,0906 % | 92,5 Mio | 654 | — |
+| Application `--gpui --demo`, fenêtre fermée | 0,0178 % | **91,1 Mio** | 649 | 64 |
+| Rappel : application Slint, fenêtre fermée, 20 règles (20 sept.) | 0,0277 % | 3,1 Mio | 189 | — |
+
+SC-004 fixe 100 Mio fenêtre ouverte et **40 Mio fenêtre fermée**. Fenêtre ouverte, l'application
+GPUI tient le budget avec 7,5 Mio de marge. Fenêtre fermée, elle le dépasse de 51 Mio : fermer
+la fenêtre ne libère presque rien. La sonde sans aucune fenêtre occupe déjà 59,7 Mio. Le coût
+vient donc de l'initialisation de GPUI (rendu DirectX, polices, exécuteurs), pas des vues de
+PowerPlanSync. Les pilotes graphiques comptent dans la mémoire privée ; une machine sans carte
+dédiée donnerait un autre chiffre, non mesuré ici.
+
+### Cent cycles de fenêtre
+
+`scripts/verify-window-lifecycle.ps1 -ExecutablePath gpui_probe.exe -Arguments --lifecycle` suit le
+protocole de la sonde Slint : une ouverture d'échauffement, 100 cycles entre deux marqueurs,
+101 ouvertures et 101 fermetures comptées. Le script échoue sur son seuil de handles :
+
+| Essai | Mémoire privée avant → après | Handles avant → après |
+| --- | --- | --- |
+| 1 | 161,6 → 136,0 Mio | 589 → 654 (+65) |
+| 2 | — | +49 |
+
+La courbe échantillonnée chaque seconde pendant l'essai 2 (`probe-lifecycle-run2-curve.csv`)
+montre un palier unique au premier cycle après l'échauffement (+115 handles, +20 threads), puis
+des handles stables entre 657 et 670 pendant les 100 cycles. Ce n'est pas une fuite par cycle.
+Le seuil de 10 handles, calibré sur Slint, échoue quand même : le marqueur de départ précède ce
+palier. La mémoire ne dérive pas et baisse même pendant les cycles. Aucune boucle de rendu ne
+reste après la fermeture : le CPU fenêtre fermée est le plus bas mesuré.
+
+### Conclusion
+
+GPUI fonctionne sur Windows réel pour la fenêtre, l'icône, le clavier, l'échelle, les thèmes et
+le Narrateur, avec deux contournements documentés pour les annonces. SC-004 échoue fenêtre
+fermée. La décision revient au responsable produit : voir D17 dans [research.md](../research.md).

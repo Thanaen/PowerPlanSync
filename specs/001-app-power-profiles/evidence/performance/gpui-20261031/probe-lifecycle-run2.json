@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-31T14:57:25.0131586Z",
+  "finished_utc": "2026-10-31T14:58:13.6931161Z",
+  "process": {
+    "id": 22276,
+    "executable_path": "D:\\Dev\\PowerPlanSync\\target\\release\\examples\\gpui_probe.exe",
+    "started_utc": "2026-10-31T14:57:25.0145096Z"
+  },
+  "executable_path": "D:\\Dev\\PowerPlanSync\\target\\release\\examples\\gpui_probe.exe",
+  "expected_cycles": 100,
+  "reported_cycles": 100,
+  "reported_successful_opens": 101,
+  "reported_hides": 101,
+  "phases": [
+    "warmup_begin",
+    "baseline_begin",
+    "baseline_end",
+    "hidden_begin",
+    "hidden_end",
+    "complete"
+  ],
+  "samples": {
+    "baseline_begin": {
+      "phase": "baseline_begin",
+      "captured_utc": "2026-10-31T14:57:30.6409734Z",
+      "private_bytes": 174104576,
+      "private_mib": 166.039,
+      "handles": 609
+    },
+    "baseline_end": {
+      "phase": "baseline_end",
+      "captured_utc": "2026-10-31T14:58:08.1361700Z",
+      "private_bytes": 141688832,
+      "private_mib": 135.125,
+      "handles": 658
+    }
+  },
+  "drift": {
+    "private_bytes": -32415744,
+    "private_mib": -30.914,
+    "handles": 49
+  },
+  "thresholds": {
+    "private_bytes_max": 5242880,
+    "private_mib_max": 5,
+    "handles_max": 10
+  },
+  "stdout_path": "D:\\Dev\\PowerPlanSync\\.audit\\t048\\lifecycle\\20261031-155724-1bbbbe81\\stdout.log",
+  "stderr_path": "D:\\Dev\\PowerPlanSync\\.audit\\t048\\lifecycle\\20261031-155724-1bbbbe81\\stderr.log",
+  "exit_code": 0,
+  "measurement_scope": "PrivateMemorySize64 and HandleCount for the launched process at probe phase markers; no ETW.",
+  "stabilization": {
+    "before_baseline_seconds": 5,
+    "after_cycles_seconds": 5,
+    "exit_delay_milliseconds": 500
+  },
+  "passed": false,
+  "failure": null
+}

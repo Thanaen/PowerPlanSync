@@ -2,10 +2,22 @@
 //! icône de notification, mouvement réduit et sélection d'un exécutable.
 //!
 //! `--smoke` ouvre la fenêtre, la détruit, la rouvre puis quitte.
+//! `--tray-only` démarre sans fenêtre, pour mesurer le coût de GPUI avant tout rendu.
+//! `--lifecycle` suit le protocole de `scripts/verify-window-lifecycle.ps1` : une ouverture
+//! d'échauffement, cent cycles entre deux marqueurs de mesure, puis cinq secondes sans fenêtre.
 
 #[cfg(windows)]
 fn main() {
-    probe::run(std::env::args().any(|argument| argument == "--smoke"));
+    let mode = if std::env::args().any(|argument| argument == "--smoke") {
+        probe::Mode::Smoke
+    } else if std::env::args().any(|argument| argument == "--tray-only") {
+        probe::Mode::TrayOnly
+    } else if std::env::args().any(|argument| argument == "--lifecycle") {
+        probe::Mode::Lifecycle
+    } else {
+        probe::Mode::Interactive
+    };
+    probe::run(mode);
 }
 
 #[cfg(not(windows))]
@@ -33,23 +45,41 @@ mod probe {
         Icon, MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent,
     };
     use windows::Win32::Foundation::HWND;
+    use windows::Win32::System::Variant::VARIANT;
+    use windows::Win32::UI::Accessibility::{
+        IRawElementProviderSimple, IRawElementProviderSimple_Impl,
+        NotificationKind_ActionCompleted, NotificationProcessing_ImportantMostRecent,
+        ProviderOptions, ProviderOptions_ServerSideProvider, UIA_PATTERN_ID, UIA_PROPERTY_ID,
+        UiaHostProviderFromHwnd, UiaRaiseNotificationEvent,
+    };
     use windows::Win32::UI::WindowsAndMessaging::{
         SPI_GETCLIENTAREAANIMATION, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SystemParametersInfoW,
     };
-    use windows::core::BOOL;
+    use windows::core::{BOOL, BSTR, IUnknown, implement};
 
-    actions!(gpui_probe, [Tab, TabPrev]);
+    actions!(gpui_probe, [Tab, TabPrev, Announce]);
 
     const SOFTWARE: [&str; 3] = ["Battlefield 6", "Blender", "OBS Studio"];
     const SWITCH_SPRING: SpringConfig = SpringConfig::new(380.0, 30.0, 1.0);
 
-    pub fn run(smoke: bool) {
+    const LIFECYCLE_CYCLES: usize = 100;
+
+    #[derive(Clone, Copy, PartialEq)]
+    pub enum Mode {
+        Interactive,
+        Smoke,
+        Lifecycle,
+        TrayOnly,
+    }
+
+    pub fn run(mode: Mode) {
         gpui_platform::application()
             .with_quit_mode(QuitMode::Explicit)
             .run(move |cx: &mut App| {
                 cx.bind_keys([
                     KeyBinding::new("tab", Tab, None),
                     KeyBinding::new("shift-tab", TabPrev, None),
+                    KeyBinding::new("ctrl-alt-a", Announce, None),
                 ]);
                 cx.set_reduce_motion(!client_area_animation_enabled());
 
@@ -73,12 +103,21 @@ mod probe {
                 })
                 .detach();
 
-                let first = open_probe_window(cx, &open_window);
+                let first = if mode == Mode::TrayOnly {
+                    None
+                } else {
+                    open_probe_window(cx, &open_window)
+                };
                 cx.spawn(async move |cx| {
                     // L'icône vit tant que la boucle tourne.
                     let _tray: TrayIcon = tray;
                     let mut window = first;
-                    if smoke {
+                    if mode == Mode::Lifecycle {
+                        run_lifecycle(window, &open_window, cx).await;
+                        cx.update(|cx| cx.quit());
+                        return;
+                    }
+                    if mode == Mode::Smoke {
                         cx.background_executor()
                             .timer(Duration::from_millis(400))
                             .await;
@@ -129,6 +168,54 @@ mod probe {
                 })
                 .detach();
             });
+    }
+
+    async fn run_lifecycle(
+        first: Option<WindowHandle<ProbeView>>,
+        open_window: &Rc<Cell<Option<WindowId>>>,
+        cx: &mut gpui::AsyncApp,
+    ) {
+        let pid = std::process::id();
+        println!("phase=warmup_begin pid={pid} cycles={LIFECYCLE_CYCLES}");
+        let mut opens = usize::from(first.is_some());
+        cx.background_executor()
+            .timer(Duration::from_millis(400))
+            .await;
+        close_probe_window(first, cx);
+        let mut hides = 1;
+        cx.background_executor()
+            .timer(Duration::from_millis(5_000))
+            .await;
+        println!("phase=baseline_begin pid={pid} warmup=1 window=none");
+        for _ in 0..LIFECYCLE_CYCLES {
+            let window = cx.update(|cx| open_probe_window(cx, open_window));
+            opens += usize::from(window.is_some());
+            cx.background_executor()
+                .timer(Duration::from_millis(200))
+                .await;
+            close_probe_window(window, cx);
+            hides += 1;
+            cx.background_executor()
+                .timer(Duration::from_millis(100))
+                .await;
+        }
+        cx.background_executor()
+            .timer(Duration::from_millis(5_000))
+            .await;
+        println!(
+            "phase=baseline_end pid={pid} cycles={LIFECYCLE_CYCLES} successful_opens={opens} hides={hides} window=none"
+        );
+        println!("phase=hidden_begin pid={pid} window=none");
+        cx.background_executor()
+            .timer(Duration::from_millis(5_000))
+            .await;
+        println!("phase=hidden_end pid={pid} duration_ms=5000 window=none");
+        println!(
+            "phase=complete pid={pid} cycles={LIFECYCLE_CYCLES} successful_opens={opens} hides={hides} window=none"
+        );
+        cx.background_executor()
+            .timer(Duration::from_millis(500))
+            .await;
     }
 
     fn build_tray() -> Result<(TrayIcon, tray_icon::menu::MenuId, tray_icon::menu::MenuId), String>
@@ -220,11 +307,58 @@ mod probe {
         }
     }
 
+    /// Fournisseur UIA minimal dont l'hôte est la fenêtre. GPUI 0.3.9 ne pose aucune région
+    /// active : un changement de `Role::Status` ne lève qu'un `NameChanged`, que le Narrateur
+    /// ne lit pas hors focus. Une notification levée sur ce fournisseur est lue sans déplacer
+    /// le focus. Le fournisseur hôte seul, renvoyé par `UiaHostProviderFromHwnd`, n'est pas
+    /// relayé aux clients.
+    #[implement(IRawElementProviderSimple)]
+    struct Announcer {
+        hwnd: HWND,
+    }
+
+    impl IRawElementProviderSimple_Impl for Announcer_Impl {
+        fn ProviderOptions(&self) -> windows::core::Result<ProviderOptions> {
+            Ok(ProviderOptions_ServerSideProvider)
+        }
+
+        fn GetPatternProvider(&self, _: UIA_PATTERN_ID) -> windows::core::Result<IUnknown> {
+            Err(windows::core::Error::empty())
+        }
+
+        fn GetPropertyValue(&self, _: UIA_PROPERTY_ID) -> windows::core::Result<VARIANT> {
+            Ok(VARIANT::default())
+        }
+
+        fn HostRawElementProvider(&self) -> windows::core::Result<IRawElementProviderSimple> {
+            unsafe { UiaHostProviderFromHwnd(self.hwnd) }
+        }
+    }
+
+    fn announce(hwnd: Option<HWND>, text: &str) {
+        let Some(hwnd) = hwnd else { return };
+        let provider: IRawElementProviderSimple = Announcer { hwnd }.into();
+        let result = unsafe {
+            UiaRaiseNotificationEvent(
+                &provider,
+                NotificationKind_ActionCompleted,
+                NotificationProcessing_ImportantMostRecent,
+                &BSTR::from(text),
+                &BSTR::from("probe-status"),
+            )
+        };
+        if let Err(error) = result {
+            eprintln!("Annonce impossible : {error}");
+        }
+    }
+
     struct ProbeView {
+        hwnd: Option<HWND>,
         focus_handle: FocusHandle,
         following: bool,
         selected: usize,
         status: SharedString,
+        announcements: usize,
     }
 
     impl ProbeView {
@@ -232,15 +366,18 @@ mod probe {
             let focus_handle = cx.focus_handle();
             window.focus(&focus_handle, cx);
             Self {
+                hwnd: window_hwnd(window),
                 focus_handle,
                 following: true,
                 selected: 0,
                 status: "Prêt".into(),
+                announcements: 0,
             }
         }
 
         fn set_status(&mut self, status: impl Into<SharedString>, cx: &mut Context<Self>) {
             self.status = status.into();
+            announce(self.hwnd, &self.status);
             cx.notify();
         }
 
@@ -314,6 +451,11 @@ mod probe {
                 .track_focus(&self.focus_handle)
                 .on_action(cx.listener(|_, _: &Tab, window, cx| window.focus_next(cx)))
                 .on_action(cx.listener(|_, _: &TabPrev, window, cx| window.focus_prev(cx)))
+                .on_action(cx.listener(|this, _: &Announce, _, cx| {
+                    this.announcements += 1;
+                    let count = this.announcements;
+                    this.set_status(format!("Annonce de test {count}"), cx);
+                }))
                 .size_full()
                 .flex()
                 .flex_col()
@@ -432,6 +574,9 @@ mod probe {
                                 .id("software")
                                 .role(Role::List)
                                 .aria_label("Logiciels associés")
+                                // AccessKit lit la taille sur le conteneur et compte les
+                                // positions à partir de 0.
+                                .aria_size_of_set(SOFTWARE.len())
                                 .flex()
                                 .flex_col()
                                 .gap_1()
@@ -446,8 +591,7 @@ mod probe {
                                             "{}. {name}",
                                             index + 1
                                         )))
-                                        .aria_position_in_set(index + 1)
-                                        .aria_size_of_set(SOFTWARE.len())
+                                        .aria_position_in_set(index)
                                         .aria_selected(selected)
                                         .px_2()
                                         .py_1()

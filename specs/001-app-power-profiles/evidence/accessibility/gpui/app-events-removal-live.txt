@@ -1,0 +1,9 @@
+2026-10-31T15:10:01.2266423Z écoute pid=2604
+2026-10-31T15:10:02.2948730Z focus Button "Supprimer demo_target"
+2026-10-31T15:10:02.3051775Z name-changed StatusBar "Automatisation désactivée, aucun plan ne sera changé" -> "Automatisation désactivée, aucun plan ne sera changé"
+2026-10-31T15:10:02.3074466Z name-changed StatusBar "demo_target a été retiré de la liste." -> "demo_target a été retiré de la liste."
+2026-10-31T15:10:02.3080008Z live-region StatusBar "demo_target a été retiré de la liste."
+2026-10-31T15:10:02.3082642Z focus Window "PowerPlanSync"
+2026-10-31T15:10:02.3254975Z name-changed StatusBar "Automatisation désactivée, aucun plan ne sera changé" -> "Automatisation désactivée, aucun plan ne sera changé"
+2026-10-31T15:10:02.3288314Z name-changed StatusBar "demo_target a été retiré de la liste." -> "demo_target a été retiré de la liste."
+2026-10-31T15:10:09.2621444Z fin

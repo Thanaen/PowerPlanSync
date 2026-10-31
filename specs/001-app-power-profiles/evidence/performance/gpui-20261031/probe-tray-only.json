@@ -1,0 +1,15 @@
+{
+  "process_id": 20532,
+  "process_name": "gpui_probe",
+  "process_started_utc": "2026-10-31T15:02:55.8996217Z",
+  "measured_utc": "2026-10-31T15:03:36.1634644Z",
+  "duration_seconds": 30.2,
+  "logical_processors": 16,
+  "samples": 31,
+  "cpu_percent_machine": 0.00647,
+  "private_mib_max": 59.668,
+  "working_set_mib_max": 48.02,
+  "handles_first": 456,
+  "handles_last": 454,
+  "threads_last": 44
+}

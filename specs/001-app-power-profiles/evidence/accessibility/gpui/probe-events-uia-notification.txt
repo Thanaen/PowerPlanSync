@@ -1,0 +1,6 @@
+2026-10-31T14:54:25.4315085Z écoute pid=5972
+2026-10-31T14:54:26.3621372Z notification Window "Sonde GPUI" kind=ActionCompleted processing=ImportantMostRecent text="Annonce de test 1" activity=probe-status
+2026-10-31T14:54:26.3623736Z name-changed StatusBar "Annonce de test 1" -> "Annonce de test 1"
+2026-10-31T14:54:29.8817322Z notification Window "Sonde GPUI" kind=ActionCompleted processing=ImportantMostRecent text="Annonce de test 2" activity=probe-status
+2026-10-31T14:54:29.8819705Z name-changed StatusBar "Annonce de test 2" -> "Annonce de test 2"
+2026-10-31T14:54:34.4659659Z fin
