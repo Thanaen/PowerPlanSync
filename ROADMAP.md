@@ -53,7 +53,7 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
 
 ### 1. Bugs ouverts
 
-Aucun bug ouvert au 25 octobre 2026.
+- [x] Réglages illisibles : l'instance garde le contrôle unique et rouvre sa fenêtre au second lancement (#32, #41).
 
 ### 2. Fonctionnalités
 
@@ -95,4 +95,5 @@ Aucun bug ouvert au 25 octobre 2026.
 | 2026-10-29 | [#25](https://github.com/Thanaen/PowerPlanSync/pull/25) | T061 : commande **Relire les réglages**, sans changement de plan ni réécriture du fichier. |
 | 2026-10-30 | [#26](https://github.com/Thanaen/PowerPlanSync/pull/26) | T062 : messages intégrés (plan choisi dans Windows, refus, retour échoué en quittant, réglages illisibles), sans dialogue. |
 | 2026-10-30 | [#27](https://github.com/Thanaen/PowerPlanSync/pull/27) | T063 : Ctrl+Alt+P suit le bouton **Mettre en pause** ou **Reprendre**, menu de l'icône grisé sans contrôle. |
-| 2026-10-31 | #28 | T064 : **Supprimer** sans confirmation avec **Annuler** (Ctrl+Z), annonce des déplacements, focus passé à la flèche opposée. |
+| 2026-10-31 | [#28](https://github.com/Thanaen/PowerPlanSync/pull/28) | T064 : **Supprimer** sans confirmation avec **Annuler** (Ctrl+Z), annonce des déplacements, focus passé à la flèche opposée. |
+| 2026-10-31 | #41 | #32 : des réglages illisibles gardent le contrôle unique et l'écoute d'ouverture ; la relecture les reprend sans les relâcher. |

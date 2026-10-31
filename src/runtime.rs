@@ -208,6 +208,17 @@ impl Worker {
         if self.controller.is_some() {
             return Ok(());
         }
+        // Des réglages illisibles gardent le contrôle unique : la relecture le reprend sans le
+        // relâcher, pour qu'aucune autre instance ne le prenne entre-temps (#32).
+        let (kept_lease, kept_listener, kept_lock) = if self.settings_unreadable {
+            (
+                self.lease.take(),
+                self.open_listener.take(),
+                self.data_lock.take(),
+            )
+        } else {
+            (None, None, None)
+        };
         self.open_listener = None;
         self.lease = None;
         self.data_lock = None;
@@ -221,25 +232,31 @@ impl Worker {
         if !self.options.demo && !session::is_active_interactive_session(&self.owner) {
             return Err("Cette session n’est pas active. Le contrôle reste suspendu.".into());
         }
-        let mut lease = None;
-        let mut open_listener = None;
-        let mut data_lock = None;
+        let mut lease = kept_lease;
+        let mut open_listener = kept_listener;
+        let mut data_lock = kept_lock;
         if self.options.demo {
-            std::fs::create_dir_all(&self.options.data_directory)
-                .map_err(|_| "Le dossier de démonstration est inaccessible.")?;
-            data_lock = Some(
-                OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .create(true)
-                    .truncate(false)
-                    .share_mode(0)
-                    .open(self.options.data_directory.join("demo.lock"))
-                    .map_err(|_| "Cette démonstration est déjà ouverte dans ce dossier.")?,
-            );
+            if data_lock.is_none() {
+                std::fs::create_dir_all(&self.options.data_directory)
+                    .map_err(|_| "Le dossier de démonstration est inaccessible.")?;
+                data_lock = Some(
+                    OpenOptions::new()
+                        .read(true)
+                        .write(true)
+                        .create(true)
+                        .truncate(false)
+                        .share_mode(0)
+                        .open(self.options.data_directory.join("demo.lock"))
+                        .map_err(|_| "Cette démonstration est déjà ouverte dans ce dossier.")?,
+                );
+            }
         } else {
-            lease = Some(ControlLease::acquire_controller().map_err(lease_refusal)?);
-            if let Some(sender) = self.sender.clone() {
+            if lease.is_none() {
+                lease = Some(ControlLease::acquire_controller().map_err(lease_refusal)?);
+            }
+            if open_listener.is_none()
+                && let Some(sender) = self.sender.clone()
+            {
                 open_listener = Some(OpenListener::start(self.owner.clone(), sender)?);
             }
         }
@@ -247,7 +264,13 @@ impl Worker {
         let diagnostics = crate::diagnostics::Diagnostics::open(&directory).ok();
         let mut store = FileStore::new(directory).map_err(|e| error_message(&e))?;
         if let Err(error) = store.load_configuration() {
+            // L'instance reste celle qui contrôle : elle garde son verrou et rouvre sa fenêtre
+            // au second lancement (FR-016).
             self.settings_unreadable = true;
+            self.open_listener = open_listener;
+            self.lease = lease;
+            self.data_lock = data_lock;
+            self.diagnostics = diagnostics;
             return Err(error_message(&error));
         }
         let mut controller = Controller::open(
@@ -1404,6 +1427,36 @@ mod tests {
     }
 
     #[test]
+    fn unreadable_settings_keep_control_until_they_are_reloaded() {
+        let mut worker = demo();
+        let directory = worker.options.data_directory.join("simulation");
+        std::fs::create_dir_all(&directory).unwrap();
+        let path = directory.join("config.json");
+        std::fs::write(&path, "broken configuration").unwrap();
+        assert!(worker.acquire().is_err());
+        assert!(worker.settings_unreadable);
+        assert!(worker.data_lock.is_some());
+        let mut second = demo();
+        second.options.data_directory = worker.options.data_directory.clone();
+        assert!(second.acquire().is_err());
+        assert!(!second.settings_unreadable);
+
+        assert!(worker.action(UiAction::ReloadConfiguration).is_err());
+        assert!(worker.data_lock.is_some());
+        assert!(second.acquire().is_err());
+        std::fs::write(
+            &path,
+            serde_json::to_vec(&Configuration::default()).unwrap(),
+        )
+        .unwrap();
+        worker.action(UiAction::ReloadConfiguration).unwrap();
+        assert!(worker.controller.is_some());
+        assert!(worker.data_lock.is_some());
+        assert!(second.acquire().is_err());
+        cleanup(worker);
+    }
+
+    #[test]
     fn failed_setup_releases_the_directory_for_another_controller() {
         let future = Configuration {
             schema_version: 2,
@@ -1431,10 +1484,16 @@ mod tests {
             std::fs::write(&configuration_path, &contents).unwrap();
             assert!(worker.acquire().is_err());
             assert!(worker.controller.is_none());
+            assert_eq!(std::fs::read(&configuration_path).unwrap(), contents);
+            // Des réglages illisibles gardent le dossier (#32) ; l'instance le rend en quittant.
+            if worker.settings_unreadable {
+                assert!(worker.data_lock.is_some());
+                worker.data_lock = None;
+                worker.settings_unreadable = false;
+            }
             assert!(worker.lease.is_none());
             assert!(worker.open_listener.is_none());
             assert!(worker.data_lock.is_none());
-            assert_eq!(std::fs::read(&configuration_path).unwrap(), contents);
             let independently_acquired = OpenOptions::new()
                 .read(true)
                 .write(true)
@@ -1444,7 +1503,7 @@ mod tests {
             drop(independently_acquired);
             assert!(worker.action(UiAction::Retry).is_err());
             assert!(worker.controller.is_none());
-            assert!(worker.data_lock.is_none());
+            assert_eq!(worker.data_lock.is_some(), worker.settings_unreadable);
             cleanup(worker);
         }
     }
