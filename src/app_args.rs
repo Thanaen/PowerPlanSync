@@ -13,6 +13,8 @@ pub struct Options {
 pub enum Arguments {
     Help,
     Run(Options),
+    /// Processus de fenêtre lancé par le processus de suivi (D18), absent de l'aide.
+    Window,
 }
 
 pub const HELP: &str = "PowerPlanSync\n\nAssocie les plans d'alimentation Windows aux logiciels ouverts.\n\n  --demo                 Plans simulés, aucune écriture de plan Windows\n  --data-dir <dossier>    Dossier de configuration et de diagnostics séparé\n  --start-minimized      Ouvrir seulement la zone de notification\n  --gpui                 Essayer la nouvelle interface, encore incomplète\n  --help                 Afficher cette aide\n\nLe dossier séparé ne simule pas Windows. Utilisez --demo pour cela.";
@@ -21,7 +23,17 @@ pub fn parse(
     arguments: impl IntoIterator<Item = OsString>,
     local_app_data: Option<OsString>,
 ) -> Result<Arguments, String> {
-    let mut arguments = arguments.into_iter();
+    let mut arguments = arguments.into_iter().peekable();
+    if arguments
+        .peek()
+        .is_some_and(|argument| argument == "--window")
+    {
+        arguments.next();
+        return match arguments.next() {
+            None => Ok(Arguments::Window),
+            Some(_) => Err("--window ne s'utilise pas avec d'autres options.".into()),
+        };
+    }
     let mut demo = false;
     let mut data_directory = None;
     let mut start_minimized = false;
@@ -108,6 +120,17 @@ mod tests {
             gpui.data_directory,
             slint.data_directory.with_file_name("PowerPlanSyncDemo")
         );
+    }
+
+    #[test]
+    fn window_process_takes_no_other_option_and_stays_out_of_help() {
+        assert!(matches!(
+            parse(["--window".into()], None),
+            Ok(Arguments::Window)
+        ));
+        assert!(parse(["--window".into(), "--demo".into()], None).is_err());
+        assert!(parse(["--demo".into(), "--window".into()], None).is_err());
+        assert!(!HELP.contains("--window"));
     }
 
     #[test]

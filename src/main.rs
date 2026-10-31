@@ -9,6 +9,14 @@ fn main() {
             attach_parent_console();
             println!("{}", power_plan_sync::app_args::HELP)
         }
+        #[cfg(windows)]
+        Ok(power_plan_sync::app_args::Arguments::Window) => {
+            std::process::exit(power_plan_sync::window_process::run())
+        }
+        #[cfg(not(windows))]
+        Ok(power_plan_sync::app_args::Arguments::Window) => {
+            eprintln!("PowerPlanSync nécessite Windows 11.");
+        }
         Ok(power_plan_sync::app_args::Arguments::Run(options)) => {
             #[cfg(windows)]
             if let Err(error) = power_plan_sync::runtime::run(options) {

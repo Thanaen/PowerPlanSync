@@ -25,8 +25,19 @@ enum Event {
     Tray(TrayCommand),
 }
 
+/// Où vit l'interface.
+#[derive(Clone, Copy)]
+pub enum Host {
+    /// `--gpui` dans le processus du coordinateur, avec l'icône, jusqu'à T077.
+    Tray { start_minimized: bool },
+    /// Processus de fenêtre `--window` (D18) : aucune icône, et fermer la fenêtre arrête le
+    /// processus.
+    WindowProcess,
+}
+
 struct Shell {
     model: UiDisplayModel,
+    window_process: bool,
     /// Vrai dès le premier état du coordinateur : avant lui, rien ne s'affiche, pour qu'une
     /// seconde instance de la même session s'arrête sans fenêtre ni icône.
     started: bool,
@@ -45,7 +56,7 @@ struct Shell {
 /// processus juste après ses observateurs de sortie.
 pub fn run(
     initial: UiDisplayModel,
-    start_minimized: bool,
+    host: Host,
     commands: UnboundedReceiver<UiCommand>,
     on_action: impl Fn(UiAction) + Send + Sync + 'static,
     before_exit: impl Fn() + 'static,
@@ -69,8 +80,13 @@ pub fn run(
 
             let on_action: OnAction = Arc::new(on_action);
             let (tray_sender, tray_commands) = unbounded();
+            let (window_process, start_minimized) = match host {
+                Host::Tray { start_minimized } => (false, start_minimized),
+                Host::WindowProcess => (true, false),
+            };
             let shell = Rc::new(RefCell::new(Shell {
                 model: initial,
+                window_process,
                 started: false,
                 start_minimized,
                 tray_sender,
@@ -82,10 +98,15 @@ pub fn run(
             }));
 
             let hidden = Rc::clone(&shell);
-            cx.on_window_closed(move |_, _| {
+            cx.on_window_closed(move |cx, _| {
                 let mut state = hidden.borrow_mut();
                 state.dialog = None;
                 state.opener = None;
+                if state.window_process {
+                    drop(state);
+                    cx.quit();
+                    return;
+                }
                 match &mut state.tray {
                     Some(tray) => {
                         let _ = tray.explain_hidden();
@@ -203,6 +224,13 @@ fn handle(shell: &Rc<RefCell<Shell>>, event: Event, cx: &mut App) -> bool {
 /// Crée l'icône, puis ouvre la fenêtre si on la demande ou si l'icône manque. Sans aucune
 /// des deux, le processus serait invisible : il s'arrête.
 fn start(shell: &Rc<RefCell<Shell>>, force_show: bool, notify: bool, cx: &mut App) {
+    if shell.borrow().window_process {
+        shell.borrow_mut().started = true;
+        if !show(shell, cx, notify) {
+            cx.quit();
+        }
+        return;
+    }
     let (model, sender, start_minimized) = {
         let mut state = shell.borrow_mut();
         state.started = true;
