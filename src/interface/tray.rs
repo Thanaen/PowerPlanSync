@@ -299,6 +299,17 @@ mod native {
             if self.hidden_explained {
                 return Ok(());
             }
+            self.balloon(strings::HIDDEN_TITLE, strings::HIDDEN_BODY)?;
+            self.hidden_explained = true;
+            Ok(())
+        }
+
+        /// Le processus de fenêtre a été perdu : le suivi continue, l'icône la rouvre.
+        pub fn explain_lost(&mut self) -> Result<(), String> {
+            self.balloon(strings::WINDOW_LOST_TITLE, strings::WINDOW_LOST_BODY)
+        }
+
+        fn balloon(&self, title: &str, body: &str) -> Result<(), String> {
             let mut balloon = NOTIFYICONDATAW {
                 cbSize: size_of::<NOTIFYICONDATAW>() as u32,
                 hWnd: HWND(self.icon.window_handle() as _),
@@ -306,14 +317,13 @@ mod native {
                 dwInfoFlags: NIIF_RESPECT_QUIET_TIME,
                 ..Default::default()
             };
-            copy_wide(&mut balloon.szInfoTitle, strings::HIDDEN_TITLE);
-            copy_wide(&mut balloon.szInfo, strings::HIDDEN_BODY);
+            copy_wide(&mut balloon.szInfoTitle, title);
+            copy_wide(&mut balloon.szInfo, body);
             // `tray-icon` ne publie pas l'identifiant de l'icône dans sa fenêtre. Chaque icône a
             // sa propre fenêtre, qui n'en porte qu'un : seul le bon est accepté.
             for id in 1..=64 {
                 balloon.uID = id;
                 if unsafe { Shell_NotifyIconW(NIM_MODIFY, &balloon) }.as_bool() {
-                    self.hidden_explained = true;
                     return Ok(());
                 }
             }

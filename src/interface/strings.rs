@@ -263,6 +263,8 @@ pub const TRAY_PAUSE: &str = "Mettre en pause";
 pub const TRAY_RESUME: &str = "Reprendre";
 pub const TRAY_QUIT: &str = "Quitter PowerPlanSync";
 pub const HIDDEN_TITLE: &str = "PowerPlanSync reste ouvert";
+pub const WINDOW_LOST_TITLE: &str = "La fenêtre de PowerPlanSync s’est fermée";
+pub const WINDOW_LOST_BODY: &str = "Le suivi continue. Cliquez sur l’icône pour la rouvrir.";
 pub const HIDDEN_BODY: &str = "Il continue de fonctionner dans la zone de notification, parfois \
      parmi les icônes masquées (^). Pour l’arrêter, faites un clic droit sur son icône, puis \
      choisissez Quitter PowerPlanSync.";

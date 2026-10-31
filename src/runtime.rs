@@ -35,6 +35,8 @@ enum AppEvent {
     Chosen(Result<Option<PathBuf>, String>),
     Native(NativeNotification),
     Shutdown(mpsc::SyncSender<()>),
+    /// Le processus de fenêtre a été perdu : la raison va au journal de diagnostic.
+    WindowLost(&'static str),
     Open,
     Stop,
 }
@@ -153,6 +155,7 @@ fn run_gpui(options: Options) -> Result<(), String> {
     let worker_tx = tx.clone();
     let worker = std::thread::spawn(move || worker(options, worker_tx, rx));
     let ui_tx = tx.clone();
+    let lost_tx = tx.clone();
     crate::tracker::run(
         start_minimized,
         session::current_owner().ok(),
@@ -165,6 +168,9 @@ fn run_gpui(options: Options) -> Result<(), String> {
             if ui_tx.send(AppEvent::Ui(action)).is_err() && quit {
                 send_ui(UiCommand::Quit);
             }
+        },
+        move |reason| {
+            let _ = lost_tx.send(AppEvent::WindowLost(reason));
         },
     );
     let _ = tx.send(AppEvent::Stop);
@@ -976,6 +982,11 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
             Some(AppEvent::Open) => {
                 worker.command(Command::Refresh);
                 send_ui(UiCommand::Open);
+            }
+            Some(AppEvent::WindowLost(reason)) => {
+                if let Some(log) = &mut worker.diagnostics {
+                    let _ = log.record("fenêtre", reason);
+                }
             }
             Some(AppEvent::Native(NativeNotification::PreferencesChanged)) => {
                 send_ui(UiCommand::PreferencesChanged)
