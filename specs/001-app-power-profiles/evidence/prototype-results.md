@@ -207,7 +207,8 @@ l'icône. Le plan Haute performance a été rétabli puis relu dans un bloc `fin
 Données : [tracker-live-20-rules.json](performance/tracker-20261031/tracker-live-20-rules.json) et
 [tracker-live-20-rules-samples.csv](performance/tracker-20261031/tracker-live-20-rules-samples.csv).
 
-**Conclusion.** Le processus de suivi sans GPUI occupe 3,6 Mio, soit 36 Mio de marge sous SC-004.
-Le CPU du relevé (0,029 %) est celui de la version Slint. La faisabilité de l'option 1 de D17 est
+**Conclusion.** Le prototype du processus de suivi sans GPUI occupe 3,6 Mio, soit 36 Mio de marge
+sous SC-004. Le CPU du relevé (0,029 % sur 60 s) est proche de celui de la version Slint (0,028 %,
+sur une autre durée). La faisabilité de l'option 1 de D17 est
 établie ; D18 en décrit la conception. Ce n'est pas la mesure de 30 minutes de SC-004 (T039), ni
 une mesure fenêtre ouverte, qui exige le processus de fenêtre (T077, T081).

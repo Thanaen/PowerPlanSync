@@ -464,9 +464,21 @@ fenêtre : commandes vers la fenêtre, actions vers le suivi. Chaque canal a :
 
 Le processus de suivi ouvre lui-même l'extrémité cliente avant le lancement, puis la transmet au
 seul processus de fenêtre comme entrée et sortie standard. Le processus de fenêtre n'ouvre aucun
-canal par son nom. Aucun autre processus, du même compte ou non, ne peut donc s'y connecter : le
-nom est déjà pris, sa seule instance est connectée, et la DACL écarte les autres comptes. L'enfant
-est créé dans la session du processus de suivi.
+canal par son nom. Aucun autre processus ne peut donc s'y connecter par le nom : le nom est déjà
+pris, sa seule instance est connectée, et la DACL écarte les autres comptes. Un intrus connecté
+avant le processus de suivi ferait échouer son ouverture : ce lancement est alors abandonné, sans
+attente ni nouvel essai. Comme pour le signal de réouverture, un processus du même compte reste de
+confiance : il pourrait de toute façon dupliquer un handle ou agir à la place de l'utilisateur.
+L'enfant est créé dans la session du processus de suivi.
+
+Toutes les extrémités sont créées non héritables. La bibliothèque standard ne rend héritables que
+les handles standard du lancement, et le processus de suivi ferme ses copies des extrémités
+clientes dès le lancement fait : sans cela, l'arrêt de l'enfant ne terminerait jamais le canal
+des actions. Au démarrage, le processus de fenêtre reprend ses deux extrémités en propriété privée
+et non héritable, puis remplace ses handles standard par `NUL`. Un `println!` d'une dépendance ne
+peut pas corrompre une trame, et aucun processus qu'il lancerait n'hériterait du canal. Le
+processus de fenêtre ne lance d'ailleurs rien : **Ouvrir le guide** et **Ouvrir le dossier des
+données** restent des `UiAction` exécutées par le processus de suivi.
 
 **Messages.** Chaque message est une trame : longueur sur 4 octets en petit-boutiste, puis un
 objet JSON `{"version": 1, "message": …}`. Le processus de fenêtre reçoit les `UiCommand`
@@ -482,36 +494,51 @@ l'exécution.
 
 - Ouvrir la fenêtre (clic sur l'icône, **Ouvrir PowerPlanSync**, second lancement, nouvelle
   erreur) lance le processus de fenêtre, ou lui envoie `UiCommand::Open` s'il existe. Le processus
-  de suivi lui transmet d'abord le dernier modèle, puis chaque nouveau modèle.
+  de suivi lui transmet d'abord le dernier modèle, puis chaque nouveau modèle. Une instance sans
+  contrôle, parce qu'une autre session le détient, lance de même le processus de fenêtre avec le
+  modèle « Contrôle indisponible » (FR-016).
+- Une demande d'ouverture reçue pendant qu'un processus de fenêtre se ferme attend la fin de son
+  canal, puis lance un nouveau processus.
 - Le processus de fenêtre répond `UiAction::WindowOpened` après chaque affichage. Sans cette
   réponse dans le délai, le processus de suivi l'arrête par `TerminateProcess`. Après `Open`
   (5 s), il lance un nouveau processus pour la même demande, une seule fois. Au lancement (15 s),
   il ne relance pas. Il ne relance jamais de lui-même : une fenêtre perdue reste fermée jusqu'à
   la demande suivante. Aucune boucle de tentatives n'est possible.
-- Une file de 64 commandes en attente vers une fenêtre qui ne lit plus arrête aussi ce processus.
-  Le coordinateur n'attend jamais l'écriture.
+- La file vers la fenêtre ne garde que le dernier `UiCommand::Update` en attente : un nouveau
+  modèle remplace l'ancien. Au-delà de 64 autres commandes en attente, la fenêtre ne lit plus et
+  son processus est arrêté. Le coordinateur n'attend jamais l'écriture.
 - La fin du canal des actions signale l'arrêt du processus de fenêtre. Un code de sortie nul est
   une fermeture : au premier masquage, l'icône affiche « PowerPlanSync reste ouvert ». Un autre
   code, une trame refusée ou un arrêt forcé est une perte, notée dans le journal de diagnostic.
-  Le suivi continue dans les deux cas.
+  L'icône l'explique par une notification : « La fenêtre de PowerPlanSync s'est fermée. Le suivi
+  continue ; cliquez sur l'icône pour la rouvrir. » Le suivi continue dans les deux cas.
 - À l'arrêt du processus de suivi, `UiCommand::Quit` ferme la fenêtre ; après 2 s, le processus de
   fenêtre est arrêté. S'il perd son canal de commandes, le processus de fenêtre s'arrête de
   lui-même : le processus de suivi peut disparaître sans laisser de fenêtre orpheline.
 - Windows n'accorde le premier plan qu'au processus qui a reçu la dernière saisie. Le processus de
-  suivi appelle `AllowSetForegroundWindow` pour le processus de fenêtre avant `Open`. Un second
-  lancement l'autorise de même avant de signaler l'instance existante. Avant de demander le
-  sélecteur de fichier, le processus de fenêtre autorise le processus de suivi.
+  suivi appelle `AllowSetForegroundWindow` avec le PID du processus de fenêtre, connu après
+  `CreateProcess`, avant d'envoyer le modèle ou `Open`. Un second lancement ne connaît pas le PID
+  du processus de suivi : il appelle `AllowSetForegroundWindow(ASFW_ANY)` avant de signaler
+  l'instance existante. Avant de demander le sélecteur de fichier, le processus de fenêtre
+  autorise le processus de suivi, dont le PID est celui du serveur de son canal
+  (`GetNamedPipeServerProcessId`).
 
 **Budgets.** Fenêtre fermée, SC-004 porte sur le processus de suivi seul : le processus de fenêtre
 n'existe plus. Fenêtre ouverte, il porte sur la somme des deux processus. SC-007 vérifie après
 cent cycles qu'aucun processus de fenêtre ne reste, et mesure la dérive du processus de suivi.
+Le script de référence de SC-007 est `scripts/measure-window-reopen.ps1`, adapté aux deux
+processus en T080. Comme pour T073, un dépassement en T077 ou T081 arrête la phase et revient
+au responsable produit avec les mesures. Le temps d'ouverture est relevé à titre informatif : la
+spécification ne lui fixe aucun seuil.
 
-**Raison.** La mesure T073 place le processus de suivi à 3,6 Mio, contre 91,1 Mio pour GPUI dans
-le même processus. Fermer la fenêtre libère réellement GPUI, comme le promet le contrat
-d'interface. La fuite de GPUI à chaque `WM_CLOSE` ne s'accumule plus : chaque fenêtre a son
-processus. Le contournement de `MainWindow::new` reste, pour une fenêtre rouverte dans le même
-processus de fenêtre. Le découpage existant s'y prête : `UiCommand` et `UiAction` passaient déjà
-par un canal entre le coordinateur et l'interface (T056).
+**Raison.** La mesure T073 place le prototype du processus de suivi à 3,6 Mio en vrai mode avec
+20 règles. GPUI dans le même processus occupait 91,1 Mio fenêtre fermée, mesuré en `--demo`. Le
+processus de fenêtre s'arrêtant, sa mémoire et la fuite de GPUI à chaque `WM_CLOSE` devraient
+disparaître avec lui : c'est attendu, et T081 le vérifie. Le contournement de `MainWindow`
+(`on_window_should_close` refuse la fermeture native, puis `remove_window()`, PR #30) reste en
+place. Il ne coûte rien et garde `src/interface/` correct hors du processus de fenêtre. Le
+découpage existant s'y prête : `UiCommand` et `UiAction` passaient déjà par un canal entre le
+coordinateur et l'interface (T056).
 
 **Alternatives.**
 
@@ -528,4 +555,6 @@ par un canal entre le coordinateur et l'interface (T056).
   réévaluer en T080 si l'autorisation de premier plan ne suffit pas.
 
 **Risques.** L'ouverture coûte un démarrage de GPUI, à mesurer en T081. Fenêtre ouverte, la
-valeur cible de 100 Mio s'applique désormais à deux processus, à mesurer aussi en T081.
+valeur cible de 100 Mio s'applique désormais à deux processus. La seule mesure disponible, GPUI et
+icône dans un processus en `--demo`, donne 92,5 Mio : la marge attendue est de quelques Mio, sans
+mesure de la somme avant T077.

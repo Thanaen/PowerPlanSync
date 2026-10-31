@@ -297,5 +297,8 @@ La mise à jour GPUI du 2026-10-25 a suivi `speckit-plan`, `speckit-tasks` puis 
 `speckit-analyze`, à la main : les scripts PowerShell ne s'exécutent pas dans le conteneur Linux
 utilisé et `.specify/feature.json` y était absent.
 La mise à jour du 2026-10-31 (D18) a exécuté `setup-plan.ps1 -Json` et `check-prerequisites.ps1`
-sous Windows ; le plan existant est conservé et complété à la main, puis `speckit-tasks` et une
-passe `speckit-analyze`.
+sous Windows ; le plan existant est conservé et complété à la main, de même que les tâches. Une
+passe `speckit-analyze` indépendante a suivi : 17 constats, aucun critique. Ses constats sur le
+passage des handles, la vue « Contrôle indisponible », la règle d'arrêt fenêtre ouverte, la file
+de commandes, la perte visible, les dépendances et les déductions présentées comme des mesures
+sont repris dans D18, `contracts/runtime.md` et ce fichier.

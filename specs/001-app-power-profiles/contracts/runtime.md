@@ -49,8 +49,22 @@ le contrôle, n'ouvre aucun dossier de données et ne lit ni n'écrit aucun plan
 Les canaux sont nommés, à une seule instance, refusent les clients distants et n'accordent l'accès
 qu'au compte courant. Le processus de suivi les connecte avant le lancement et les transmet au seul
 processus de fenêtre. Une trame d'une autre version, d'un type inconnu ou de plus de 1 Mio ferme
-le canal. Une fenêtre sans réponse est arrêtée ; elle n'est relancée qu'à la demande suivante,
-une seule fois. La perte du processus de fenêtre n'interrompt jamais le suivi.
+le canal. Une fenêtre qui ne répond pas à `Open` dans les 5 s est arrêtée, puis relancée une
+seule fois pour cette demande ; au lancement, sans réponse en 15 s, elle est arrêtée sans
+relance. Le processus de suivi ne relance jamais de lui-même. La perte du processus de fenêtre
+n'interrompt jamais le suivi.
+
+| État de la fenêtre | Événement | État suivant |
+| --- | --- | --- |
+| Absente | Demande d'ouverture | Lancement, délai de 15 s |
+| Lancement | `WindowOpened` | Ouverte |
+| Lancement | Délai dépassé | Absente, processus arrêté, perte notifiée |
+| Ouverte | Demande d'ouverture | `Open` envoyé, délai de 5 s |
+| `Open` en attente | `WindowOpened` | Ouverte |
+| `Open` en attente | Délai dépassé | Processus arrêté, un nouveau lancement |
+| Ouverte ou en attente | Fin du canal, code nul | Absente ; une demande en attente relance |
+| Ouverte ou en attente | Fin du canal, autre code ou trame refusée | Absente, perte notifiée |
+| Toute | `Quit` du coordinateur | Fermeture demandée, arrêt après 2 s |
 
 ## Modes d'essai prévus
 
