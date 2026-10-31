@@ -1,0 +1,44 @@
+{
+  "executable": "D:\\Dev\\PowerPlanSync\\target\\release\\power-plan-sync.exe",
+  "sha256": "0D62F2015D9909B930CAD73D1BF50B529E3F5D94C4FC967EA7B460567DE8C6E3",
+  "settle_seconds": 8,
+  "per_open_mib": 1.3,
+  "rows": [
+    {
+      "opens": 1,
+      "closed_private_mib": 90.7,
+      "handles": 644,
+      "threads": 69
+    },
+    {
+      "opens": 2,
+      "closed_private_mib": 97.5,
+      "handles": 646,
+      "threads": 69
+    },
+    {
+      "opens": 3,
+      "closed_private_mib": 97.3,
+      "handles": 643,
+      "threads": 68
+    },
+    {
+      "opens": 4,
+      "closed_private_mib": 98.1,
+      "handles": 643,
+      "threads": 68
+    },
+    {
+      "opens": 5,
+      "closed_private_mib": 97.3,
+      "handles": 643,
+      "threads": 68
+    },
+    {
+      "opens": 6,
+      "closed_private_mib": 97.4,
+      "handles": 635,
+      "threads": 65
+    }
+  ]
+}

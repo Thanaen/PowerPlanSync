@@ -77,7 +77,7 @@ GeForce RTX 3080 et Radeon intégrée, Windows 11 Pro 26H2 build 26300.9711, un 
 2560 × 1440 réglé à 125 %. Binaires release compilés sur la machine avec Rust 1.98.1 et MSVC :
 
 ```text
-gpui_probe.exe       58E07D5714B83305F8865C915C0EF28E3991A52953FE434C4B5204EB8C08DDE4
+gpui_probe.exe       CDFBC9D6956C70CD05F13E9377EC42D9B17BEAE15C281AB3B2DC79E2806F61B9 (sonde finale ; les essais d'accessibilité précèdent les modes de fermeture)
 power-plan-sync.exe  mesuré : voir app-gpui-window-states.json (champ sha256)
 ```
 
@@ -135,26 +135,42 @@ vient donc de l'initialisation de GPUI (rendu DirectX, polices, exécuteurs), pa
 PowerPlanSync. Les pilotes graphiques comptent dans la mémoire privée ; une machine sans carte
 dédiée donnerait un autre chiffre, non mesuré ici.
 
-### Cent cycles de fenêtre
+### Cent cycles de fenêtre et réouvertures
 
 `scripts/verify-window-lifecycle.ps1 -ExecutablePath gpui_probe.exe -Arguments --lifecycle` suit le
 protocole de la sonde Slint : une ouverture d'échauffement, 100 cycles entre deux marqueurs,
-101 ouvertures et 101 fermetures comptées. Le script échoue sur son seuil de handles :
+101 ouvertures et 101 fermetures comptées. Le marqueur de départ est relevé sans fenêtre, 200 ms
+avant la première ouverture. Les premiers essais le relevaient pendant cette ouverture et
+donnaient à tort une baisse de mémoire.
 
-| Essai | Mémoire privée avant → après | Handles avant → après |
-| --- | --- | --- |
-| 1 | 161,6 → 136,0 Mio | 589 → 654 (+65) |
-| 2 | — | +49 |
+| Fermeture des 100 fenêtres | Mémoire privée, marqueur de départ → fin | Handles | Preuve |
+| --- | --- | --- | --- |
+| `remove_window()` | 112,3 → 135,4 Mio (+23,2) | 544 → 632 (+88) | `probe-lifecycle-remove-window.json` |
+| `WM_CLOSE`, comme le × de la barre de titre | **+1 312 Mio** | **+887** | `probe-lifecycle-wm-close-raw.json` |
+| `WM_CLOSE` refusé par `on_window_should_close`, puis `remove_window()` | +24,1 Mio | +88 | `probe-lifecycle-wm-close-guarded.json` |
 
-La courbe échantillonnée chaque seconde pendant l'essai 2 (`probe-lifecycle-run2-curve.csv`)
-montre un palier unique au premier cycle après l'échauffement (+115 handles, +20 threads), puis
-des handles stables entre 657 et 670 pendant les 100 cycles. Ce n'est pas une fuite par cycle.
-Le seuil de 10 handles, calibré sur Slint, échoue quand même : le marqueur de départ précède ce
-palier. La mémoire ne dérive pas et baisse même pendant les cycles. Aucune boucle de rendu ne
-reste après la fermeture : le CPU fenêtre fermée est le plus bas mesuré.
+Avec `remove_window()`, la courbe échantillonnée chaque seconde (`probe-lifecycle-run2-curve.csv`)
+montre un palier atteint au premier cycle, puis des handles stables pendant les 100 cycles. Les
+deux cas dépassent le seuil du protocole Slint (5 Mio, 10 handles). **Fermée par `WM_CLOSE`,
+une fenêtre GPUI 0.3.9 garde son rendu** : environ 13 Mio de mémoire privée par fermeture dans la
+sonde. Les compteurs « GPU Process Memory » de l'application montrent 12,6 Mo de mémoire GPU
+dédiée en plus à chaque ouverture, jamais rendus. Refuser la fermeture native et appeler
+`remove_window()` supprime cette fuite.
+
+L'application de `main` se ferme par `WM_CLOSE` (× dessiné, Alt+F4). `scripts/measure-window-reopen.ps1`
+l'ouvre et la ferme six fois dans le même processus, sans `--demo` et avec un dossier neuf
+(automatisation désactivée, aucun plan changé) :
+
+| Fenêtre fermée après l'ouverture n° | 1 | 2 | 3 | 4 | 5 | 6 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `main` | 90,8 Mio | 116,0 | 141,3 | 165,9 | 193,0 | 219,1 |
+| avec `on_window_should_close` | 90,7 Mio | 97,5 | 97,3 | 98,1 | 97,3 | 97,4 |
+
+Le correctif d'interface du même jour applique ce contournement à la fenêtre principale.
+Aucune boucle de rendu ne reste après la fermeture : le CPU fenêtre fermée est le plus bas mesuré.
 
 ### Conclusion
 
 GPUI fonctionne sur Windows réel pour la fenêtre, l'icône, le clavier, l'échelle, les thèmes et
-le Narrateur, avec deux contournements documentés pour les annonces. SC-004 échoue fenêtre
-fermée. La décision revient au responsable produit : voir D17 dans [research.md](../research.md).
+le Narrateur, avec des contournements documentés pour les annonces et pour la fuite à la
+fermeture. SC-004 échoue fenêtre fermée, même sans fuite. La décision revient au responsable produit : voir D17 dans [research.md](../research.md).

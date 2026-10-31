@@ -44,7 +44,7 @@ mod probe {
     use tray_icon::{
         Icon, MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent,
     };
-    use windows::Win32::Foundation::HWND;
+    use windows::Win32::Foundation::{HWND, LPARAM, WPARAM};
     use windows::Win32::System::Variant::VARIANT;
     use windows::Win32::UI::Accessibility::{
         IRawElementProviderSimple, IRawElementProviderSimple_Impl,
@@ -53,7 +53,8 @@ mod probe {
         UiaHostProviderFromHwnd, UiaRaiseNotificationEvent,
     };
     use windows::Win32::UI::WindowsAndMessaging::{
-        SPI_GETCLIENTAREAANIMATION, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SystemParametersInfoW,
+        PostMessageW, SPI_GETCLIENTAREAANIMATION, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
+        SystemParametersInfoW, WM_CLOSE,
     };
     use windows::core::{BOOL, BSTR, IUnknown, implement};
 
@@ -187,6 +188,10 @@ mod probe {
             .timer(Duration::from_millis(5_000))
             .await;
         println!("phase=baseline_begin pid={pid} warmup=1 window=none");
+        // Laisser le script relever le marqueur avant la première ouverture, comme la sonde Slint.
+        cx.background_executor()
+            .timer(Duration::from_millis(200))
+            .await;
         for _ in 0..LIFECYCLE_CYCLES {
             let window = cx.update(|cx| open_probe_window(cx, open_window));
             opens += usize::from(window.is_some());
@@ -280,9 +285,20 @@ mod probe {
         }
     }
 
+    /// `POWERPLANSYNC_PROBE_CLOSE=wm` ferme par `WM_CLOSE`, comme le bouton × de la barre de
+    /// titre ou UI Automation, au lieu de `remove_window`. `wm-raw` laisse en plus Windows
+    /// détruire la fenêtre, sans le contournement de [`ProbeView::new`].
     fn close_probe_window(window: Option<WindowHandle<ProbeView>>, cx: &mut gpui::AsyncApp) {
+        let by_message =
+            std::env::var("POWERPLANSYNC_PROBE_CLOSE").is_ok_and(|close| close.starts_with("wm"));
         if let Some(window) = window {
-            let _ = window.update(cx, |_, window, _| window.remove_window());
+            let _ = window.update(cx, |_, window, _| {
+                if by_message && let Some(hwnd) = window_hwnd(window) {
+                    let _ = unsafe { PostMessageW(Some(hwnd), WM_CLOSE, WPARAM(0), LPARAM(0)) };
+                } else {
+                    window.remove_window();
+                }
+            });
         }
     }
 
@@ -365,6 +381,15 @@ mod probe {
         fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
             let focus_handle = cx.focus_handle();
             window.focus(&focus_handle, cx);
+            // GPUI 0.3.9 sous Windows : une fenêtre détruite par `WM_CLOSE` garde son rendu
+            // DirectX, environ 13 Mio par fermeture. `remove_window` le libère : la demande de
+            // fermeture native est refusée et remplacée par ce chemin.
+            if std::env::var("POWERPLANSYNC_PROBE_CLOSE").as_deref() != Ok("wm-raw") {
+                window.on_window_should_close(cx, |window, _| {
+                    window.remove_window();
+                    false
+                });
+            }
             Self {
                 hwnd: window_hwnd(window),
                 focus_handle,

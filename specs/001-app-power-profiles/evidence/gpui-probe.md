@@ -13,7 +13,8 @@ pwsh scripts/verify-window-lifecycle.ps1 -ExecutablePath target/release/examples
 `--smoke` ouvre la fenêtre, la détruit, la rouvre, la détruit de nouveau puis quitte.
 `--tray-only` démarre sans fenêtre, pour mesurer GPUI avant tout rendu. `--lifecycle` suit le
 protocole des cent cycles de `scripts/verify-window-lifecycle.ps1`. Ctrl+Alt+A change le statut
-sans déplacer le focus, pour vérifier son annonce.
+sans déplacer le focus, pour vérifier son annonce. `POWERPLANSYNC_PROBE_CLOSE=wm` ferme les fenêtres
+de `--lifecycle` par `WM_CLOSE`, avec le contournement de la fuite ; `wm-raw` sans lui.
 Sans option, la sonde reste dans la zone de notification après la fermeture de la fenêtre.
 **Ouvrir la sonde** ou un clic gauche sur l'icône rouvre la fenêtre ; **Quitter la sonde** arrête tout.
 
@@ -57,6 +58,8 @@ décision en attente dans D17 de [research.md](../research.md).
 - **Position dans un ensemble.** `aria_position_in_set` compte à partir de 0 et la taille se pose
   sur le conteneur : `accesskit_windows` ajoute 1 et lit `size_of_set` sur les parents.
 - **Coût mémoire.** GPUI occupe 59,7 Mio de mémoire privée sans aucune fenêtre ; voir D17.
+- **Fuite à la fermeture par `WM_CLOSE`.** La fenêtre garde son rendu DirectX. `ProbeView::new`
+  refuse la fermeture native par `on_window_should_close` et appelle `remove_window()`.
 - **Filtre et titre du sélecteur GPUI.** `PathPromptOptions` ne permet ni de limiter le choix aux
   `.exe` ni de donner un titre : `prompt` nomme seulement le bouton de validation. Le sélecteur Win32
   existant garde son filtre et son titre ; il reste le choix par défaut de T059.

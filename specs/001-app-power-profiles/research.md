@@ -406,8 +406,13 @@ agrandi exigent un vrai Windows. Les cycles réels utilisent l'exécutable témo
   fenêtre de la sonde porte ce chiffre à 111 Mio après sa fermeture. L'interface Slint occupait 3,1 Mio
   fenêtre fermée. Le contrat d'interface promet que fermer la fenêtre « libère les ressources de
   la fenêtre » : ce n'est pas le cas dans un processus qui garde GPUI.
-- Cent cycles de fenêtre : pas de dérive de mémoire ni de fuite de handles par cycle, mais un
-  palier unique de 115 handles et 20 threads au premier cycle après l'échauffement.
+- Fermeture par `WM_CLOSE` (× dessiné, Alt+F4) : GPUI 0.3.9 garde le rendu de la fenêtre,
+  environ 13 Mio par fermeture dans la sonde et 25 Mio dans l'application, qui atteint 219 Mio
+  fenêtre fermée après six ouvertures. Refuser la fermeture native par `on_window_should_close`
+  et appeler `remove_window()` supprime la fuite : l'application se stabilise vers 97 Mio. Ce
+  défaut est à signaler au projet GPUI ; le contournement reste dans `src/interface/window.rs`.
+- Cent cycles fermés par `remove_window()` : +23,2 Mio et +88 handles entre les marqueurs, en un
+  palier au premier cycle, au-dessus du seuil de 5 Mio et 10 handles calibré sur Slint.
 
 **Proposition d'amendement, en attente du responsable produit.** Comme le prévoit le plan, un
 dépassement de SC-004 arrête ce point et revient au responsable produit avec les mesures.
@@ -423,7 +428,9 @@ dépassement de SC-004 arrête ce point et revient au responsable produit avec l
    processus de suivi sans GPUI.
 2. **Amender SC-004** à 100 Mio fenêtre fermée. Aucun changement d'architecture, mais un outil
    d'arrière-plan trente fois plus lourd que la version Slint, et une promesse du contrat
-   d'interface à retirer.
+   d'interface à retirer. Avec le contournement, l'application se stabilise à 97 à 98 Mio
+   fenêtre fermée sur cette machine : la marge est de 2 Mio, et une autre carte graphique peut
+   la dépasser. SC-007 demanderait aussi un seuil propre à GPUI.
 3. **Revenir à Slint** : rejeté sauf avis contraire, la décision D12 reposant sur le design system.
 
 D'ici la décision, T065 à T070 peuvent avancer : l'option 1 garde tout `src/interface/`.
