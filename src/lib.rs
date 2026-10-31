@@ -6,6 +6,7 @@ pub mod engine;
 pub mod interface;
 pub mod presentation;
 pub mod storage;
+pub mod window_protocol;
 #[cfg(target_os = "windows")]
 pub mod windows;
 

@@ -102,7 +102,7 @@ pub struct ProcessInstance {
     pub key: ProcessKey,
     pub executable: ExecutablePath,
 }
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub enum PowerSource {
     Ac,
     Battery,

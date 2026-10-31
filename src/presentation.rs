@@ -1,8 +1,9 @@
 use crate::{domain::*, interface::strings};
+use serde::{Deserialize, Serialize};
 
 const BALANCED: PlanId = PlanId(0x381b4222_f694_41f0_9685_ff5bb260df2e);
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Automation {
     Active,
     Waiting,
@@ -13,7 +14,7 @@ pub enum Automation {
     Stopped,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Badge {
     Applied,
     Open,
@@ -21,7 +22,8 @@ pub enum Badge {
     Refused,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RuleDisplay {
     pub id: i32,
     pub rank: usize,
@@ -36,13 +38,15 @@ pub struct RuleDisplay {
     pub accessible_name: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PlanDisplay {
     pub id: String,
     pub name: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RunningAppDisplay {
     pub label: String,
     /// Vide quand le chemin ne peut pas être vérifié.
@@ -51,7 +55,8 @@ pub struct RunningAppDisplay {
     pub accessible: bool,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct UiDisplayModel {
     pub observed_plan: String,
     pub reason: String,
@@ -110,7 +115,8 @@ impl UiDisplayModel {
 
 /// Ce que la page signale dans un message intégré, jamais dans un dialogue (FR-009, FR-012,
 /// FR-013, FR-017). Les noms de plans et de logiciels sont ceux de l'affichage.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub enum Notice {
     /// Un plan a été choisi dans Windows pendant un cycle. `resume` : le plan et le logiciel
     /// que **Reprendre l'automatisation** rétablirait.
@@ -138,7 +144,8 @@ pub enum Notice {
     Problem(String),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub enum UiAction {
     AddRule {
         label: String,
@@ -202,7 +209,8 @@ pub enum UiAction {
 }
 
 /// Ce que le coordinateur demande à l'interface, Slint ou GPUI, depuis son thread.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub enum UiCommand {
     /// Nouvel état ; `alert` ouvre la fenêtre pour une nouvelle erreur.
     Update {
