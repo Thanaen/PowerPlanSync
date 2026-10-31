@@ -410,7 +410,8 @@ agrandi exigent un vrai Windows. Les cycles réels utilisent l'exécutable témo
   environ 13 Mio par fermeture dans la sonde et 25 Mio dans l'application, qui atteint 219 Mio
   fenêtre fermée après six ouvertures. Refuser la fermeture native par `on_window_should_close`
   et appeler `remove_window()` supprime la fuite : l'application se stabilise vers 97 Mio. Ce
-  défaut est à signaler au projet GPUI ; le contournement reste dans `src/interface/window.rs`.
+  défaut est à signaler au projet GPUI ; la PR #30 ajoute le contournement à
+  `src/interface/window.rs`.
 - Cent cycles fermés par `remove_window()` : +23,2 Mio et +88 handles entre les marqueurs, en un
   palier au premier cycle, au-dessus du seuil de 5 Mio et 10 handles calibré sur Slint.
 

@@ -166,7 +166,8 @@ l'ouvre et la ferme six fois dans le même processus, sans `--demo` et avec un d
 | `main` | 90,8 Mio | 116,0 | 141,3 | 165,9 | 193,0 | 219,1 |
 | avec `on_window_should_close` | 90,7 Mio | 97,5 | 97,3 | 98,1 | 97,3 | 97,4 |
 
-Le correctif d'interface du même jour applique ce contournement à la fenêtre principale.
+La PR #30 (commit `8db9a95`) applique ce contournement à `MainWindow` ; la seconde ligne du
+tableau vient de ce binaire. Sans elle, `main` fuit toujours à chaque fermeture.
 Aucune boucle de rendu ne reste après la fermeture : le CPU fenêtre fermée est le plus bas mesuré.
 
 ### Conclusion
