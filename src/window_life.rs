@@ -188,7 +188,8 @@ mod tests {
         Effect::Lost { loss, notify }
     }
 
-    /// Une ligne par ligne de la table d'états de `contracts/runtime.md`.
+    /// Une ligne par ligne de la table d'états de `contracts/runtime.md`, sauf `Quit` du
+    /// coordinateur : le processus de suivi ferme alors la fenêtre lui-même, hors de cette table.
     #[test]
     fn every_row_of_the_state_table() {
         use Effect::*;
