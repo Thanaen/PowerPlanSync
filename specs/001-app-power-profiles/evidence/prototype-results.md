@@ -236,3 +236,19 @@ est de 4,9 Mio : le processus de fenêtre seul coûte presque autant que GPUI da
 
 **Quitter** dans la barre latérale du processus de fenêtre arrête aussi le processus de suivi
 (code 0) ; aucun processus ne reste.
+
+### Réouverture (T078)
+
+Binaire release de la PR de T078, vrai mode, dossier neuf (automatisation désactivée, aucun plan
+changé ; plan Haute performance relu et rétabli dans un bloc `finally`). Le premier plan est lu par
+`GetForegroundWindow`.
+
+| Essai | Résultat |
+| --- | --- |
+| Fenêtre ouverte, second lancement | Un seul processus de fenêtre, le même ; il garde le premier plan |
+| Fenêtre recouverte par le Bloc-notes, second lancement | La fenêtre revient au premier plan (`AllowSetForegroundWindow(ASFW_ANY)` du second lancement, puis du PID de la fenêtre par le processus de suivi) |
+| Fenêtre fermée, second lancement | Un nouveau processus de fenêtre, au premier plan |
+| Signal d'ouverture 0 à 30 ms après `WindowPattern.Close` | **Défaut trouvé puis corrigé** : à 0 ms, le processus de fenêtre qui s'arrêtait traitait encore `Open`, répondait `WindowOpened`, puis quittait, et aucune fenêtre ne restait. Un processus de fenêtre qui se ferme ignore désormais toute commande ; le processus de suivi relance. Après correction : 6 fois sur 6, une nouvelle fenêtre |
+| Verrou `Global\PowerPlanSync.Controller` tenu par un autre processus | Le processus de suivi reste en lecture seule et ouvre le processus de fenêtre avec « Contrôle indisponible » (arbre UI Automation) |
+| Clic sur l'icône | **Non exécuté** : l'icône est dans le dépassement de la zone de notification, non piloté ici. Même chemin que le second lancement à partir de `TrayCommand::Open` |
+

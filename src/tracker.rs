@@ -13,9 +13,9 @@ use std::time::{Duration, Instant};
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::Threading::CREATE_NO_WINDOW;
 use windows::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetMessageW, HWND_MESSAGE,
-    MSG, PostMessageW, PostQuitMessage, RegisterClassW, TranslateMessage, WINDOW_EX_STYLE,
-    WINDOW_STYLE, WM_APP, WNDCLASSW,
+    AllowSetForegroundWindow, CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW,
+    GetMessageW, HWND_MESSAGE, MSG, PostMessageW, PostQuitMessage, RegisterClassW,
+    TranslateMessage, WINDOW_EX_STYLE, WINDOW_STYLE, WM_APP, WNDCLASSW,
 };
 use windows::core::w;
 
@@ -147,9 +147,20 @@ fn drain(state: &mut Loop) {
     }
 }
 
+/// Où en est un processus de fenêtre, d'après la table d'états de `contracts/runtime.md`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Phase {
+    /// Lancé, `WindowOpened` pas encore reçu.
+    Launching,
+    Shown,
+    /// `Open` envoyé, `WindowOpened` pas encore reçu.
+    Reopening,
+}
+
 /// Un processus de fenêtre lancé, et la file de ses commandes, écrites par un thread.
 struct WindowProcess {
     instance: u32,
+    phase: Phase,
     child: Child,
     commands: mpsc::Sender<UiCommand>,
 }
@@ -157,6 +168,12 @@ struct WindowProcess {
 impl WindowProcess {
     fn send(&self, command: UiCommand) {
         let _ = self.commands.send(command);
+    }
+
+    /// Windows ne laisse le premier plan qu'au processus qui a reçu la dernière saisie : le
+    /// processus de suivi, qui la tient de l'icône ou d'un second lancement, le cède.
+    fn allow_foreground(&self) {
+        let _ = unsafe { AllowSetForegroundWindow(self.child.id()) };
     }
 
     /// Demande la fermeture, puis arrête le processus s'il est encore là après `QUIT_GRACE`.
@@ -242,7 +259,14 @@ fn handle(shell: &mut Shell, event: Event) -> bool {
         Event::Tray(TrayCommand::Resume) => (shell.on_action)(UiAction::Resume),
         // Le coordinateur rend d'abord le plan de retour, puis demande `UiCommand::Quit`.
         Event::Tray(TrayCommand::Quit) => (shell.on_action)(UiAction::Quit),
-        Event::Action(instance, action) if is_current(shell, instance) => (shell.on_action)(action),
+        Event::Action(instance, action) if is_current(shell, instance) => {
+            if action == UiAction::WindowOpened
+                && let Some(window) = &mut shell.window
+            {
+                window.phase = Phase::Shown;
+            }
+            (shell.on_action)(action)
+        }
         Event::Ended(instance) if is_current(shell, instance) => ended(shell),
         Event::Action(..) | Event::Ended(_) => {}
         Event::Ui(command) => return command_from_coordinator(shell, command),
@@ -263,7 +287,12 @@ fn command_from_coordinator(shell: &mut Shell, command: UiCommand) -> bool {
             shell.model = (*model).clone();
             match &shell.window {
                 // Une nouvelle erreur ramène la fenêtre au premier plan : elle s'en charge.
-                Some(window) => window.send(UiCommand::Update { model, alert }),
+                Some(window) => {
+                    if alert {
+                        window.allow_foreground();
+                    }
+                    window.send(UiCommand::Update { model, alert })
+                }
                 None if alert => open(shell),
                 None => {}
             }
@@ -325,10 +354,14 @@ fn start(shell: &mut Shell, force_show: bool) {
 }
 
 /// Lance le processus de fenêtre, ou ramène au premier plan celui qui existe : un double clic
-/// sur l'icône n'en crée pas un second.
+/// sur l'icône n'en crée pas un second. Une fenêtre qui s'affiche déjà le fera d'elle-même.
 fn open(shell: &mut Shell) {
-    if let Some(window) = &shell.window {
-        window.send(UiCommand::Open);
+    if let Some(window) = &mut shell.window {
+        if window.phase == Phase::Shown {
+            window.allow_foreground();
+            window.send(UiCommand::Open);
+            window.phase = Phase::Reopening;
+        }
         return;
     }
     let instance = shell.next_instance;
@@ -351,10 +384,17 @@ fn open(shell: &mut Shell) {
     }
 }
 
-/// La fenêtre s'est fermée. Au premier masquage, l'icône explique que le suivi continue.
+/// La fenêtre s'est fermée. Une demande d'ouverture restée sans réponse, parce que la fenêtre
+/// se fermait, lance un nouveau processus. Sinon, au premier masquage, l'icône explique que le
+/// suivi continue.
 fn ended(shell: &mut Shell) {
-    if let Some(mut window) = shell.window.take() {
-        let _ = window.child.wait();
+    let Some(mut window) = shell.window.take() else {
+        return;
+    };
+    let _ = window.child.wait();
+    if window.phase == Phase::Reopening {
+        open(shell);
+        return;
     }
     match &mut shell.tray {
         Some(tray) => {
@@ -391,11 +431,14 @@ fn launch(
         }
         mailbox.post(Event::Ended(instance));
     });
-    Ok(WindowProcess {
+    let window = WindowProcess {
         instance,
+        phase: Phase::Launching,
         child,
         commands,
-    })
+    };
+    window.allow_foreground();
+    Ok(window)
 }
 
 fn write_commands(to_window: &mut File, outbox: mpsc::Receiver<UiCommand>) {
