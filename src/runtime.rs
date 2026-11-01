@@ -805,6 +805,12 @@ impl Worker {
                 previous == windows::startup::StartupState::Enabled,
             );
         }
+        if editing
+            && !saved
+            && let Some(error) = self.error.clone()
+        {
+            return Err(error);
+        }
         if editing && saved {
             send_ui(UiCommand::FinishEditorSave);
         }
@@ -1324,6 +1330,44 @@ mod tests {
             .unwrap();
         assert_eq!(worker.view().configuration.rules[0].id, saved.rules[0].id);
         assert_eq!(worker.view().configuration.rules[0].plan, PlanId(1));
+        cleanup(worker);
+    }
+    #[test]
+    fn a_failed_save_from_the_dialog_reaches_the_dialog() {
+        let mut worker = demo();
+        worker.acquire().unwrap();
+        let path = std::env::current_exe()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+        worker
+            .action(UiAction::AddRule {
+                label: "Témoin".into(),
+                path: path.clone(),
+                plan_id: PlanId(2).to_string(),
+            })
+            .unwrap();
+        let saved = worker.view().configuration;
+        let directory = worker.options.data_directory.clone();
+        std::fs::write(directory.join("simulation/config.json"), b"illisible").unwrap();
+        let unsaved = crate::interface::strings::error_message(&Error::Storage(String::new()));
+
+        let update = UiAction::UpdateRule {
+            rule_id: saved.rules[0].id.0 as i32,
+            label: "Modifié".into(),
+            path,
+            plan_id: PlanId(1).to_string(),
+        };
+        assert_eq!(worker.action(update), Err(unsaved.clone()));
+        let other = directory.join("Autre.exe");
+        std::fs::write(&other, b"").unwrap();
+        let add = UiAction::AddRule {
+            label: "Autre".into(),
+            path: other.to_string_lossy().into_owned(),
+            plan_id: PlanId(2).to_string(),
+        };
+        assert_eq!(worker.action(add), Err(unsaved));
+        assert_eq!(worker.view().configuration, saved);
         cleanup(worker);
     }
     #[test]
