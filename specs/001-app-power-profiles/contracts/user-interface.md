@@ -52,8 +52,8 @@ ignore la casse et les accents et place d'abord les entrées dont le domaine ou 
 par la saisie. Le champ garde le focus : ↑ et ↓ choisissent une entrée, annoncée avec son
 raccourci et sa position (« Logiciels : ajouter, Ctrl+N, 1 sur 5 »), Entrée la lance, Échap ou
 un clic hors de la palette la ferme, et le focus revient à ce qui l'avait ouverte. Tab ne sort
-pas de la palette, qui ne s'ouvre pas par-dessus un dialogue. Tant qu'elle est ouverte, les
-raccourcis de la fenêtre ne font rien. Elle ne voile pas la page.
+pas de la palette, qui ne s'ouvre pas par-dessus un dialogue. Tant que la palette ou un dialogue
+est ouvert, les raccourcis de la fenêtre ne font rien. La palette ne voile pas la page.
 
 ## Premier lancement
 

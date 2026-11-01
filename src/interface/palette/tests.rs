@@ -283,6 +283,21 @@ fn the_palette_does_not_open_over_a_dialog(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+fn the_window_shortcuts_wait_for_the_dialog_to_close(cx: &mut TestAppContext) {
+    let (harness, cx) = open_window(UiDisplayModel::default(), cx);
+    harness.main.update(cx, |main, cx| {
+        let dialog = cx.new(|cx| Opener(cx.focus_handle()));
+        main.set_dialog(Some(dialog.into()), cx);
+    });
+    cx.simulate_keystrokes("f1 ctrl-, ctrl-q ctrl-n ctrl-alt-p ctrl-z");
+    assert!(harness.events.borrow().is_empty());
+    assert_eq!(
+        harness.main.read_with(cx, |main, _| main.page()),
+        Page::Software
+    );
+}
+
+#[gpui::test]
 fn a_new_state_updates_the_open_palette(cx: &mut TestAppContext) {
     let (harness, cx) = open_window(UiDisplayModel::default(), cx);
     cx.simulate_keystrokes("ctrl-shift-p");

@@ -356,8 +356,8 @@ impl MainWindow {
         }
     }
 
-    fn run_unless_palette_open(&mut self, command: Command, cx: &mut Context<Self>) {
-        if self.palette.is_none() {
+    fn run_shortcut(&mut self, command: Command, cx: &mut Context<Self>) {
+        if self.palette.is_none() && self.dialog.is_none() {
             self.run(command, cx);
         }
     }
@@ -646,25 +646,23 @@ impl Render for MainWindow {
                 cx.listener(|this, _: &OpenCommands, window, cx| this.open_commands(window, cx)),
             )
             .on_action(cx.listener(|this, _: &AddSoftware, _, cx| {
-                this.run_unless_palette_open(Command::AddSoftware, cx)
+                this.run_shortcut(Command::AddSoftware, cx)
             }))
             .on_action(cx.listener(|this, _: &TogglePause, _, cx| {
-                this.run_unless_palette_open(Command::TogglePause, cx)
-            }))
-            .on_action(cx.listener(|this, _: &UndoDelete, _, cx| {
-                this.run_unless_palette_open(Command::UndoDelete, cx)
-            }))
-            .on_action(cx.listener(|this, _: &ShowSettings, _, cx| {
-                this.run_unless_palette_open(Command::ShowSettings, cx)
-            }))
-            .on_action(cx.listener(|this, _: &ShowHelp, _, cx| {
-                this.run_unless_palette_open(Command::ShowHelp, cx)
+                this.run_shortcut(Command::TogglePause, cx)
             }))
             .on_action(
-                cx.listener(|this, _: &Quit, _, cx| {
-                    this.run_unless_palette_open(Command::Quit, cx)
+                cx.listener(|this, _: &UndoDelete, _, cx| {
+                    this.run_shortcut(Command::UndoDelete, cx)
                 }),
             )
+            .on_action(cx.listener(|this, _: &ShowSettings, _, cx| {
+                this.run_shortcut(Command::ShowSettings, cx)
+            }))
+            .on_action(
+                cx.listener(|this, _: &ShowHelp, _, cx| this.run_shortcut(Command::ShowHelp, cx)),
+            )
+            .on_action(cx.listener(|this, _: &Quit, _, cx| this.run_shortcut(Command::Quit, cx)))
             .on_action(|_: &FocusNext, window, cx| window.focus_next(cx))
             .on_action(|_: &FocusPrevious, window, cx| window.focus_prev(cx))
             .relative()
