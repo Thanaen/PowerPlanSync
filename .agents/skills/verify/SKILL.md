@@ -9,9 +9,9 @@ Lire d'abord `AGENTS.md`, `.specify/memory/constitution.md`, `.specify/feature.j
 
 ## Launch
 
-Utiliser le binaire produit `target/release/power-plan-sync.exe`, pas `ui_probe.exe` ni `ui_candidate.exe`. Dans le dépôt principal de cette machine, son chemin est `C:\Users\Utilisateur\Documents\Dev\PowerPlanSync\target\release\power-plan-sync.exe`. Exécuter les commandes depuis la racine du checkout à vérifier. Ne pas piloter une instance utilisée par une autre campagne.
+Utiliser le binaire produit `target/release/power-plan-sync.exe`, pas `ui_probe.exe` ni `ui_candidate.exe`. Dans le dépôt principal de cette machine, son chemin est `D:\Dev\PowerPlanSync\target\release\power-plan-sync.exe`. Exécuter les commandes depuis la racine du checkout à vérifier. Ne pas piloter une instance utilisée par une autre campagne.
 
-Si nécessaire, compiler une fois avant les essais avec `cargo build --locked --release --bins --examples`. L'installation locale requiert `CARGO_HOME=.tools/cargo`, `RUSTUP_HOME=.tools/rustup` et `.tools/cargo/bin` dans le PATH de cette commande. Ne pas reconstruire pendant une mesure de consommation.
+Si nécessaire, compiler une fois avant les essais avec `cargo build --locked --release --bins --examples`. Rust est installé par rustup : `cargo` est dans le PATH et `rust-toolchain.toml` sélectionne la chaîne épinglée. Ne définir ni `CARGO_HOME` ni `RUSTUP_HOME`. Ne pas reconstruire pendant une mesure de consommation.
 
 Lancer la démonstration isolée depuis l'outil shell, sans automatiser un terminal Windows avec sky.
 

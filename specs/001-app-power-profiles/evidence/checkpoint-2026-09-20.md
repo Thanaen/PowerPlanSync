@@ -66,8 +66,7 @@ cargo build --locked --release --example window_lifecycle
 .\scripts\verify-window-lifecycle.ps1
 ```
 
-Sur ce poste, l'installation Rust est locale au dépôt. Définir `CARGO_HOME=.tools/cargo`,
-`RUSTUP_HOME=.tools/rustup` et ajouter `.tools/cargo/bin` au PATH de la commande.
+Sur ce poste, Rust est installé par rustup et `cargo` est dans le PATH.
 Le binaire de la sonde dans `target/release/examples/` doit être reconstruit ; il peut
 encore correspondre à la version qui échouait. Aucun essai ne doit lancer Battlefield 6.
 

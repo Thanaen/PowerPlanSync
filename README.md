@@ -62,13 +62,11 @@ utiliser **Quitter** pour arrêter la sonde UI.
 
 ## Compiler
 
-Avec Rust et les outils MSVC installés normalement, utiliser `cargo build --locked --release --bins --examples`.
-L'installation locale de cette séance est dans `.tools`, hors Git et sans changement global du PATH.
+Installer Rust avec [rustup](https://rustup.rs/) et Visual Studio Build Tools avec la charge
+de travail « Développement Desktop en C++ ». rustup ajoute `cargo` au PATH de l'utilisateur.
+`rust-toolchain.toml` épingle la chaîne, rustup l'installe au premier appel dans le dépôt.
 
 ```powershell
-$env:CARGO_HOME = Join-Path $PWD '.tools/cargo'
-$env:RUSTUP_HOME = Join-Path $PWD '.tools/rustup'
-$env:PATH = (Join-Path $env:CARGO_HOME 'bin') + ';' + $env:PATH
 cargo build --locked --release --bins --examples
 ```
 
