@@ -308,6 +308,36 @@ pub const VIEW_LICENSES: &str = "Voir les licences";
 pub const QUIT: &str = "Quitter";
 pub const COMMANDS: &str = "Commandes";
 pub const COMMANDS_KEYS: [&str; 3] = ["Ctrl", "Maj", "P"];
+
+pub const PALETTE: &str = "Palette de commandes";
+pub const PALETTE_SEARCH: &str = "Rechercher une commande";
+pub const PALETTE_NO_MATCH: &str = "Aucune commande ne correspond.";
+pub const PALETTE_SELECT: &str = "Choisir";
+pub const PALETTE_RUN: &str = "Lancer";
+pub const PALETTE_CLOSE: &str = "Fermer";
+pub const PALETTE_SELECT_KEYS: [&str; 2] = ["↑", "↓"];
+pub const DOMAIN_AUTOMATION: &str = "Automatisation";
+pub const VERB_ADD: &str = "ajouter";
+pub const VERB_UNDO: &str = "annuler le retrait";
+pub const VERB_OPEN: &str = "ouvrir";
+pub const VERB_PAUSE: &str = "mettre en pause";
+pub const VERB_RESUME: &str = "reprendre";
+pub const VERB_QUIT: &str = "quitter";
+pub const SETTINGS_KEYS: [&str; 2] = ["Ctrl", ","];
+pub const HELP_KEYS: [&str; 1] = ["F1"];
+pub const QUIT_KEYS: [&str; 2] = ["Ctrl", "Q"];
+
+pub fn command(domain: &str, verb: &str) -> String {
+    format!("{domain}\u{a0}: {verb}")
+}
+
+pub fn command_selected(name: &str, keys: &[&str], position: usize, count: usize) -> String {
+    if keys.is_empty() {
+        format!("{name}, {position} sur {count}")
+    } else {
+        format!("{name}, {}, {position} sur {count}", keys.join("+"))
+    }
+}
 pub const MINIMIZE: &str = "Réduire";
 pub const MAXIMIZE: &str = "Agrandir";
 pub const RESTORE: &str = "Restaurer";
