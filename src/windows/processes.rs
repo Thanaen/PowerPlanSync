@@ -47,7 +47,6 @@ pub struct ProcessSnapshot {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RunningApp {
-    pub pid: u32,
     pub image_name: OsString,
     pub executable_path: PathBuf,
 }
@@ -150,8 +149,9 @@ pub fn observe_paths(paths: &[PathBuf], session_id: u32) -> Result<ProcessSnapsh
     Ok(snapshot)
 }
 
-/// Les applications de la session dont le chemin est vérifiable, puis les noms de celles qui
-/// ne le sont pas : le sélecteur les montre sans jamais les proposer.
+/// Une entrée par exécutable vérifiable de la session, puis les noms de ceux qui ne le sont
+/// pas : le sélecteur les montre sans jamais les proposer. Un logiciel multiprocessus
+/// (navigateur, Electron) n'apparaît qu'une fois.
 pub fn running_apps(session_id: u32) -> Result<RunningApps, SnapshotError> {
     let snapshot = snapshot_named_in_session(&[], Some(session_id))?;
     let mut inaccessible: Vec<OsString> = Vec::new();
@@ -160,16 +160,22 @@ pub fn running_apps(session_id: u32) -> Result<RunningApps, SnapshotError> {
             inaccessible.push(issue.image_name);
         }
     }
+    let mut seen = std::collections::HashSet::new();
+    let verified = snapshot
+        .verified
+        .into_iter()
+        .filter(|process| {
+            let key = normalized_path_units(&process.executable_path)
+                .unwrap_or_else(|_| process.executable_path.as_os_str().encode_wide().collect());
+            seen.insert(key)
+        })
+        .map(|process| RunningApp {
+            image_name: process.image_name,
+            executable_path: process.executable_path,
+        })
+        .collect();
     Ok(RunningApps {
-        verified: snapshot
-            .verified
-            .into_iter()
-            .map(|process| RunningApp {
-                pid: process.key.pid,
-                image_name: process.image_name,
-                executable_path: process.executable_path,
-            })
-            .collect(),
+        verified,
         inaccessible,
     })
 }
@@ -371,14 +377,39 @@ mod tests {
 
     #[test]
     fn running_app_chooser_includes_this_accessible_process() {
-        let pid = std::process::id();
-        let session = process_session_id(pid).unwrap();
+        let session = process_session_id(std::process::id()).unwrap();
+        let this = std::env::current_exe().unwrap();
         let apps = running_apps(session).unwrap().verified;
-        assert!(apps.iter().any(|app| app.pid == pid));
         assert!(
             apps.iter()
-                .filter(|app| app.pid == pid)
-                .all(|app| app.executable_path.is_absolute())
+                .any(|app| paths_equal(&app.executable_path, &this))
         );
+    }
+
+    #[test]
+    fn running_app_chooser_lists_each_executable_once() {
+        let ping =
+            PathBuf::from(std::env::var_os("SystemRoot").unwrap()).join(r"System32\PING.EXE");
+        let mut children: Vec<_> = (0..3)
+            .map(|_| {
+                std::process::Command::new(&ping)
+                    .args(["-n", "30", "127.0.0.1"])
+                    .stdout(std::process::Stdio::null())
+                    .spawn()
+                    .unwrap()
+            })
+            .collect();
+        let session = process_session_id(std::process::id()).unwrap();
+        let apps = running_apps(session).map(|apps| apps.verified);
+        for child in &mut children {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
+        let entries = apps
+            .unwrap()
+            .into_iter()
+            .filter(|app| paths_equal(&app.executable_path, &ping))
+            .count();
+        assert_eq!(entries, 1, "three ping processes, one chooser entry");
     }
 }
