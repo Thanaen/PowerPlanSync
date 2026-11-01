@@ -12,6 +12,7 @@ use gpui::{
     div, prelude::*, px,
 };
 
+use crate::interface::first_launch;
 use crate::interface::motion::{self, Entrance};
 use crate::interface::strings;
 use crate::interface::text_input::TextInput;
@@ -441,6 +442,7 @@ impl RuleDialog {
                 plan_id,
             },
         };
+        first_launch::note_validating_input(window.last_input_was_keyboard(), cx);
         (self.on_action)(action, cx);
     }
 
@@ -920,6 +922,7 @@ impl Render for RuleDialog {
         }
         body = body.child(self.fields(&theme, cx));
         let card = div()
+            .debug_selector(|| "rule-dialog".into())
             .id("rule-dialog")
             .role(Role::Dialog)
             .aria_label(title)

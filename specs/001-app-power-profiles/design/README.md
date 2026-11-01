@@ -47,6 +47,11 @@ valeurs lues et la navigation ne le sont pas non plus. `App::reduce_motion` suit
 « Effets d'animation » et affiche directement l'état final. Il faut vérifier chaque animation au
 ressenti dans l'application réelle, avec les durées ralenties quatre fois.
 
+Les ressorts gardent leurs paramètres (`SpringConfig` de GPUI), mais `motion::Entrance` les calcule
+sur l'horloge de l'exécuteur : `with_spring` et `with_animation` lisent l'horloge murale, que les tests
+de vue ne peuvent pas avancer. Pendant un échange, les deux lignes gardent leur ancien ordre jusqu'au
+repos : la ligne qui monte est ainsi dessinée par-dessus l'autre.
+
 ## Écarts avec le design system
 
 Le design system s'appelle désormais **Bientôt GPUI** et reflète le code de Bientôt. Il n'est donc
@@ -58,7 +63,7 @@ thème, jusqu'à ce que Bientôt les adopte.
 - bouton Tinted désactivé : fond transparent, bordure `border`, texte `text-placeholder` ;
 - `g-badge--error` (texte `#e8999c` dans le thème sombre) et badge accent en `accent-on-active` ;
 - Switch éteint : pastille en `text-muted`, piste en `element-active` et bordure en `text-placeholder` ;
-- glissement de la pastille du Switch en PRESS (140 ms) au lieu de 120 ms ;
+- pastille du Switch sans glissement et liste déroulante ouverte sans `slide_over` : le contrat n'anime que quatre transitions, et la liste s'ouvre aussi au clavier ;
 - boutons de fenêtre comme ceux de Windows : glyphes de 10 px, glyphe blanc sur le rouge de **Fermer** survolé (`#c42b1c` dans le thème sombre, HighlightText sur Highlight en contraste élevé) et glyphe de restauration quand la fenêtre est agrandie ;
 - infobulles de la barre latérale étroite affichées sans le fondu `tooltip` de 150 ms : GPUI les montre au survol sans animation d'entrée.
 - liste **Application ouverte** sans barre de défilement visible, que GPUI ne dessine pas : la troisième ligne coupée signale le défilement ;

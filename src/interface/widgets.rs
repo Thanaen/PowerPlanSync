@@ -12,7 +12,6 @@ use gpui::{
     div, point, prelude::*, px, svg, transparent_black,
 };
 
-use crate::interface::motion::{self, Entrance};
 use crate::interface::strings;
 use crate::interface::theme::spacing::*;
 use crate::interface::theme::{Theme, TypeStyled as _, radius, size as token, text};
@@ -305,8 +304,10 @@ impl RenderOnce for Button {
                 .collect::<Vec<_>>()
                 .join("+")
         });
+        let id = self.id;
         let base = div()
-            .id(self.id)
+            .debug_selector(|| id.to_string())
+            .id(id)
             .role(Role::Button)
             .aria_label(self.label.clone())
             .when_some(shortcut, |button, keys| button.aria_keyshortcuts(keys))
@@ -951,17 +952,16 @@ pub struct SelectOption {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SelectChanged(pub usize);
 
-/// Liste déroulante de plans : un bouton `ComboBox` et, ouverte, la liste dessous, qui entre
-/// en `slide_over(MENU, 4 px)`. Le focus reste sur le bouton ; les flèches parcourent la
-/// liste, Entrée ou Espace choisit, Échap ferme. La liste est peinte hors de l'arbre du
-/// bouton : la valeur annoncée suit donc l'option survolée tant qu'elle est ouverte.
+/// Liste déroulante de plans : un bouton `ComboBox` et, ouverte, la liste dessous. Le focus
+/// reste sur le bouton ; les flèches parcourent la liste, Entrée ou Espace choisit, Échap
+/// ferme. La liste est peinte hors de l'arbre du bouton : la valeur annoncée suit donc
+/// l'option survolée tant qu'elle est ouverte.
 pub struct Select {
     focus_handle: FocusHandle,
     name: SharedString,
     options: Vec<SelectOption>,
     choice: Choice,
     width: Pixels,
-    entrance: Entrance,
     /// Où une pression hors de la liste ouverte l'a fermée : si c'était sur le bouton, le clic
     /// qui suit ne la rouvre pas.
     dismissed_at: Option<Point<Pixels>>,
@@ -986,7 +986,6 @@ impl Select {
             options: Vec::new(),
             choice: Choice::default(),
             width: px(280.),
-            entrance: Entrance::default(),
             dismissed_at: None,
             _focus_out: focus_out,
             error: None,
@@ -1009,9 +1008,6 @@ impl Select {
         // Les mêmes options, rafraîchies à chaque état reçu, laissent la liste ouverte.
         if options == self.options && choice.selected() == self.choice.selected() {
             return;
-        }
-        if self.choice.is_open() {
-            self.entrance.reset();
         }
         self.choice = choice;
         self.options = options;
@@ -1041,12 +1037,8 @@ impl Select {
         change: impl FnOnce(&mut Choice) -> Option<usize>,
         cx: &mut Context<Self>,
     ) {
-        let was_open = self.choice.is_open();
         if let Some(index) = change(&mut self.choice) {
             cx.emit(SelectChanged(index));
-        }
-        if was_open && !self.choice.is_open() {
-            self.entrance.reset();
         }
         cx.notify();
     }
@@ -1063,7 +1055,6 @@ impl Render for Select {
         let theme = Theme::of(window, cx);
         if self.disabled && self.choice.is_open() {
             self.choice.dismiss();
-            self.entrance.reset();
         }
         let hover = theme.element_hover;
         let ring = FocusRing::on(&theme, self.backdrop);
@@ -1187,7 +1178,6 @@ impl Render for Select {
                 )
             }));
         let menu = self.choice.is_open().then(|| {
-            let time = self.entrance.time(motion::MENU, window, cx);
             let (selected, highlighted) = (self.choice.selected(), self.choice.highlighted());
             // En contraste élevé, `element_hover` est la fenêtre : l'option survolée prend la
             // paire Highlight et HighlightText.
@@ -1236,7 +1226,6 @@ impl Render for Select {
                         .role(Role::ListBox)
                         .aria_label(self.name.clone())
                         .occlude()
-                        .map(|list| motion::slide_over(time, px(-4.)).apply(list))
                         .mt(BASE_04)
                         .w(self.width)
                         .p(BASE_04)

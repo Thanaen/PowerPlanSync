@@ -2,17 +2,20 @@
 //! actions, le message intégré et la liste **Logiciels associés** (FR-001, FR-006, FR-018,
 //! FR-024). Sans contrôle, actions et liste laissent place au seul message (FR-016).
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::time::Duration;
 
 use gpui::{
     App, ClickEvent, Context, Entity, EventEmitter, FocusHandle, FontWeight, HighlightStyle, Hsla,
-    IntoElement, ParentElement, Render, Role, SharedString, Styled, StyledText, Subscription,
-    Window, div, prelude::*, px,
+    IntoElement, ParentElement, Pixels, Render, Role, SharedString, Styled, StyledText,
+    Subscription, Window, div, prelude::*, px,
 };
 
 use crate::interface::first_launch::{self, AddRequested, FirstLaunch};
 use crate::interface::messages;
+use crate::interface::motion::{self, Entrance};
 use crate::interface::strings;
 use crate::interface::theme::spacing::*;
 use crate::interface::theme::{Theme, TypeStyled as _, radius, size as token, text};
@@ -42,7 +45,11 @@ pub struct SoftwarePage {
     /// **Monter** et **Descendre** de chaque logiciel, pour passer le focus de l'un à l'autre.
     arrows: HashMap<i32, (FocusHandle, FocusHandle)>,
     /// Le logiciel que **Monter** ou **Descendre** vient de déplacer, jusqu'à la liste suivante.
-    moving: Option<i32>,
+    moving: Option<Move>,
+    swap: Option<Swap>,
+    heights: Rc<RefCell<HashMap<i32, Pixels>>>,
+    pointer_removal: Option<String>,
+    removal_entrance: Entrance,
     /// La dernière phrase pour les lecteurs d'écran : déplacement ou retrait.
     announcement: Option<String>,
     /// **Annuler** du message de retrait : la ligne supprimée emporte son bouton, le focus
@@ -63,6 +70,10 @@ impl SoftwarePage {
             first_launch: None,
             arrows: HashMap::new(),
             moving: None,
+            swap: None,
+            heights: Rc::default(),
+            pointer_removal: None,
+            removal_entrance: Entrance::at_rest(),
             announcement: None,
             undo_focus: None,
             focus_undo: None,
@@ -80,10 +91,27 @@ impl SoftwarePage {
                 }
                 _ => {}
             }
-            if let Some(rule_id) = self.moving
+            if model.removed != self.model.removed {
+                let pointer = self.pointer_removal.take();
+                let message_appears = !self.model.can_undo() && model.can_undo();
+                if message_appears {
+                    self.removal_entrance = if pointer.is_some() && pointer == model.removed {
+                        Entrance::default()
+                    } else {
+                        Entrance::at_rest()
+                    };
+                }
+            }
+            if let Some(Move {
+                rule_id,
+                by_pointer,
+            }) = self.moving
                 && order(&model) != order(&self.model)
             {
                 self.moving = None;
+                self.swap = by_pointer
+                    .then(|| Swap::between(&self.model, &model, rule_id, &self.heights.borrow()))
+                    .flatten();
                 if let Some(line) = move_announcement(&self.model, &model, rule_id) {
                     self.announcement = Some(line);
                 }
@@ -237,13 +265,48 @@ impl SoftwarePage {
         }
     }
 
-    fn list(&self, narrow: bool, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
+    fn list(
+        &mut self,
+        narrow: bool,
+        theme: &Theme,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + use<> {
         let count = self.model.rules.len();
-        let mut rows = Vec::with_capacity(count);
-        for rule in &self.model.rules {
-            let arrows = &self.arrows[&rule.id];
-            rows.push(self.row(rule, count, arrows, narrow, theme, cx));
+        let mut rules: Vec<&RuleDisplay> = self.model.rules.iter().collect();
+        let lifts = self
+            .swap
+            .as_mut()
+            .and_then(|swap| swap.draw_rising_row_last(&mut rules, window, cx));
+        if lifts.is_none() {
+            self.swap = None;
         }
+        let lifts = lifts.unwrap_or_default();
+        let ids: Vec<i32> = rules.iter().map(|rule| rule.id).collect();
+        let mut rows = Vec::with_capacity(count);
+        for (index, rule) in rules.into_iter().enumerate() {
+            let arrows = &self.arrows[&rule.id];
+            let row = self.row(rule, arrows, index > 0, narrow, theme, cx);
+            let (offset, rising) = lifts.get(&rule.id).copied().unwrap_or_default();
+            rows.push(
+                div()
+                    .debug_selector(|| format!("rule-{}", rule.id))
+                    .relative()
+                    .top(offset)
+                    .when(rising, |row| {
+                        row.rounded(radius::MD).bg(theme.surface).child(
+                            div()
+                                .absolute()
+                                .inset_0()
+                                .rounded(radius::MD)
+                                .border_1()
+                                .border_color(theme.border),
+                        )
+                    })
+                    .child(row),
+            );
+        }
+        let heights = Rc::clone(&self.heights);
         div()
             .flex()
             .flex_col()
@@ -268,6 +331,13 @@ impl SoftwarePage {
             .when(count > 0, |list| {
                 list.child(
                     div()
+                        .on_children_prepainted(move |bounds, _, _| {
+                            *heights.borrow_mut() = ids
+                                .iter()
+                                .zip(bounds)
+                                .map(|(id, bounds)| (*id, bounds.size.height))
+                                .collect();
+                        })
                         .id("rules")
                         .role(Role::List)
                         .aria_label(strings::ASSOCIATED_SOFTWARE)
@@ -374,8 +444,8 @@ impl SoftwarePage {
     fn row(
         &self,
         rule: &RuleDisplay,
-        count: usize,
         (up, down): &(FocusHandle, FocusHandle),
+        separated: bool,
         narrow: bool,
         theme: &Theme,
         cx: &mut Context<Self>,
@@ -389,14 +459,18 @@ impl SoftwarePage {
         };
         let on_action = Rc::clone(&self.on_action);
         let deleted = rule.label.clone();
-        let delete = cx.listener(move |page: &mut Self, _: &ClickEvent, _, cx| {
+        let delete = cx.listener(move |page: &mut Self, event: &ClickEvent, _, cx| {
             page.focus_undo = Some(deleted.clone());
+            page.pointer_removal = (!event.is_keyboard()).then(|| deleted.clone());
             (page.on_action)(UiAction::DeleteRule { rule_id: id }, cx);
         });
         let named = |action: &str| strings::row_action(action, &label);
         let arrow = |action: UiAction| {
-            cx.listener(move |page: &mut Self, _: &ClickEvent, _, cx| {
-                page.moving = Some(id);
+            cx.listener(move |page: &mut Self, event: &ClickEvent, _, cx| {
+                page.moving = Some(Move {
+                    rule_id: id,
+                    by_pointer: !event.is_keyboard(),
+                });
                 (page.on_action)(action.clone(), cx);
             })
         };
@@ -475,7 +549,7 @@ impl SoftwarePage {
                 )
                 .backdrop(theme.surface)
                 .focus(down)
-                .disabled(rule.rank == count)
+                .disabled(rule.rank == self.model.rules.len())
                 .on_click(arrow(UiAction::MoveRuleDown { rule_id: id })),
             )
             .child(
@@ -497,7 +571,7 @@ impl SoftwarePage {
             // Les boutons d'icône portent leur propre marge : le bord droit reste à 16 px.
             .pr(BASE_08)
             .py(BASE_08)
-            .when(rule.rank > 1, |row| {
+            .when(separated, |row| {
                 row.border_t_1().border_color(theme.border_variant)
             });
         if narrow {
@@ -530,6 +604,86 @@ impl SoftwarePage {
             .child(div().w(px(178.)).flex_none().child(plan))
             .child(follow)
             .child(actions)
+    }
+}
+
+#[derive(Clone, Copy)]
+struct Move {
+    rule_id: i32,
+    by_pointer: bool,
+}
+
+struct Swap {
+    rising: i32,
+    falling: i32,
+    rise: Pixels,
+    fall: Pixels,
+    rising_entrance: Entrance,
+    falling_entrance: Entrance,
+}
+
+impl Swap {
+    fn between(
+        before: &UiDisplayModel,
+        after: &UiDisplayModel,
+        rule_id: i32,
+        heights: &HashMap<i32, Pixels>,
+    ) -> Option<Self> {
+        let (old, new) = (order(before), order(after));
+        let from = old.iter().position(|id| *id == rule_id)?;
+        let to = new.iter().position(|id| *id == rule_id)?;
+        let other = *new.get(from)?;
+        if from.abs_diff(to) != 1 || old.get(to) != Some(&other) {
+            return None;
+        }
+        let (rising, falling) = if to < from {
+            (rule_id, other)
+        } else {
+            (other, rule_id)
+        };
+        Some(Self {
+            rising,
+            falling,
+            rise: *heights.get(&falling)?,
+            fall: *heights.get(&rising)?,
+            rising_entrance: Entrance::default(),
+            falling_entrance: Entrance::default(),
+        })
+    }
+
+    fn offsets(&mut self, window: &mut Window, cx: &App) -> (Pixels, Pixels) {
+        let spring = motion::spring(motion::SWAP, motion::SWAP_BOUNCE);
+        let rising = self
+            .rising_entrance
+            .spring(spring, Duration::ZERO, window, cx);
+        let falling =
+            self.falling_entrance
+                .spring(spring, motion::SWAP_FALL_DELAY.duration(), window, cx);
+        (-self.rise * (1. - rising), self.fall * (1. - falling))
+    }
+
+    /// Tant que l'échange bouge, remet les deux lignes dans leur ancien ordre, la ligne qui
+    /// monte après l'autre pour passer au-dessus, et rend le décalage de chacune et si elle
+    /// monte. `None` au repos.
+    fn draw_rising_row_last(
+        &mut self,
+        rules: &mut [&RuleDisplay],
+        window: &mut Window,
+        cx: &App,
+    ) -> Option<HashMap<i32, (Pixels, bool)>> {
+        let (rising, falling) = self.offsets(window, cx);
+        if !self.rising_entrance.is_moving() && !self.falling_entrance.is_moving() {
+            return None;
+        }
+        let at = |id| rules.iter().position(|rule| rule.id == id);
+        let (Some(up), Some(down)) = (at(self.rising), at(self.falling)) else {
+            return Some(HashMap::new());
+        };
+        rules.swap(up, down);
+        Some(HashMap::from([
+            (self.rising, (rising, true)),
+            (self.falling, (falling, false)),
+        ]))
     }
 }
 
@@ -649,7 +803,13 @@ impl Render for SoftwarePage {
             .removed
             .as_deref()
             .filter(|_| self.model.can_undo())
-            .map(|label| self.removal(label, &undo_focus, narrow, &theme));
+            .map(|label| self.removal(label, &undo_focus, narrow, &theme))
+            .map(|removal| {
+                let time = self.removal_entrance.time(motion::MENU, window, cx);
+                motion::slide_in(time, px(4.))
+                    .apply(div().debug_selector(|| "removal".into()))
+                    .child(removal)
+            });
         if removal.is_some() && self.focus_undo.is_some() && self.focus_undo == self.model.removed {
             self.focus_undo = None;
             undo_focus.focus(window, cx);
@@ -659,7 +819,8 @@ impl Render for SoftwarePage {
         } else if first_launch::shown(&self.model) {
             // Retirer le dernier logiciel suivi ramène « Pour commencer » : **Annuler** reste.
             let steps = self.first_launch(window, cx);
-            let list = first_launch::list_shown(&self.model).then(|| self.list(narrow, &theme, cx));
+            let list = first_launch::list_shown(&self.model)
+                .then(|| self.list(narrow, &theme, window, cx));
             let demo = self.model.demo_mode.then(|| self.demo(false, &theme));
             body.children(demo)
                 .children(message)
@@ -671,7 +832,7 @@ impl Render for SoftwarePage {
             body.child(self.actions(&theme, cx))
                 .children(demo)
                 .children(message)
-                .child(self.list(narrow, &theme, cx))
+                .child(self.list(narrow, &theme, window, cx))
                 .children(removal)
         };
         // Hors de l'écran, la région vivante dit ce que la liste ne montre qu'en bougeant.
