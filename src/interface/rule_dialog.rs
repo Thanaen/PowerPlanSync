@@ -8,8 +8,8 @@ use std::rc::Rc;
 
 use gpui::{
     App, Context, Entity, EventEmitter, FocusHandle, Focusable, FontWeight, IntoElement,
-    KeyBinding, ParentElement, Render, Role, SharedString, Styled, Subscription, Window, actions,
-    div, prelude::*, px,
+    KeyBinding, ParentElement, Rems, Render, Role, SharedString, Styled, Subscription, Window,
+    actions, div, prelude::*, px,
 };
 
 use crate::interface::first_launch;
@@ -17,7 +17,7 @@ use crate::interface::motion::{self, Entrance};
 use crate::interface::strings;
 use crate::interface::text_input::TextInput;
 use crate::interface::theme::spacing::*;
-use crate::interface::theme::{Theme, TypeStyled as _, radius, size as token, text};
+use crate::interface::theme::{Theme, TypeStyled as _, radius, rem, size as token, text};
 use crate::interface::widgets::{
     self, Button, ButtonStyle, FocusRing, Message, MessageKind, Select, SelectChanged,
     SelectOption, Tooltip,
@@ -40,9 +40,9 @@ actions!(
 
 const KEY_CONTEXT: &str = "RuleDialog";
 const LIST_CONTEXT: &str = "RunningApps";
-const CARD_WIDTH: f32 = 520.;
+const CARD_WIDTH: Rems = rem(520.);
 /// Deux lignes et demie : la troisième, coupée, montre que la liste défile.
-const LIST_HEIGHT: f32 = 104.;
+const LIST_HEIGHT: Rems = rem(104.);
 const NAME_LENGTH: usize = 80;
 
 pub fn bind_keys(cx: &mut App) {
@@ -188,7 +188,7 @@ impl RuleDialog {
         });
         let plan = cx.new(|cx| {
             let mut select = Select::new(strings::PLAN_DURING, window, cx);
-            select.set_width(px(CARD_WIDTH) - BASE_16 * 2.);
+            select.set_width(rem(520. - 32.));
             select
         });
         let subscriptions = vec![
@@ -680,7 +680,7 @@ impl RuleDialog {
                     .track_focus(&self.list_focus)
                     .role(Role::ListBox)
                     .aria_label(strings::RUNNING_APPS)
-                    .when(!empty, |list| list.h(px(LIST_HEIGHT)))
+                    .when(!empty, |list| list.h(LIST_HEIGHT))
                     .p(BASE_04)
                     .flex()
                     .flex_col()
@@ -872,11 +872,8 @@ impl Render for RuleDialog {
         self.mark_invalid_fields(cx);
         let time = self.entrance.time(motion::DIALOG, window, cx);
         let viewport = window.viewport_size();
-        let width = if viewport.width - BASE_16 * 2. < px(CARD_WIDTH) {
-            viewport.width - BASE_16 * 2.
-        } else {
-            px(CARD_WIDTH)
-        };
+        let rem_size = window.rem_size();
+        let width = (viewport.width - BASE_16 * 2.).min(CARD_WIDTH.to_pixels(rem_size));
         let title: SharedString = match &self.mode {
             RuleDialogMode::Add => strings::ADD_SOFTWARE.into(),
             RuleDialogMode::Edit { rule, .. } => strings::edit_title(&rule.label).into(),
@@ -928,7 +925,10 @@ impl Render for RuleDialog {
             .aria_label(title)
             .w(width)
             .max_h(
-                viewport.height - token::TITLEBAR_HEIGHT - token::STATUSBAR_HEIGHT - BASE_16 * 2.,
+                viewport.height
+                    - token::TITLEBAR_HEIGHT.to_pixels(rem_size)
+                    - token::STATUSBAR_HEIGHT.to_pixels(rem_size)
+                    - BASE_16 * 2.,
             )
             .flex()
             .flex_col()

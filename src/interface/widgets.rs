@@ -7,14 +7,14 @@
 use gpui::accesskit::Live;
 use gpui::{
     AnyElement, App, BoxShadow, ClickEvent, Context, ElementId, EventEmitter, FocusHandle,
-    Focusable, FontWeight, Hsla, KeyBinding, MouseButton, MouseDownEvent, Pixels, Point, Role,
-    SharedString, StyleRefinement, Subscription, Svg, Toggled, Window, actions, anchored, deferred,
-    div, point, prelude::*, px, svg, transparent_black,
+    Focusable, FontWeight, Hsla, KeyBinding, MouseButton, MouseDownEvent, Pixels, Point, Rems,
+    Role, SharedString, StyleRefinement, Subscription, Svg, Toggled, Window, actions, anchored,
+    deferred, div, point, prelude::*, px, svg, transparent_black,
 };
 
 use crate::interface::strings;
 use crate::interface::theme::spacing::*;
-use crate::interface::theme::{Theme, TypeStyled as _, radius, size as token, text};
+use crate::interface::theme::{Theme, TypeStyled as _, radius, rem, size as token, text};
 use crate::presentation::Badge;
 
 type OnClick = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -289,6 +289,12 @@ impl Button {
     }
 }
 
+const KEY_CAPS_MIN_WIDTH: Rems = rem(400.);
+
+fn shows_key_caps(window: &Window) -> bool {
+    window.viewport_size().width >= KEY_CAPS_MIN_WIDTH.to_pixels(window.rem_size())
+}
+
 impl RenderOnce for Button {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = Theme::of(window, cx);
@@ -335,7 +341,7 @@ impl RenderOnce for Button {
             })
             .children(self.icon.map(|name| icon(name, colors.icon)))
             .when(!self.icon_only, |button| button.child(self.label))
-            .when(!self.keys.is_empty(), |button| {
+            .when(!self.keys.is_empty() && shows_key_caps(window), |button| {
                 let key_color = if self.disabled {
                     theme.text_placeholder
                 } else {
@@ -480,7 +486,7 @@ impl RenderOnce for Switch {
     }
 }
 
-pub const BADGE_HEIGHT: Pixels = px(18.);
+pub const BADGE_HEIGHT: Rems = rem(18.);
 
 /// Couleurs d'un badge : fond teinté et bord de 1 px de la même teinte.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -809,7 +815,7 @@ impl RenderOnce for Message {
             // Le bouton déborde sur sa marge à droite ; sur plusieurs lignes, il se centre aussi
             // sur la première sans la grandir.
             .when_some(self.close, |message, close| {
-                let overhang = (token::BUTTON_MEDIUM - text::LABEL_MD.line_height) / 2.;
+                let overhang = Rems((token::BUTTON_MEDIUM.0 - text::LABEL_MD.line_height.0) / 2.);
                 message.child(
                     div()
                         .flex_none()
@@ -961,7 +967,7 @@ pub struct Select {
     name: SharedString,
     options: Vec<SelectOption>,
     choice: Choice,
-    width: Pixels,
+    width: Rems,
     /// Où une pression hors de la liste ouverte l'a fermée : si c'était sur le bouton, le clic
     /// qui suit ne la rouvre pas.
     dismissed_at: Option<Point<Pixels>>,
@@ -985,7 +991,7 @@ impl Select {
             name: name.into(),
             options: Vec::new(),
             choice: Choice::default(),
-            width: px(280.),
+            width: rem(280.),
             dismissed_at: None,
             _focus_out: focus_out,
             error: None,
@@ -994,7 +1000,7 @@ impl Select {
         }
     }
 
-    pub fn set_width(&mut self, width: Pixels) {
+    pub fn set_width(&mut self, width: Rems) {
         self.width = width;
     }
 

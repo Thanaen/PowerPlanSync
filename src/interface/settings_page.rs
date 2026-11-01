@@ -9,11 +9,11 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, Context, Entity, IntoElement, ParentElement, Render, Role, SharedString,
-    Styled, Subscription, Window, div, prelude::*, px,
+    Styled, Subscription, Window, div, prelude::*,
 };
 
 use crate::interface::theme::spacing::*;
-use crate::interface::theme::{Theme, TypeStyled as _, radius, text};
+use crate::interface::theme::{Theme, TypeStyled as _, radius, rem, text};
 use crate::interface::widgets::{
     Button, ButtonStyle, Message, MessageKind, Select, SelectChanged, SelectOption, Switch,
 };
@@ -21,7 +21,7 @@ use crate::interface::window::is_narrow;
 use crate::interface::{messages, strings};
 use crate::presentation::{Notice, PlanDisplay, UiAction, UiDisplayModel};
 
-const SELECT_WIDTH: gpui::Pixels = px(220.);
+const SELECT_WIDTH: gpui::Rems = rem(220.);
 
 type OnAction = Rc<dyn Fn(UiAction, &mut App)>;
 
@@ -257,7 +257,7 @@ fn setting(
 impl Render for SettingsPage {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = Theme::of(window, cx);
-        let narrow = is_narrow(window.viewport_size().width);
+        let narrow = is_narrow(window);
         div()
             .px(if narrow { BASE_16 } else { BASE_24 })
             .pt(BASE_20)

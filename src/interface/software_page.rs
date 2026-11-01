@@ -18,12 +18,16 @@ use crate::interface::messages;
 use crate::interface::motion::{self, Entrance};
 use crate::interface::strings;
 use crate::interface::theme::spacing::*;
-use crate::interface::theme::{Theme, TypeStyled as _, radius, size as token, text};
+use crate::interface::theme::{Theme, TypeStyled as _, radius, rem, size as token, text};
 use crate::interface::widgets::{
     self, Button, ButtonStyle, Message, MessageKind, Switch, Tooltip, message_colors,
 };
 use crate::interface::window::{is_narrow, needs_action, status_dot};
 use crate::presentation::{Automation, RuleDisplay, UiAction, UiDisplayModel};
+
+const PLAN_WIDTH: gpui::Rems = rem(178.);
+const ONE_LINE_ROW_WIDTH: gpui::Rems = rem(840.);
+const RANK_WIDTH: gpui::Rems = rem(12.);
 
 /// Les demandes qui ouvrent un dialogue.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -267,7 +271,7 @@ impl SoftwarePage {
 
     fn list(
         &mut self,
-        narrow: bool,
+        stacked: bool,
         theme: &Theme,
         window: &mut Window,
         cx: &mut Context<Self>,
@@ -286,7 +290,7 @@ impl SoftwarePage {
         let mut rows = Vec::with_capacity(count);
         for (index, rule) in rules.into_iter().enumerate() {
             let arrows = &self.arrows[&rule.id];
-            let row = self.row(rule, arrows, index > 0, narrow, theme, cx);
+            let row = self.row(rule, arrows, index > 0, stacked, theme, cx);
             let (offset, rising) = lifts.get(&rule.id).copied().unwrap_or_default();
             rows.push(
                 div()
@@ -446,7 +450,7 @@ impl SoftwarePage {
         rule: &RuleDisplay,
         (up, down): &(FocusHandle, FocusHandle),
         separated: bool,
-        narrow: bool,
+        stacked: bool,
         theme: &Theme,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + use<> {
@@ -475,7 +479,7 @@ impl SoftwarePage {
             })
         };
         let rank = div()
-            .w(BASE_12)
+            .w(RANK_WIDTH)
             .flex_none()
             .type_style(text::LABEL_MD)
             .text_color(theme.text_muted)
@@ -574,7 +578,7 @@ impl SoftwarePage {
             .when(separated, |row| {
                 row.border_t_1().border_color(theme.border_variant)
             });
-        if narrow {
+        if stacked {
             // Étroite, la ligne passe sur trois niveaux plutôt que de serrer ses contrôles.
             return row.flex().items_start().gap(BASE_12).child(rank).child(
                 div()
@@ -601,7 +605,7 @@ impl SoftwarePage {
             .gap(BASE_12)
             .child(rank)
             .child(name)
-            .child(div().w(px(178.)).flex_none().child(plan))
+            .child(div().w(PLAN_WIDTH).flex_none().child(plan))
             .child(follow)
             .child(actions)
     }
@@ -685,6 +689,10 @@ impl Swap {
             (self.falling, (falling, false)),
         ]))
     }
+}
+
+fn fits_one_line_rows(width: Pixels, rem_size: Pixels) -> bool {
+    width >= ONE_LINE_ROW_WIDTH.to_pixels(rem_size)
 }
 
 /// L'ordre de la liste, par identifiant.
@@ -773,7 +781,9 @@ pub fn status_icon(model: &UiDisplayModel) -> &'static str {
 impl Render for SoftwarePage {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = Theme::of(window, cx);
-        let narrow = is_narrow(window.viewport_size().width);
+        let narrow = is_narrow(window);
+        let stacked =
+            narrow || !fits_one_line_rows(window.viewport_size().width, window.rem_size());
         let ids = order(&self.model);
         self.arrows.retain(|id, _| ids.contains(id));
         for id in ids {
@@ -820,7 +830,7 @@ impl Render for SoftwarePage {
             // Retirer le dernier logiciel suivi ramène « Pour commencer » : **Annuler** reste.
             let steps = self.first_launch(window, cx);
             let list = first_launch::list_shown(&self.model)
-                .then(|| self.list(narrow, &theme, window, cx));
+                .then(|| self.list(stacked, &theme, window, cx));
             let demo = self.model.demo_mode.then(|| self.demo(false, &theme));
             body.children(demo)
                 .children(message)
@@ -832,7 +842,7 @@ impl Render for SoftwarePage {
             body.child(self.actions(&theme, cx))
                 .children(demo)
                 .children(message)
-                .child(self.list(narrow, &theme, window, cx))
+                .child(self.list(stacked, &theme, window, cx))
                 .children(removal)
         };
         // Hors de l'écran, la région vivante dit ce que la liste ne montre qu'en bougeant.
@@ -862,6 +872,17 @@ impl Render for SoftwarePage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::interface::theme::TextScale;
+    use crate::interface::window::OPENING_SIZE;
+
+    #[test]
+    fn rows_keep_one_line_at_the_opening_size_only_with_text_at_100_percent() {
+        let at = |percent| TextScale::from_percent(percent).rem_size();
+        assert!(fits_one_line_rows(OPENING_SIZE.width, at(100)));
+        assert!(!fits_one_line_rows(OPENING_SIZE.width, at(125)));
+        assert!(fits_one_line_rows(px(1280.), at(150)));
+        assert!(!fits_one_line_rows(px(1280.), at(200)));
+    }
 
     #[test]
     fn before_activation_the_header_promises_no_change() {

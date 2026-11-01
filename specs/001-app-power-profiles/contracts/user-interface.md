@@ -142,7 +142,10 @@ annule un dialogue et Entrée active son action principale. Un dialogue invalide
 Les thèmes suivent Windows, y compris les thèmes de contraste : les jetons sont alors remplacés par
 les couleurs système et l'état reste porté par l'icône et le mot. Les parcours passent à 100 %,
 150 % et 200 % de mise à l'échelle et avec texte agrandi. Une fenêtre étroite réduit la barre
-latérale à ses icônes et défile plutôt que de serrer les contrôles.
+latérale à ses icônes et défile plutôt que de serrer les contrôles. Le texte agrandi de Windows
+grandit les textes, les contrôles qui les portent, la barre latérale et les seuils de mise en page ;
+les icônes gardent leur taille. Une fenêtre trop étroite pour eux masque les capuchons des
+raccourcis, toujours annoncés.
 
 ## Mouvement
 

@@ -41,7 +41,9 @@ mod shots {
     use power_plan_sync::interface::software_page::SoftwarePage;
     use power_plan_sync::interface::strings;
     use power_plan_sync::interface::text_input::TextInput;
-    use power_plan_sync::interface::theme::{self, ForcedAppearance, Theme};
+    use power_plan_sync::interface::theme::{
+        self, ForcedAppearance, HighContrast, SystemColors, TextScale, Theme,
+    };
     use power_plan_sync::interface::widgets::{
         self, Button, ButtonStyle, Message, MessageKind, Select, SelectOption, Switch,
     };
@@ -269,6 +271,32 @@ mod shots {
             path: path.into(),
             accessible: !path.is_empty(),
         }
+    }
+
+    /// Le thème de contraste « Ciel nocturne » de Windows 11.
+    const NIGHT_SKY: SystemColors = SystemColors {
+        window: 0x000000,
+        window_text: 0xffffff,
+        highlight: 0xd6b4fd,
+        highlight_text: 0x2b2b2b,
+        gray_text: 0xa6a6a6,
+    };
+
+    /// Le thème de contraste « Désert » de Windows 11.
+    const DESERT: SystemColors = SystemColors {
+        window: 0xfffaef,
+        window_text: 0x3d3d3d,
+        highlight: 0x903909,
+        highlight_text: 0xfff5e3,
+        gray_text: 0x676767,
+    };
+
+    #[derive(Clone, Copy)]
+    enum View {
+        Software,
+        Settings,
+        Help,
+        Dialog(DialogCase),
     }
 
     /// Les dialogues de T059 sur la page **Logiciels**, dans l'état de leur maquette.
@@ -947,6 +975,133 @@ mod shots {
             })?;
             capture(&mut cx, window.into(), &output.join(format!("{name}.png")))?;
         }
+        let shot =
+            |name, contrast, text, view, model| (name, contrast, text, (880., 620.), view, model);
+        let night = Some(NIGHT_SKY);
+        let accessibility = [
+            shot("text-125", None, 125, View::Software, shown(active())),
+            shot("text-150", None, 150, View::Software, shown(active())),
+            shot("text-200", None, 200, View::Software, shown(active())),
+            (
+                "text-200-wide",
+                None,
+                200,
+                (1280., 720.),
+                View::Software,
+                shown(active()),
+            ),
+            (
+                "text-200-narrow",
+                None,
+                200,
+                (420., 760.),
+                View::Software,
+                shown(active()),
+            ),
+            shot(
+                "text-200-settings",
+                None,
+                200,
+                View::Settings,
+                shown(reserved_return()),
+            ),
+            shot(
+                "text-200-first-launch",
+                None,
+                200,
+                View::Software,
+                shown(first_launch(true, false)),
+            ),
+            shot(
+                "text-200-refused",
+                None,
+                200,
+                View::Software,
+                shown(self::refused()),
+            ),
+            shot("text-200-removed", None, 200, View::Software, removed()),
+            shot("text-200-help", None, 200, View::Help, shown(active())),
+            shot(
+                "text-200-add-rule",
+                None,
+                200,
+                View::Dialog(DialogCase::AddInvalid),
+                shown(active()),
+            ),
+            shot("contrast-dark", night, 100, View::Software, shown(active())),
+            shot("contrast-help", night, 100, View::Help, shown(active())),
+            shot(
+                "contrast-light",
+                Some(DESERT),
+                100,
+                View::Software,
+                shown(active()),
+            ),
+            shot(
+                "contrast-settings",
+                night,
+                100,
+                View::Settings,
+                shown(reserved_return()),
+            ),
+            shot(
+                "contrast-refused",
+                night,
+                100,
+                View::Software,
+                shown(self::refused()),
+            ),
+            shot(
+                "contrast-add-rule",
+                Some(DESERT),
+                100,
+                View::Dialog(DialogCase::Add),
+                shown(active()),
+            ),
+            shot(
+                "contrast-text-200",
+                night,
+                200,
+                View::Software,
+                shown(active()),
+            ),
+        ];
+        for (name, contrast, text, (width, height), view, model) in accessibility {
+            cx.update(|cx| {
+                cx.set_global(ForcedAppearance(WindowAppearance::Dark));
+                cx.set_global(HighContrast(contrast));
+                cx.set_global(TextScale::from_percent(text));
+            });
+            let window = cx.open_window(size(px(width), px(height)), |window, cx| {
+                let page = cx.new(|_| SoftwarePage::new(model.clone(), |_, _| {}));
+                let help = matches!(view, View::Help).then(|| cx.new(|_| HelpPage::new(|_, _| {})));
+                let settings = matches!(view, View::Settings)
+                    .then(|| cx.new(|cx| SettingsPage::new(model.clone(), |_, _| {}, window, cx)));
+                let dialog = match view {
+                    View::Dialog(case) => Some(cx.new(|cx| dialog(case, &model, window, cx))),
+                    View::Software | View::Settings | View::Help => None,
+                };
+                cx.new(|cx| {
+                    let mut main = MainWindow::new(model.clone(), window, cx);
+                    main.set_page_view(Page::Software, page.into(), cx);
+                    if let Some(settings) = settings {
+                        main.set_page_view(Page::Settings, settings.into(), cx);
+                        main.show_page(Page::Settings, cx);
+                    }
+                    if let Some(help) = help {
+                        main.set_page_view(Page::Help, help.into(), cx);
+                        main.show_page(Page::Help, cx);
+                    }
+                    main.set_dialog(dialog.map(Into::into), cx);
+                    main
+                })
+            })?;
+            capture(&mut cx, window.into(), &output.join(format!("{name}.png")))?;
+        }
+        cx.update(|cx| {
+            cx.set_global(HighContrast(None));
+            cx.set_global(TextScale::NONE);
+        });
         for (name, appearance) in [
             ("widgets-dark", WindowAppearance::Dark),
             ("widgets-light", WindowAppearance::Light),

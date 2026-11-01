@@ -15,7 +15,7 @@ use crate::interface::palette;
 use crate::interface::rule_dialog::{self, RuleDialog, RuleDialogEvent, RuleDialogMode};
 use crate::interface::settings_page::SettingsPage;
 use crate::interface::software_page::{SoftwareEvent, SoftwarePage};
-use crate::interface::theme::{self, HighContrast};
+use crate::interface::theme::{self, HighContrast, TextScale};
 use crate::interface::window::{self, MainWindow, Page, ShellEvent};
 use crate::interface::{text_input, widgets};
 use crate::presentation::{UiAction, UiCommand, UiDisplayModel};
@@ -340,13 +340,16 @@ fn with_dialog(
     }
 }
 
-/// Contraste élevé et « Effets d'animation » lus dans Windows.
 fn apply_preferences(cx: &mut App) {
     let preferences = crate::windows::preferences::ui_preferences().ok();
     let reduce_motion = preferences.as_ref().is_some_and(|p| p.reduce_motion);
+    let text_scale = preferences.as_ref().map_or(TextScale::NONE, |p| {
+        TextScale::from_percent(p.text_scale_percent)
+    });
     let contrast = preferences
         .filter(|p| p.high_contrast)
         .map(|p| p.palette.into());
     cx.set_reduce_motion(reduce_motion);
+    cx.set_global(text_scale);
     cx.set_global(HighContrast(contrast));
 }
