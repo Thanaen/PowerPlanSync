@@ -477,8 +477,8 @@ clientes dès le lancement fait : sans cela, l'arrêt de l'enfant ne terminerait
 des actions. Au démarrage, le processus de fenêtre reprend ses deux extrémités en propriété privée
 et non héritable, puis remplace ses handles standard par `NUL`. Un `println!` d'une dépendance ne
 peut pas corrompre une trame, et aucun processus qu'il lancerait n'hériterait du canal. Le
-processus de fenêtre ne lance d'ailleurs rien : **Ouvrir le guide** et **Ouvrir le dossier des
-données** restent des `UiAction` exécutées par le processus de suivi.
+processus de fenêtre ne lance d'ailleurs rien : **Ouvrir le guide**, **Voir les licences** et
+**Ouvrir le dossier des données** restent des `UiAction` exécutées par le processus de suivi.
 
 **Messages.** Chaque message est une trame : longueur sur 4 octets en petit-boutiste, puis un
 objet JSON `{"version": 1, "message": …}`. Le processus de fenêtre reçoit les `UiCommand`

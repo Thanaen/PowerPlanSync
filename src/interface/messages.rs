@@ -10,7 +10,7 @@ use gpui::{App, SharedString};
 use crate::interface::strings;
 use crate::interface::theme::Theme;
 use crate::interface::widgets::{Button, ButtonStyle, Message, MessageKind, message_colors};
-use crate::presentation::{Notice, UiAction};
+use crate::presentation::{GuideSection, Notice, UiAction};
 
 type OnAction = Rc<dyn Fn(UiAction, &mut App)>;
 
@@ -86,7 +86,11 @@ pub fn content(notice: &Notice) -> Content {
                     "refresh-cw",
                     UiAction::ReloadConfiguration,
                 ),
-                (strings::OPEN_GUIDE, "external-link", UiAction::OpenGuide),
+                (
+                    strings::OPEN_GUIDE,
+                    "external-link",
+                    UiAction::OpenGuide(GuideSection::UnreadableSettings),
+                ),
             ],
             note: Some(strings::SETTINGS_UNREADABLE_HINT.into()),
             ..error(
@@ -238,7 +242,7 @@ mod tests {
             [
                 UiAction::OpenDataFolder,
                 UiAction::ReloadConfiguration,
-                UiAction::OpenGuide
+                UiAction::OpenGuide(GuideSection::UnreadableSettings)
             ]
         );
     }

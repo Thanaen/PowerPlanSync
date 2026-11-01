@@ -10,6 +10,7 @@ use futures::StreamExt as _;
 use futures::channel::mpsc::UnboundedReceiver;
 use gpui::{App, AppContext as _, Context, Entity, FocusHandle, Focusable as _, QuitMode, Window};
 
+use crate::interface::help_page::HelpPage;
 use crate::interface::rule_dialog::{self, RuleDialog, RuleDialogEvent, RuleDialogMode};
 use crate::interface::settings_page::SettingsPage;
 use crate::interface::software_page::{SoftwareEvent, SoftwarePage};
@@ -209,11 +210,14 @@ fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App, notify: bool) -> bool {
     })
     .detach();
     let send = Arc::clone(&on_action);
+    let send_help = Arc::clone(&on_action);
     let Ok((main, settings)) = handle.update(cx, |main, window, cx| {
         let settings = cx
             .new(|cx| SettingsPage::new(model.clone(), move |action, _| send(action), window, cx));
+        let help = cx.new(|_| HelpPage::new(move |action, _| send_help(action)));
         main.set_page_view(Page::Software, page.clone().into(), cx);
         main.set_page_view(Page::Settings, settings.clone().into(), cx);
+        main.set_page_view(Page::Help, help.into(), cx);
         (cx.entity(), settings)
     }) else {
         return true;

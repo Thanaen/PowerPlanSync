@@ -156,4 +156,6 @@ choisit des plans d'alimentation Windows existants. Le mode « Recommandé » de
 être un réglage distinct. Les libellés affichés viennent de la machine. Un arrêt forcé peut laisser
 le dernier plan actif ; au lancement suivant, PowerPlanSync vérifie le plan actif et conserve un
 plan choisi entre-temps. Aucun gain d'images par seconde, de température ou de consommation n'est
-annoncé. La page se termine par **Voir les licences** et **Ouvrir le guide**.
+annoncé. La page se termine par **Voir les licences** et **Ouvrir le guide**. **Voir les licences**
+montre dans l'Explorateur les notices livrées à côté de l'application, ou ouvre leur version en
+ligne si elles manquent. **Ouvrir le guide** ouvre le guide utilisateur à son début.

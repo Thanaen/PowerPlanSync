@@ -3,7 +3,7 @@ use crate::{
     coordinator::{Controller, PowerPort},
     domain::*,
     interface::strings::error_message,
-    presentation::{self, RunningAppDisplay, UiAction, UiCommand, UiDisplayModel},
+    presentation::{self, GuideSection, RunningAppDisplay, UiAction, UiCommand, UiDisplayModel},
     runtime_power::RuntimePower,
     storage::{FileStore, Store as _},
     ui::{UiPalette, UiRuntime},
@@ -18,7 +18,7 @@ use std::{
     collections::HashMap,
     ffi::OsString,
     fs::{File, OpenOptions},
-    os::windows::{ffi::OsStringExt, fs::OpenOptionsExt},
+    os::windows::{ffi::OsStringExt, fs::OpenOptionsExt, process::CommandExt as _},
     path::PathBuf,
     rc::Rc,
     sync::{
@@ -42,8 +42,18 @@ enum AppEvent {
 }
 type AppController = Controller<RuntimePower, FileStore>;
 
-/// La section « Réglages illisibles » du guide utilisateur.
+const GUIDE: &str = "https://github.com/Thanaen/PowerPlanSync/blob/main/docs/guide-utilisateur.md";
 const GUIDE_UNREADABLE_SETTINGS: &str = "https://github.com/Thanaen/PowerPlanSync/blob/main/docs/guide-utilisateur.md#r%C3%A9glages-illisibles";
+const NOTICES_ONLINE: &str =
+    "https://github.com/Thanaen/PowerPlanSync/blob/main/THIRD_PARTY_NOTICES.md";
+
+fn packaged_notices() -> Option<PathBuf> {
+    let notices = std::env::current_exe()
+        .ok()?
+        .parent()?
+        .join("THIRD_PARTY_NOTICES.md");
+    notices.is_file().then_some(notices)
+}
 
 /// L'interface en cours, Slint ou GPUI, vue depuis le thread du coordinateur.
 static UI_SINK: OnceLock<Box<dyn Fn(UiCommand) + Send + Sync>> = OnceLock::new();
@@ -516,11 +526,28 @@ impl Worker {
                     .map_err(|_| "Le dossier des données ne peut pas être ouvert.")?;
                 return Ok(());
             }
-            UiAction::OpenGuide => {
+            UiAction::OpenGuide(section) => {
+                let url = match section {
+                    GuideSection::Start => GUIDE,
+                    GuideSection::UnreadableSettings => GUIDE_UNREADABLE_SETTINGS,
+                };
                 std::process::Command::new("explorer.exe")
-                    .arg(GUIDE_UNREADABLE_SETTINGS)
+                    .arg(url)
                     .spawn()
                     .map_err(|_| "Le guide ne peut pas être ouvert.")?;
+                return Ok(());
+            }
+            UiAction::OpenLicenses => {
+                let mut explorer = std::process::Command::new("explorer.exe");
+                // L'explorateur attend les guillemets autour du seul chemin, qu'`arg` placerait
+                // autour de tout l'argument.
+                match packaged_notices() {
+                    Some(notices) => explorer.raw_arg(format!("/select,\"{}\"", notices.display())),
+                    None => explorer.arg(NOTICES_ONLINE),
+                };
+                explorer
+                    .spawn()
+                    .map_err(|_| "Les licences ne peuvent pas être ouvertes.")?;
                 return Ok(());
             }
             UiAction::Quit | UiAction::QuitAfterFailedRestore => {

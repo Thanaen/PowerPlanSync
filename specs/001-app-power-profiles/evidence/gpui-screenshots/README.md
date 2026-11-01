@@ -8,7 +8,7 @@ sudo apt-get install libfontconfig-dev mesa-vulkan-drivers
 cargo run --features screenshots --bin screenshots -- specs/001-app-power-profiles/evidence/gpui-screenshots
 ```
 
-La page **Logiciels** est en place (T058), avec ses dialogues **Ajouter un logiciel** et **Modifier** (T059) « Pour commencer » avant la première activation (T060) et ses messages intégrés (T062). La page **Réglages** est vide en attendant T065. Les
+La page **Logiciels** est en place (T058), avec ses dialogues **Ajouter un logiciel** et **Modifier** (T059) « Pour commencer » avant la première activation (T060) et ses messages intégrés (T062). Les pages **Réglages** et **Aide et limites** sont en place (T065). Les
 coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-dark.png` et
 `widgets-light.png` montrent les composants de T053 seuls.
 
@@ -39,6 +39,9 @@ coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-da
 | `settings-read-only-unreadable.png` | aucune | Réglages illisibles : le message **Les réglages sont illisibles** seul, qui ouvre déjà le dossier des données. |
 | `settings-unreadable.png` | `ConfigError.png` | Conforme, sauf la barre d'état, qui garde le mot-clé « Automatisation arrêtée ». |
 | `settings-unreadable-light.png` | aucune | Mêmes constats en thème clair. |
+| `help.png` | `Help.png` | Conforme, sauf la section **Limites**, qui précise que les plans s'affichent sous leur nom dans Windows, et « conserve ce choix » au lieu de « le garde » (écarts notés dans `design/README.md`). Comme dans la maquette, les boutons passent sous la barre d'état et la page défile. |
+| `help-light.png` | aucune | Mêmes constats en thème clair. |
+| `help-narrow.png` | aucune | Fenêtre étroite : le texte se replie, les deux boutons tiennent sur une ligne. |
 | `unavailable-dark.png` | `Unavailable.png` | Maquette tirée de cette capture. |
 | `unavailable-light.png` | aucune | Mêmes constats en thème clair. |
 | `add-rule.png` | `AddRule.png` | Conforme, sauf le nom du processus (`bf6.exe`) dans la liste : Windows ne donne pas le nom du produit. |

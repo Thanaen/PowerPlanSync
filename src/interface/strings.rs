@@ -265,6 +265,46 @@ pub const DATA_FOLDER: &str = "Dossier des données";
 pub const DATA_FOLDER_HINT: &str =
     "Logiciels associés, informations de récupération et\u{a0}journal.";
 pub const OPEN_FOLDER: &str = "Ouvrir le dossier";
+
+pub const HELP_SUBTITLE: &str = concat!(
+    "PowerPlanSync ",
+    env!("CARGO_PKG_VERSION"),
+    " · données locales, sans compte ni réseau"
+);
+
+pub struct HelpSection {
+    pub title: &'static str,
+    pub body: &'static str,
+}
+
+pub const HELP_SECTIONS: [HelpSection; 4] = [
+    HelpSection {
+        title: "Comment le plan est choisi",
+        body: "Quand un logiciel suivi s’ouvre, son plan devient actif. Si plusieurs logiciels \
+suivis sont ouverts, le premier de la liste décide du plan. Trois secondes après la fermeture \
+complète du dernier logiciel suivi, PowerPlanSync applique le plan de retour. Un cycle va de \
+l’ouverture du premier logiciel suivi à cette fermeture.",
+    },
+    HelpSection {
+        title: "Votre choix dans Windows reste prioritaire",
+        body: "Si le plan change dans Windows pendant un cycle, PowerPlanSync conserve ce choix \
+jusqu’à la fin du cycle et ne revient pas au plan de retour. Choisissez Reprendre \
+l’automatisation pour revenir aux plans des logiciels suivis.",
+    },
+    HelpSection {
+        title: "Après un arrêt forcé",
+        body: "Un arrêt forcé peut laisser le dernier plan actif. Au lancement suivant, PowerPlanSync \
+vérifie le plan actif\u{a0}; si un autre plan a été choisi entre-temps, il est conservé.",
+    },
+    HelpSection {
+        title: "Limites",
+        body: "PowerPlanSync choisit parmi les plans déjà installés et les affiche sous leur nom \
+dans Windows. Le mode «\u{202f}Recommandé\u{202f}» des Paramètres Windows peut être un réglage \
+distinct des plans d’alimentation. Aucun gain d’images par seconde, de température ou de \
+consommation n’est promis.",
+    },
+];
+pub const VIEW_LICENSES: &str = "Voir les licences";
 pub const QUIT: &str = "Quitter";
 pub const COMMANDS: &str = "Commandes";
 pub const COMMANDS_KEYS: [&str; 3] = ["Ctrl", "Maj", "P"];
