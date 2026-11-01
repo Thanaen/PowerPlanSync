@@ -10,7 +10,9 @@ cargo tree --offline --locked --target x86_64-pc-windows-msvc --edges normal,bui
 
 The SPDX expressions below describe the choices published by each package. The portable package must also include `notices/THIRD_PARTY_LICENSES.txt`, which contains the license texts found in the corresponding Cargo packages.
 
-This file records third-party terms. It does not select or grant a license for PowerPlanSync.
+PowerPlanSync itself is distributed under the MIT license, whose text is in `LICENSE` at the root of the repository and of the portable package. This file records the terms of third-party components only. The MIT license does not cover them, and their terms do not change it.
+
+All these terms are permissive and allow distributing the binary of an MIT project, provided their notices ship with it. Every package offered under several licenses includes MIT or Apache-2.0 among them. The packages under a single license use MIT, Apache-2.0 (the `gpui-pre` packages), BSD-2-Clause, BSD-3-Clause, Zlib or Unicode-3.0. None is copyleft. The embedded icons are under ISC and MIT, and the embedded fonts under the SIL Open Font License 1.1, which allows bundling them with software under any license as long as the fonts are not sold by themselves.
 
 ## Embedded resources
 

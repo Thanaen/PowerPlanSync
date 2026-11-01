@@ -117,3 +117,11 @@ avec une option d'écrasement pour une simple reprise.
 
 Ce contrôle vérifie les documents disponibles. Il ne certifie ni le fonctionnement du futur
 produit ni ses objectifs de performances.
+
+## Licence
+
+PowerPlanSync est distribué sous [licence MIT](LICENSE). Les composants tiers inclus dans
+l'exécutable gardent leurs propres licences, recensées dans
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) avec leurs textes dans
+[notices/THIRD_PARTY_LICENSES.txt](notices/THIRD_PARTY_LICENSES.txt). Le paquet portable livre
+ces fichiers avec `LICENSE`.
