@@ -13,8 +13,8 @@ use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::Threading::CREATE_NO_WINDOW;
 use windows::Win32::UI::WindowsAndMessaging::{
     AllowSetForegroundWindow, CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW,
-    GetMessageW, HWND_MESSAGE, KillTimer, MSG, PostMessageW, PostQuitMessage, RegisterClassW,
-    SetTimer, TranslateMessage, WINDOW_EX_STYLE, WINDOW_STYLE, WM_APP, WM_TIMER, WNDCLASSW,
+    EndMenu, GetMessageW, HWND_MESSAGE, KillTimer, MSG, PostMessageW, RegisterClassW, SetTimer,
+    TranslateMessage, WINDOW_EX_STYLE, WINDOW_STYLE, WM_APP, WM_TIMER, WNDCLASSW,
 };
 use windows::core::w;
 
@@ -49,6 +49,10 @@ enum Event {
 
 /// La minuterie de la fenêtre de messages, armée seulement pendant une attente de réponse.
 const DEADLINE_TIMER: usize = 1;
+
+/// Armée à l'arrêt : son message, généré tant que la file est vide, réveille la boucle
+/// principale une fois finie une boucle modale.
+const QUIT_TIMER: usize = 2;
 
 /// Dépose des événements pour le thread principal, depuis n'importe quel thread.
 #[derive(Clone)]
@@ -90,6 +94,14 @@ impl Mailbox {
 
     pub fn command(&self, command: UiCommand) {
         self.post(Event::Ui(command));
+    }
+
+    /// La boucle modale du menu de l'icône perd `WM_QUIT` (#52) : l'arrêt ne passe pas par lui.
+    /// Le menu ouvert se ferme, et la boucle principale s'arrête au message suivant.
+    fn quit(&self) {
+        let window = Some(HWND(self.window as _));
+        let _ = unsafe { EndMenu() };
+        unsafe { SetTimer(window, QUIT_TIMER, 10, None) };
     }
 }
 
@@ -137,6 +149,13 @@ struct Loop {
     done: bool,
 }
 
+impl Loop {
+    fn finish(&mut self) {
+        self.done = true;
+        self.shell.mailbox.quit();
+    }
+}
+
 thread_local! { static LOOP: RefCell<Option<Loop>> = const { RefCell::new(None) }; }
 
 unsafe extern "system" fn wake_proc(
@@ -153,8 +172,7 @@ unsafe extern "system" fn wake_proc(
                 && !state.done
                 && handle(&mut state.shell, Event::Tick)
             {
-                state.done = true;
-                unsafe { PostQuitMessage(0) };
+                state.finish();
             }
         });
         return LRESULT(0);
@@ -181,8 +199,7 @@ fn drain(state: &mut Loop) {
         && let Ok(event) = state.inbox.0.try_recv()
     {
         if handle(&mut state.shell, event) {
-            state.done = true;
-            unsafe { PostQuitMessage(0) };
+            state.finish();
         }
     }
 }
@@ -323,8 +340,9 @@ pub fn run(
     });
     // Des événements ont pu arriver avant la boucle.
     wake.wake();
+    let done = || LOOP.with(|slot| slot.borrow().as_ref().is_none_or(|state| state.done));
     let mut message = MSG::default();
-    while unsafe { GetMessageW(&mut message, None, 0, 0) }.as_bool() {
+    while !done() && unsafe { GetMessageW(&mut message, None, 0, 0) }.as_bool() {
         unsafe {
             let _ = TranslateMessage(&message);
             DispatchMessageW(&message);
@@ -574,4 +592,75 @@ fn launch(
     };
     window.allow_foreground();
     Ok(window)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use windows::Win32::UI::WindowsAndMessaging::{PM_REMOVE, PeekMessageW, WM_QUIT};
+
+    const WM_NESTED: u32 = WM_APP + 7;
+
+    /// Comme la boucle modale du menu de l'icône, mesurée sous Windows 11 : distribue les
+    /// messages et perd `WM_QUIT`.
+    unsafe extern "system" fn nested_proc(
+        window: HWND,
+        message: u32,
+        wparam: WPARAM,
+        lparam: LPARAM,
+    ) -> LRESULT {
+        if message != WM_NESTED {
+            return unsafe { DefWindowProcW(window, message, wparam, lparam) };
+        }
+        let end = Instant::now() + Duration::from_millis(300);
+        let mut message = MSG::default();
+        while Instant::now() < end {
+            while unsafe { PeekMessageW(&mut message, None, 0, 0, PM_REMOVE) }.as_bool() {
+                if message.message != WM_QUIT {
+                    unsafe { DispatchMessageW(&message) };
+                }
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        LRESULT(0)
+    }
+
+    #[test]
+    fn quit_received_during_a_nested_modal_loop_still_stops_the_loop() {
+        let (stopped, stop) = mpsc::channel();
+        std::thread::spawn(move || {
+            let (mailbox, inbox) = super::mailbox().unwrap();
+            let class = WNDCLASSW {
+                lpfnWndProc: Some(nested_proc),
+                lpszClassName: w!("PowerPlanSync.Tracker.Nested"),
+                ..Default::default()
+            };
+            unsafe { RegisterClassW(&class) };
+            let nested = unsafe {
+                CreateWindowExW(
+                    WINDOW_EX_STYLE(0),
+                    w!("PowerPlanSync.Tracker.Nested"),
+                    None,
+                    WINDOW_STYLE(0),
+                    0,
+                    0,
+                    0,
+                    0,
+                    Some(HWND_MESSAGE),
+                    None,
+                    None,
+                    None,
+                )
+            }
+            .unwrap();
+            unsafe { PostMessageW(Some(nested), WM_NESTED, WPARAM(0), LPARAM(0)) }.unwrap();
+            mailbox.command(UiCommand::Quit);
+            run(true, None, mailbox, inbox, |_| {}, |_| {});
+            let _ = stopped.send(());
+        });
+        assert!(
+            stop.recv_timeout(Duration::from_secs(5)).is_ok(),
+            "la boucle du suivi reste bloquée après Quit"
+        );
+    }
 }
