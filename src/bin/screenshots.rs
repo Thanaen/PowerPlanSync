@@ -574,6 +574,13 @@ mod shots {
         set_model(cx, &page, removed());
         capture_motion(cx, window, output, "removed", Duration::from_millis(100))?;
 
+        let (page, window) = main_window(cx, display(&active(), false, false, None))?;
+        click(cx, window, (703., 408.))?;
+        let mut followed = active();
+        followed.configuration.rules[2].enabled = true;
+        set_model(cx, &page, display(&followed, false, false, None));
+        capture_motion(cx, window, output, "switch", Duration::from_millis(70))?;
+
         let mut pending = first_launch(true, true);
         pending.configuration.return_plan = None;
         let (page, window) = main_window(cx, display(&pending, false, false, None))?;

@@ -397,3 +397,98 @@ fn a_validated_step_pill_appears_at_rest_with_reduced_motion(cx: &mut TestAppCon
     assert_close(pill(cx), 20.);
     assert_at_rest(cx);
 }
+
+fn blender_followed(followed: bool) -> UiDisplayModel {
+    let mut model = model(&["Atom", "Blender", "Cubase"]);
+    model.rules[1].enabled = followed;
+    model
+}
+
+fn follow_blender(
+    followed: bool,
+    page: &Entity<SoftwarePage>,
+    cx: &mut VisualTestContext,
+    actions: &Actions,
+) {
+    assert_eq!(
+        actions.borrow().last(),
+        Some(&UiAction::SetRuleEnabled {
+            rule_id: BLENDER,
+            enabled: followed,
+        })
+    );
+    set_model(page, blender_followed(followed), cx);
+}
+
+fn knob(cx: &mut VisualTestContext) -> f32 {
+    f32::from(bounds(cx, "follow-66-knob").origin.x)
+}
+
+#[gpui::test]
+fn the_switch_knob_slides_after_a_click(cx: &mut TestAppContext) {
+    let (page, cx, actions) = open_page(cx, blender_followed(true));
+    let on = knob(cx);
+    click(cx, "follow-66");
+    let focused = cx.update(|window, cx| window.focused(cx));
+    follow_blender(false, &page, cx, &actions);
+    assert_close(knob(cx), on);
+    assert!(next_frame_requested(cx, Duration::from_millis(70)));
+    let midway = knob(cx);
+    while next_frame_requested(cx, Duration::from_millis(16)) {}
+    let off = knob(cx);
+    assert_close(on - off, 12.);
+    assert!(off < midway && midway < on, "{on} {midway} {off}");
+    assert_eq!(cx.update(|window, cx| window.focused(cx)), focused);
+}
+
+#[gpui::test]
+fn the_switch_knob_moves_at_once_after_a_key(cx: &mut TestAppContext) {
+    let (page, cx, actions) = open_page(cx, blender_followed(true));
+    let on = knob(cx);
+    focus_then_press_enter(cx, "follow-66");
+    follow_blender(false, &page, cx, &actions);
+    assert_close(on - knob(cx), 12.);
+    assert_at_rest(cx);
+}
+
+#[gpui::test]
+fn the_switch_knob_moves_at_once_with_reduced_motion(cx: &mut TestAppContext) {
+    reduce_motion(cx);
+    let (page, cx, actions) = open_page(cx, blender_followed(true));
+    let on = knob(cx);
+    click(cx, "follow-66");
+    follow_blender(false, &page, cx, &actions);
+    assert_close(on - knob(cx), 12.);
+    assert_at_rest(cx);
+}
+
+#[gpui::test]
+fn the_switch_knob_moves_at_once_when_the_change_comes_from_elsewhere(cx: &mut TestAppContext) {
+    let (page, cx, _) = open_page(cx, blender_followed(true));
+    let on = knob(cx);
+    set_model(&page, blender_followed(false), cx);
+    assert_close(on - knob(cx), 12.);
+    assert_at_rest(cx);
+}
+
+#[gpui::test]
+fn a_second_click_sends_the_knob_back_from_where_it_is(cx: &mut TestAppContext) {
+    let (page, cx, actions) = open_page(cx, blender_followed(true));
+    let on = knob(cx);
+    click(cx, "follow-66");
+    follow_blender(false, &page, cx, &actions);
+    assert!(next_frame_requested(cx, Duration::from_millis(70)));
+    let midway = knob(cx);
+    click(cx, "follow-66");
+    follow_blender(true, &page, cx, &actions);
+    assert_close(knob(cx), midway);
+    assert!(next_frame_requested(cx, Duration::from_millis(40)));
+    let returning = knob(cx);
+    assert!(
+        midway < returning && returning < on,
+        "{midway} {returning} {on}"
+    );
+    next_frame_requested(cx, Duration::from_millis(50));
+    assert_at_rest(cx);
+    assert_close(knob(cx), on);
+}
