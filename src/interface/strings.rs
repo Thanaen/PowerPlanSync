@@ -199,6 +199,12 @@ pub fn power_source(source: PowerSource) -> &'static str {
     }
 }
 
+/// Un nom de plan dans une liste : l'apostrophe typographique, sans espace insécable pour que le
+/// nom puisse passer à la ligne.
+pub fn plan_label(name: &str) -> String {
+    name.replace('\'', "’")
+}
+
 /// Nom de plan cité dans une phrase, insécable.
 pub fn plan_name(name: &str) -> String {
     name.replace(' ', "\u{a0}").replace('\'', "’")
@@ -242,6 +248,23 @@ pub const NAVIGATION: &str = "Navigation";
 pub const PAGE_SOFTWARE: &str = "Logiciels";
 pub const PAGE_SETTINGS: &str = "Réglages";
 pub const PAGE_HELP: &str = "Aide et limites";
+
+// Réglages.
+pub const AFTER_CLOSING: &str = "Après fermeture";
+pub const RETURN_PLAN_HINT: &str = "Appliqué quand le dernier logiciel suivi se ferme, même si ce plan \
+était déjà actif avant le cycle.";
+pub const CONDITIONS: &str = "Conditions";
+pub const ALLOW_ON_BATTERY: &str = "Changer de plan sur batterie";
+pub const ALLOW_ON_BATTERY_HINT: &str = "Sinon, sur batterie, aucun logiciel ne change le plan et un \
+cycle en cours revient au plan\u{a0}de\u{a0}retour.";
+pub const START_AT_LOGIN: &str = "Démarrer avec Windows";
+pub const START_AT_LOGIN_HINT: &str = "Ouvre PowerPlanSync dans la zone de notification à votre \
+connexion. Ne déplacez pas le dossier de PowerPlanSync tant que cette option est activée.";
+pub const DATA: &str = "Données";
+pub const DATA_FOLDER: &str = "Dossier des données";
+pub const DATA_FOLDER_HINT: &str =
+    "Logiciels associés, informations de récupération et\u{a0}journal.";
+pub const OPEN_FOLDER: &str = "Ouvrir le dossier";
 pub const QUIT: &str = "Quitter";
 pub const COMMANDS: &str = "Commandes";
 pub const COMMANDS_KEYS: [&str; 3] = ["Ctrl", "Maj", "P"];

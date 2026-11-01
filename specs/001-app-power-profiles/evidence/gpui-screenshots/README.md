@@ -30,6 +30,13 @@ coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-da
 | `removed-light.png` | aucune | Même message en thème clair. |
 | `removed-last.png` | aucune | Le seul logiciel suivi retiré : « Pour commencer » revient, **Annuler** reste sous les étapes. |
 | `removed-narrow.png` | aucune | Fenêtre étroite : **Annuler** passe sous le texte. |
+| `settings.png` | `Settings.png` | Conforme, sauf la description de **Dossier des données**, qui ne cite pas de chemin (écart noté dans `design/README.md`). Le message du retour réservé au cycle en cours s'affiche sous **Plan de retour**. |
+| `settings-light.png` | aucune | Mêmes constats en thème clair. |
+| `settings-idle.png` | aucune | Automatisation en pause : pas de message sous **Plan de retour**. |
+| `settings-narrow.png` | aucune | Fenêtre étroite : la liste et **Ouvrir le dossier** passent sous leur texte, les interrupteurs restent à droite. |
+| `settings-refused.png` | aucune | Réglage refusé (**Démarrer avec Windows** avec `--data-dir`) : le message d'erreur s'affiche en tête de page. |
+| `settings-read-only.png` | aucune | Contrôle tenu par une autre session : le message de la page **Logiciels**, puis **Données** seulement. Les valeurs non lues ne sont pas montrées. |
+| `settings-read-only-unreadable.png` | aucune | Réglages illisibles : le message **Les réglages sont illisibles** seul, qui ouvre déjà le dossier des données. |
 | `settings-unreadable.png` | `ConfigError.png` | Conforme, sauf la barre d'état, qui garde le mot-clé « Automatisation arrêtée ». |
 | `settings-unreadable-light.png` | aucune | Mêmes constats en thème clair. |
 | `unavailable-dark.png` | `Unavailable.png` | Maquette tirée de cette capture. |

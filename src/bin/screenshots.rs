@@ -32,6 +32,7 @@ mod shots {
     };
     use power_plan_sync::interface::assets::Assets;
     use power_plan_sync::interface::rule_dialog::{RuleDialog, RuleDialogMode};
+    use power_plan_sync::interface::settings_page::SettingsPage;
     use power_plan_sync::interface::software_page::SoftwarePage;
     use power_plan_sync::interface::strings;
     use power_plan_sync::interface::text_input::TextInput;
@@ -41,8 +42,8 @@ mod shots {
     };
     use power_plan_sync::interface::window::{MainWindow, Page};
     use power_plan_sync::presentation::{
-        Badge, RunningAppDisplay, UiDisplayModel, after_failed_quit, display, settings_unreadable,
-        without_control,
+        Badge, Notice, RunningAppDisplay, UiDisplayModel, after_failed_quit, display,
+        settings_unreadable, without_control,
     };
 
     fn rule(id: u64, label: &str, path: &str, plan: u128, enabled: bool) -> AppRule {
@@ -111,6 +112,18 @@ mod shots {
             poll_processes: true,
             can_exit: false,
         }
+    }
+
+    /// Le plan de retour passe à Économies d'énergie pendant un cycle commencé avec
+    /// Utilisation normale.
+    fn reserved_return() -> ViewState {
+        let mut view = active();
+        view.plans.push(PowerPlan {
+            id: PlanId(4),
+            name: "Économies d'énergie".into(),
+        });
+        view.configuration.return_plan = Some(PlanId(4));
+        view
     }
 
     fn paused() -> ViewState {
@@ -634,6 +647,80 @@ mod shots {
                 cx.new(|cx| {
                     let mut main = MainWindow::new(model.clone(), window, cx);
                     main.set_page_view(Page::Software, page.into(), cx);
+                    main
+                })
+            })?;
+            capture(&mut cx, window.into(), &output.join(format!("{name}.png")))?;
+        }
+        let shown = |view: ViewState| display(&view, false, false, None);
+        let refused = {
+            let mut model = shown(active());
+            model.notice = Some(Notice::Problem(
+                "Le démarrage Windows est indisponible avec un dossier de données personnalisé. \
+                 Relancez PowerPlanSync sans --data-dir pour utiliser cette option."
+                    .into(),
+            ));
+            model
+        };
+        let settings = [
+            (
+                "settings",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                shown(reserved_return()),
+            ),
+            (
+                "settings-light",
+                WindowAppearance::Light,
+                880.,
+                620.,
+                shown(reserved_return()),
+            ),
+            (
+                "settings-idle",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                shown(paused()),
+            ),
+            (
+                "settings-narrow",
+                WindowAppearance::Dark,
+                420.,
+                900.,
+                shown(reserved_return()),
+            ),
+            (
+                "settings-refused",
+                WindowAppearance::Dark,
+                880.,
+                700.,
+                refused,
+            ),
+            (
+                "settings-read-only",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                unavailable(),
+            ),
+            (
+                "settings-read-only-unreadable",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                unreadable(),
+            ),
+        ];
+        for (name, appearance, width, height, model) in settings {
+            cx.update(|cx| cx.set_global(ForcedAppearance(appearance)));
+            let window = cx.open_window(size(px(width), px(height)), |window, cx| {
+                let settings = cx.new(|cx| SettingsPage::new(model.clone(), |_, _| {}, window, cx));
+                cx.new(|cx| {
+                    let mut main = MainWindow::new(model.clone(), window, cx);
+                    main.set_page_view(Page::Settings, settings.into(), cx);
+                    main.show_page(Page::Settings, cx);
                     main
                 })
             })?;

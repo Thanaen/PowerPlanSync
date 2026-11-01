@@ -73,3 +73,8 @@ points : les pictogrammes sont pleins, plus nets à 16 px que les traits de la m
 ligne de l'infobulle reprend la ligne d'état entière (« Automatisation active · Battlefield 6 est
 ouvert »), comme la première ligne du menu, pour nommer l'état de l'automatisation en pause ou
 suspendue.
+
+La page **Réglages** (`src/interface/settings_page.rs`) s'écarte de la maquette `Settings.png` sur
+un point : la description de **Dossier des données** ne cite pas `%LOCALAPPDATA%\PowerPlanSync`,
+faux quand `--data-dir` choisit un autre dossier. **Ouvrir le dossier** mène toujours au dossier
+réellement utilisé.
