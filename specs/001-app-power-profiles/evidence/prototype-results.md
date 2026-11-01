@@ -376,5 +376,29 @@ lancement suivant, fait avant de le constater, a tourné en même temps que lui 
 avant `Stop-Process`. Non reproduit : deux rejeux complets de la même suite et six autres arrêts
 par le menu, dont un en vrai mode, ont quitté en moins de 5 s.
 
+**Cause.** Le processus de suivi s'arrêtait par `PostQuitMessage`, puis ignorait tout événement.
+Or `UiCommand::Quit` peut être traité pendant la boucle modale du menu de l'icône, qui distribue
+`WM_WAKE`, et cette boucle perd `WM_QUIT`. Un essai sur une fenêtre et un menu propres au test le
+montre : `PostQuitMessage` appelé pendant `TrackPopupMenu` laisse le menu ouvert, et la boucle
+principale ne reçoit jamais `WM_QUIT`. Il ne reste alors qu'un processus qui ouvre son menu et ne
+fait plus rien. Le déclencheur de l'incident n'est pas établi : rejoué contre une fausse icône,
+`tray-act.ps1` ferme le menu avant d'envoyer `WM_COMMAND`, 3 fois sur 3.
+
+**Correction.** L'arrêt ne passe plus par `WM_QUIT`. La boucle principale s'arrête dès que le suivi
+est fini. `EndMenu` ferme un menu ouvert, et une minuterie réveille la boucle principale après une
+boucle modale. Deux tests de `src/tracker.rs` simulent une boucle imbriquée qui perd `WM_QUIT`,
+ouverte par un message posté ou par un message envoyé d'un autre thread. Le premier échoue avant
+la correction, le second sans la minuterie ; les deux passent après. Essai réel, binaires release avant et après la correction, `--gpui --demo` avec un
+dossier isolé, fenêtre ouverte, sous le verrou des essais. Le menu est ouvert par `WM_RBUTTONUP`,
+puis `WM_COMMAND` **Quitter PowerPlanSync** est posté sans fermer le menu :
+
+| Binaire | Résultat |
+| --- | --- |
+| Avant | Processus de suivi et de fenêtre encore là après 5 s, menu ouvert. Après Échap, un second **Quitter** par `tray-act.ps1` reste sans effet : les symptômes de l'incident. Arrêtés par `Stop-Process` |
+| Après | 3 fois sur 3 : arrêt en moins de 5 s, menu fermé, aucun processus de fenêtre restant |
+| Après, menu fermé avant `WM_COMMAND` | 2 fois sur 2 : arrêt en moins de 5 s |
+
+Plan initial relu avant et après chaque série, inchangé.
+
 `cargo test --locked --all-targets` passe (fenêtres GPUI réelles comprises), lancé pendant la
 session, sous le même verrou.
