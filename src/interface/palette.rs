@@ -24,8 +24,6 @@ actions!(
 const KEY_CONTEXT: &str = "Palette";
 
 const TOP_FRACTION_BELOW_TITLE_BAR: f32 = 0.12;
-const QUERY_HEIGHT: gpui::Pixels = BASE_48;
-const HEADING_HEIGHT: gpui::Pixels = BASE_24;
 const LIST_PADDING: gpui::Pixels = BASE_04;
 
 pub fn bind_keys(cx: &mut App) {
@@ -511,7 +509,7 @@ impl Render for PaletteView {
         });
         let heading = self.state.heading().map(|heading| {
             div()
-                .h(HEADING_HEIGHT)
+                .h(token::PALETTE_HEADING)
                 .flex_none()
                 .px(BASE_08)
                 .pb(BASE_02)
@@ -562,7 +560,7 @@ impl Render for PaletteView {
             )
             .child(
                 div()
-                    .h(QUERY_HEIGHT)
+                    .h(token::PALETTE_QUERY)
                     .flex_none()
                     .px(BASE_12)
                     .flex()

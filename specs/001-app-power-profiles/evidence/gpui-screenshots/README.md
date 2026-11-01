@@ -90,6 +90,7 @@ toutes les captures ci-dessus sont restées identiques au pixel près. Aucune ma
 | `text-200-refused.png` | Message d'erreur intégré à 200 %. |
 | `text-200-removed.png` | Message de retrait annulable à 200 %. |
 | `text-200-help.png` | **Aide et limites** à 200 % : la largeur de lecture suit la taille du texte, la page défile. |
+| `text-200-palette.png` | Palette de commandes à 200 % : la recherche, le titre du groupe et les entrées suivent la taille du texte, la liste défile dans la fenêtre. |
 | `text-200-add-rule.png` | **Ajouter un logiciel** invalide à 200 % : le corps du dialogue défile, le pied reste visible. |
 | `text-200-add-rule-plan.png` | **Ajouter un logiciel** à 200 % dans une fenêtre de 880 px de large : la liste **Plan pendant l'exécution** s'aligne sur **Nom affiché** sans sortir du dialogue. |
 | `contrast-dark.png` | Ciel nocturne : couleurs système, sans ombre ; l'état reste porté par l'icône et le mot. |

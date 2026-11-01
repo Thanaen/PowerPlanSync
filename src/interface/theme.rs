@@ -481,7 +481,9 @@ pub mod size {
     pub const FOCUS_RING: Pixels = px(2.);
     pub const KEY_CAP: Rems = rem(20.);
     pub const WINDOW_CONTROL_WIDTH: Pixels = px(46.);
-    pub const PALETTE_WIDTH: Pixels = px(520.);
+    pub const PALETTE_WIDTH: Rems = rem(520.);
+    pub const PALETTE_QUERY: Rems = rem(48.);
+    pub const PALETTE_HEADING: Rems = rem(24.);
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -743,6 +745,10 @@ mod tests {
             assert!(
                 size::STATUSBAR_HEIGHT.to_pixels(rem) > text::LABEL_SM.line_height.to_pixels(rem)
             );
+            assert!(
+                size::PALETTE_HEADING.to_pixels(rem) > text::LABEL_SM.line_height.to_pixels(rem)
+            );
+            assert!(size::PALETTE_QUERY.to_pixels(rem) > text::LABEL_MD.line_height.to_pixels(rem));
         }
         assert_eq!(size::ICON_MD, px(16.));
     }

@@ -296,6 +296,7 @@ mod shots {
         Software,
         Settings,
         Help,
+        Palette,
         Dialog(DialogCase),
     }
 
@@ -1022,6 +1023,13 @@ mod shots {
             shot("text-200-removed", None, 200, View::Software, removed()),
             shot("text-200-help", None, 200, View::Help, shown(active())),
             shot(
+                "text-200-palette",
+                None,
+                200,
+                View::Palette,
+                shown(active()),
+            ),
+            shot(
                 "text-200-add-rule",
                 None,
                 200,
@@ -1087,7 +1095,7 @@ mod shots {
                     .then(|| cx.new(|cx| SettingsPage::new(model.clone(), |_, _| {}, window, cx)));
                 let dialog = match view {
                     View::Dialog(case) => Some(cx.new(|cx| dialog(case, &model, window, cx))),
-                    View::Software | View::Settings | View::Help => None,
+                    View::Software | View::Settings | View::Help | View::Palette => None,
                 };
                 cx.new(|cx| {
                     let mut main = MainWindow::new(model.clone(), window, cx);
@@ -1104,6 +1112,9 @@ mod shots {
                     main
                 })
             })?;
+            if matches!(view, View::Palette) {
+                window.update(&mut cx, |main, window, cx| main.open_commands(window, cx))?;
+            }
             capture(&mut cx, window.into(), &output.join(format!("{name}.png")))?;
         }
         cx.update(|cx| {

@@ -9,7 +9,7 @@ use std::rc::Rc;
 use gpui::{
     App, Context, Entity, EventEmitter, FocusHandle, Focusable, FontWeight, IntoElement,
     KeyBinding, ParentElement, Rems, Render, Role, SharedString, Styled, Subscription, Window,
-    actions, div, prelude::*, px,
+    actions, div, prelude::*, px, rems,
 };
 
 use crate::interface::first_launch;
@@ -186,11 +186,7 @@ impl RuleDialog {
                 cx,
             )
         });
-        let plan = cx.new(|cx| {
-            let mut select = Select::new(strings::PLAN_DURING, window, cx);
-            select.set_width(CARD_WIDTH);
-            select
-        });
+        let plan = cx.new(|cx| Select::new(strings::PLAN_DURING, window, cx));
         let subscriptions = vec![
             cx.observe(&filter, |_, _, cx| cx.notify()),
             cx.observe(&name, |_, _, cx| cx.notify()),
@@ -874,6 +870,9 @@ impl Render for RuleDialog {
         let viewport = window.viewport_size();
         let rem_size = window.rem_size();
         let width = (viewport.width - BASE_16 * 2.).min(CARD_WIDTH.to_pixels(rem_size));
+        let field = (width - BASE_16 * 2.) / rem_size;
+        self.plan
+            .update(cx, |select, _| select.set_width(rems(field)));
         let title: SharedString = match &self.mode {
             RuleDialogMode::Add => strings::ADD_SOFTWARE.into(),
             RuleDialogMode::Edit { rule, .. } => strings::edit_title(&rule.label).into(),
