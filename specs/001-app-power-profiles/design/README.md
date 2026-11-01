@@ -5,7 +5,7 @@ Ces maquettes préparent la migration de l'interface vers GPUI. Elles reprennent
 Les originaux se trouvent sur la toile Claude Design « PowerPlanSync GPUI · maquettes »
 (https://claude.ai/artifact/Lzw5kCJu484qb26Tk6V9ni, privée). Les captures ci-dessous en
 sont des copies figées. Les libellés et les comportements qui font foi sont dans
-[contracts/user-interface.md](../contracts/user-interface.md). Le brouillon du guide utilisateur pour cette interface est [guide-gpui.md](guide-gpui.md).
+[contracts/user-interface.md](../contracts/user-interface.md). Le guide utilisateur de cette interface est [docs/guide-utilisateur.md](../../../docs/guide-utilisateur.md).
 
 Deux boucles de revue indépendantes ont validé ces maquettes. La première en quatre tours, avec
 trois relecteurs : design, textes et captures. La seconde en trois tours, avec un quatrième

@@ -107,8 +107,8 @@ dans une boîte de dialogue bloquante :
   ramène la fenêtre de la première et s'arrête.
 - **Les réglages sont illisibles** : l'automatisation reste arrêtée. Actions **Ouvrir le dossier
   des données**, **Relire les réglages** et **Ouvrir le guide**, qui renvoie à la section
-  « Réglages illisibles » du guide. Le texte prévu pour ce guide est dans
-  [design/guide-gpui.md](../design/guide-gpui.md).
+  « Réglages illisibles » du guide
+  [docs/guide-utilisateur.md](../../../docs/guide-utilisateur.md).
 
 ## Réglages et notification
 

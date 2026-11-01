@@ -54,6 +54,7 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
 ### 1. Bugs ouverts
 
 - [x] Réglages illisibles : l'instance garde le contrôle unique et rouvre sa fenêtre au second lancement (#32, [#41](https://github.com/Thanaen/PowerPlanSync/pull/41)).
+- [ ] Fenêtre : une fermeture demandée juste après l'ouverture reste ignorée une vingtaine de secondes (#59). À reproduire sur Windows réel avant toute correction.
 
 ### 2. Fonctionnalités
 
@@ -67,9 +68,10 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
 
 - [x] Relire et merger la synchronisation de la conception GPUI ([#4](https://github.com/Thanaen/PowerPlanSync/pull/4)).
 - [x] Budget GitHub Actions rétabli le 26 octobre 2026 : Pullfrog et la CI tournent de nouveau.
-- [ ] Créer le jalon v1 : l'outil GitHub de la routine ne crée pas de jalon.
+- [x] Jalon v1 créé.
 - [ ] Valider la v1 sur un Windows réel (#6).
-- [ ] Choisir la licence et préparer la livraison (#8).
+- [x] Choisir la licence : MIT ([#60](https://github.com/Thanaen/PowerPlanSync/pull/60)).
+- [ ] Préparer la livraison (#8).
 
 ## Journal
 
@@ -97,4 +99,19 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
 | 2026-10-30 | [#27](https://github.com/Thanaen/PowerPlanSync/pull/27) | T063 : Ctrl+Alt+P suit le bouton **Mettre en pause** ou **Reprendre**, menu de l'icône grisé sans contrôle. |
 | 2026-10-31 | [#28](https://github.com/Thanaen/PowerPlanSync/pull/28) | T064 : **Supprimer** sans confirmation avec **Annuler** (Ctrl+Z), annonce des déplacements, focus passé à la flèche opposée. |
 | 2026-10-31 | [#41](https://github.com/Thanaen/PowerPlanSync/pull/41) | #32 : des réglages illisibles gardent le contrôle unique et l'écoute d'ouverture ; la relecture les reprend sans les relâcher. |
-| 2026-11-01 | #43 | T065 (début) : page **Réglages** GPUI, plan de retour enregistré dès son choix, conditions, dossier des données et message du retour réservé au cycle. |
+| 2026-11-01 | [#43](https://github.com/Thanaen/PowerPlanSync/pull/43) | T065 (début) : page **Réglages** GPUI, plan de retour enregistré dès son choix, réglage refusé expliqué sur la page, aucune valeur non lue montrée sans contrôle. |
+| 2026-11-01 | [#45](https://github.com/Thanaen/PowerPlanSync/pull/45) | T065 (fin) : page **Aide et limites**, **Voir les licences** et **Ouvrir le guide** (autre fil). |
+| 2026-11-01 | [#46](https://github.com/Thanaen/PowerPlanSync/pull/46) | T066 : palette de commandes (autre fil). |
+| 2026-11-01 | [#47](https://github.com/Thanaen/PowerPlanSync/pull/47) | T068 : texte agrandi, contraste et échelles (autre fil). |
+| 2026-11-01 | [#49](https://github.com/Thanaen/PowerPlanSync/pull/49) | T069 : les quatre transitions du contrat ; reste le jugement au ressenti sur Windows réel (autre fil). |
+| 2026-11-01 | [#50](https://github.com/Thanaen/PowerPlanSync/pull/50) | T043 : audit des droits, du réseau et des données (autre fil). |
+| 2026-11-01 | [#53](https://github.com/Thanaen/PowerPlanSync/pull/53) | T078 et T080 : réouverture sur erreur et **Modifier** à travers les deux processus (autre fil). |
+| 2026-11-01 | [#54](https://github.com/Thanaen/PowerPlanSync/pull/54) | Un enregistrement en échec s'explique dans le dialogue (autre fil). |
+| 2026-11-01 | [#55](https://github.com/Thanaen/PowerPlanSync/pull/55) | Le processus de suivi s'arrête sans dépendre de `WM_QUIT` (#52, autre fil). |
+| 2026-11-01 | [#56](https://github.com/Thanaen/PowerPlanSync/pull/56) | T067 : accessibilité complète de l'interface GPUI (autre fil). |
+| 2026-11-01 | [#57](https://github.com/Thanaen/PowerPlanSync/pull/57) | Glissement de la pastille des interrupteurs au pointeur (autre fil). |
+| 2026-11-01 | [#58](https://github.com/Thanaen/PowerPlanSync/pull/58) | T071 : GPUI devient l'interface par défaut, Slint est retiré (autre fil). |
+| 2026-11-01 | [#60](https://github.com/Thanaen/PowerPlanSync/pull/60) | Licence MIT ; dépendances compatibles (autre fil). |
+| 2026-11-01 | [#61](https://github.com/Thanaen/PowerPlanSync/pull/61) | « Application ouverte » liste chaque logiciel une seule fois (autre fil). |
+| 2026-11-01 | [#62](https://github.com/Thanaen/PowerPlanSync/pull/62) | Test du signal de réouverture isolé d'une instance lancée (autre fil). |
+| 2026-11-01 | #63 | T072 : le guide GPUI remplace le guide Slint de `docs/`, avec la section « Réglages illisibles » visée par **Ouvrir le guide**. |
