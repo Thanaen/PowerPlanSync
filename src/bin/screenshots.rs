@@ -25,8 +25,8 @@ mod shots {
 
     use gpui::{
         AnyWindowHandle, AppContext as _, Context, Entity, HeadlessAppContext, IntoElement,
-        Modifiers, MouseButton, MouseDownEvent, MouseUpEvent, ParentElement, PlatformInput, Render,
-        Styled, Window, WindowAppearance, div, point, px, size,
+        Keystroke, Modifiers, MouseButton, MouseDownEvent, MouseUpEvent, ParentElement,
+        PlatformInput, Render, Styled, Window, WindowAppearance, div, point, px, size,
     };
     use power_plan_sync::domain::PowerSource;
     use power_plan_sync::domain::{
@@ -130,6 +130,22 @@ mod shots {
             name: "Économies d'énergie".into(),
         });
         view.configuration.return_plan = Some(PlanId(4));
+        view
+    }
+
+    fn demo() -> ViewState {
+        let mut view = active();
+        view.configuration.rules = vec![rule(
+            1,
+            "Logiciel simulé",
+            r"C:\Outils\PowerPlanSync\temoin.exe",
+            2,
+            true,
+        )];
+        view.observed_plan = Some(PlanId(1));
+        view.status = Status::Idle;
+        view.cycle = None;
+        view.open_rules = Vec::new();
         view
     }
 
@@ -595,6 +611,9 @@ mod shots {
         )
     }
 
+    /// **Commandes**, les trois pages, **Quitter**, **Ajouter un logiciel** et **Mettre en pause**.
+    const TABS_TO_FIRST_ROW: usize = 8;
+
     pub fn run() -> anyhow::Result<()> {
         let output = PathBuf::from(std::env::args().nth(1).unwrap_or("out".into()));
         std::fs::create_dir_all(&output)?;
@@ -613,6 +632,7 @@ mod shots {
             power_plan_sync::interface::text_input::bind_keys(cx);
             power_plan_sync::interface::rule_dialog::bind_keys(cx);
             power_plan_sync::interface::palette::bind_keys(cx);
+            power_plan_sync::interface::software_page::bind_keys(cx);
             anyhow::Ok(())
         })?;
         let cases = [
@@ -737,6 +757,20 @@ mod shots {
                 760.,
                 quit_failed(),
             ),
+            (
+                "demo",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                display(&demo(), true, false, None),
+            ),
+            (
+                "demo-light",
+                WindowAppearance::Light,
+                880.,
+                620.,
+                display(&demo(), true, false, None),
+            ),
             ("removed", WindowAppearance::Dark, 880., 620., removed()),
             (
                 "removed-light",
@@ -797,6 +831,29 @@ mod shots {
                     main.set_page_view(Page::Software, page.into(), cx);
                     main
                 })
+            })?;
+            capture(&mut cx, window.into(), &output.join(format!("{name}.png")))?;
+        }
+        for (name, appearance, down) in [
+            ("keyboard-row", WindowAppearance::Dark, true),
+            ("keyboard-row-light", WindowAppearance::Light, false),
+        ] {
+            cx.update(|cx| cx.set_global(ForcedAppearance(appearance)));
+            let model = display(&active(), false, false, None);
+            let window = cx.open_window(size(px(880.), px(620.)), |window, cx| {
+                let page = cx.new(|_| SoftwarePage::new(model.clone(), |_, _| {}));
+                cx.new(|cx| {
+                    let mut main = MainWindow::new(model.clone(), window, cx);
+                    main.set_page_view(Page::Software, page.into(), cx);
+                    main
+                })
+            })?;
+            cx.run_until_parked();
+            cx.update_window(window.into(), |_, window, cx| {
+                let down = down.then_some("down");
+                for key in std::iter::repeat_n("tab", TABS_TO_FIRST_ROW).chain(down) {
+                    window.dispatch_keystroke(Keystroke::parse(key).unwrap(), cx);
+                }
             })?;
             capture(&mut cx, window.into(), &output.join(format!("{name}.png")))?;
         }

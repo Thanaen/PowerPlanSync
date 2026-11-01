@@ -270,6 +270,7 @@ impl FirstLaunch {
             .role(Role::ListItem)
             .aria_label(strings::step_name(number, title, done))
             .aria_description(hint.clone())
+            .aria_position_in_set(number - 1)
             .px(BASE_16)
             .py(BASE_12)
             .flex()
@@ -325,7 +326,7 @@ impl FirstLaunch {
         div()
             .type_style(text::LABEL_SM)
             .text_color(theme.text_muted)
-            .child(content.into())
+            .child(widgets::readable("summary", content))
     }
 }
 
@@ -417,6 +418,7 @@ impl Render for FirstLaunch {
             .id("getting-started")
             .role(Role::List)
             .aria_label(strings::GETTING_STARTED)
+            .aria_size_of_set(3)
             .flex()
             .flex_col()
             .rounded(radius::LG)
@@ -469,6 +471,9 @@ impl Render for FirstLaunch {
             .gap(BASE_08)
             .child(
                 div()
+                    .id("getting-started-title")
+                    .role(Role::Heading)
+                    .aria_label(strings::GETTING_STARTED)
                     .type_style(text::HEADLINE_SM)
                     .text_color(theme.text)
                     .child(strings::GETTING_STARTED),

@@ -14,7 +14,7 @@ use crate::interface::help_page::HelpPage;
 use crate::interface::palette;
 use crate::interface::rule_dialog::{self, RuleDialog, RuleDialogEvent, RuleDialogMode};
 use crate::interface::settings_page::SettingsPage;
-use crate::interface::software_page::{SoftwareEvent, SoftwarePage};
+use crate::interface::software_page::{self, SoftwareEvent, SoftwarePage};
 use crate::interface::theme::{self, HighContrast, TextScale};
 use crate::interface::window::{self, MainWindow, Page, ShellEvent};
 use crate::interface::{text_input, widgets};
@@ -53,6 +53,7 @@ pub fn run(
             text_input::bind_keys(cx);
             rule_dialog::bind_keys(cx);
             palette::bind_keys(cx);
+            software_page::bind_keys(cx);
             apply_preferences(cx);
 
             let on_action: OnAction = Arc::new(on_action);
@@ -352,4 +353,118 @@ fn apply_preferences(cx: &mut App) {
     cx.set_reduce_motion(reduce_motion);
     cx.set_global(text_scale);
     cx.set_global(HighContrast(contrast));
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Mutex;
+
+    use gpui::{
+        KeyUpEvent, Keystroke, Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px,
+    };
+
+    use super::*;
+    use crate::presentation::RuleDisplay;
+
+    type Sent = Arc<Mutex<Vec<UiAction>>>;
+
+    fn model() -> UiDisplayModel {
+        UiDisplayModel {
+            automation_enabled: true,
+            automation_can_enable: true,
+            return_plan_confirmed: true,
+            return_plan_chosen: true,
+            removed: Some("Blender".into()),
+            rules: vec![RuleDisplay {
+                id: 1,
+                rank: 1,
+                label: "Atom".into(),
+                enabled: true,
+                ..RuleDisplay::default()
+            }],
+            ..UiDisplayModel::default()
+        }
+    }
+
+    fn open(cx: &mut TestAppContext) -> (Rc<RefCell<Shell>>, Sent, VisualTestContext) {
+        let sent = Sent::default();
+        let send = Arc::clone(&sent);
+        let shell = Rc::new(RefCell::new(Shell {
+            model: model(),
+            started: true,
+            closing: false,
+            page: None,
+            settings: None,
+            dialog: None,
+            opener: None,
+            on_action: Arc::new(move |action| send.lock().unwrap().push(action)),
+        }));
+        let handle = cx.update(|cx| {
+            widgets::bind_keys(cx);
+            window::bind_keys(cx);
+            text_input::bind_keys(cx);
+            rule_dialog::bind_keys(cx);
+            palette::bind_keys(cx);
+            software_page::bind_keys(cx);
+            assert!(show(&shell, cx, false));
+            window::handle(cx).expect("la fenêtre est ouverte")
+        });
+        let cx = VisualTestContext::from_window(handle.into(), cx);
+        cx.run_until_parked();
+        (shell, sent, cx)
+    }
+
+    fn focus_button(cx: &mut VisualTestContext, selector: &'static str) -> FocusHandle {
+        let center = cx.debug_bounds(selector).expect(selector).center();
+        cx.simulate_mouse_down(center, MouseButton::Left, Modifiers::none());
+        cx.simulate_mouse_up(point(px(1.), px(1.)), MouseButton::Left, Modifiers::none());
+        cx.update(|window, cx| window.focused(cx)).expect(selector)
+    }
+
+    fn press_enter(cx: &mut VisualTestContext) {
+        cx.simulate_keystrokes("enter");
+        cx.simulate_event(KeyUpEvent {
+            keystroke: Keystroke::parse("enter").unwrap(),
+        });
+    }
+
+    fn focused(handle: &FocusHandle, cx: &mut VisualTestContext) -> bool {
+        let handle = handle.clone();
+        cx.update(|window, _| handle.is_focused(window))
+    }
+
+    #[gpui::test]
+    fn closing_the_dialog_gives_the_focus_back_to_the_button_that_opened_it(
+        cx: &mut TestAppContext,
+    ) {
+        let (shell, _, mut cx) = open(cx);
+        let add = focus_button(&mut cx, "add");
+        press_enter(&mut cx);
+        assert!(shell.borrow().dialog.is_some());
+        assert!(!focused(&add, &mut cx));
+        cx.simulate_keystrokes("escape");
+        assert!(shell.borrow().dialog.is_none());
+        assert!(focused(&add, &mut cx));
+    }
+
+    #[gpui::test]
+    fn ctrl_n_opens_the_dialog_and_escape_gives_the_focus_back(cx: &mut TestAppContext) {
+        let (shell, _, mut cx) = open(cx);
+        let pause = focus_button(&mut cx, "pause");
+        cx.simulate_keystrokes("ctrl-n");
+        assert!(shell.borrow().dialog.is_some());
+        cx.simulate_keystrokes("ctrl-n escape");
+        assert!(shell.borrow().dialog.is_none());
+        assert!(focused(&pause, &mut cx));
+    }
+
+    #[gpui::test]
+    fn ctrl_alt_p_and_ctrl_z_do_what_their_buttons_do(cx: &mut TestAppContext) {
+        let (_, sent, mut cx) = open(cx);
+        cx.simulate_keystrokes("ctrl-alt-p ctrl-z");
+        assert_eq!(
+            sent.lock().unwrap().as_slice(),
+            [UiAction::Pause, UiAction::UndoDelete]
+        );
+    }
 }

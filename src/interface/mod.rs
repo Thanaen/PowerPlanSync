@@ -5,6 +5,8 @@ pub mod app;
 pub mod assets;
 pub mod first_launch;
 pub mod help_page;
+#[cfg(test)]
+mod keyboard_tests;
 pub mod messages;
 pub mod motion;
 pub mod palette;

@@ -59,6 +59,10 @@ coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-da
 | `palette-filtered.png` | aucune | Recherche « ou » : les verbes qui commencent par la saisie d'abord, la partie trouvée en accent. |
 | `palette-no-match.png` | aucune | Aucune entrée : « Aucune commande ne correspond. », et le pied ne garde que **Échap** **Fermer**. |
 | `palette-narrow.png` | aucune | Fenêtre étroite : sans le bouton **Commandes**, Ctrl+Maj+P ouvre la palette, centrée avec ses marges. |
+| `demo.png` | `Demo.png` | Badge « Démo » de la barre de titre conforme (T067). L'état reste celui de l'application : « Automatisation en attente » avec son cercle, le plan de retour « quand le dernier logiciel suivi se fermera » et « Sur secteur » sans « (simulé) », la source d'alimentation étant lue dans Windows. |
+| `demo-light.png` | aucune | Mêmes constats en thème clair. |
+| `keyboard-row.png` | aucune | Tab jusqu'à la première ligne, puis ↓ : la ligne Blender a le focus, anneau de 2 px tracé dans la ligne (T067). |
+| `keyboard-row-light.png` | aucune | La première ligne focalisée en thème clair : l'anneau suit les coins arrondis de la liste. |
 
 ## Mouvement (T069)
 

@@ -70,6 +70,7 @@ thème, jusqu'à ce que Bientôt les adopte.
 - voile du dialogue posé sous la barre de titre, qui garde ses boutons de fenêtre utilisables.
 - texte agrandi de Windows, que Bientôt ne traite pas : les styles de texte, les hauteurs des contrôles qui portent du texte (`button-*`, barre de titre, barre d'état, badge, capuchon), la barre latérale, les listes et colonnes de largeur fixe et les seuils de mise en page sont convertis en rems (16 px à 100 %), et la fenêtre pose le rem à 16 px × la taille du texte. Les icônes, les espacements et les interrupteurs gardent leurs pixels, comme dans les applications Windows. À 100 %, le rendu est identique au pixel près ;
 - lignes de **Logiciels** sur plusieurs niveaux sous 840 px × la taille du texte, même barre latérale entière, et capuchons des raccourcis masqués sous 400 px × la taille du texte ;
+- ligne de **Logiciels associés** focalisée au clavier : l'anneau de 2 px est tracé à l'intérieur de la ligne, dont le bord est celui de la liste, et suit ses coins arrondis ;
 
 Les couleurs `tray-*` ont un sens propre à PowerPlanSync : bleu pour un plan de logiciel appliqué,
 gris quand aucun ne l'est, orange pour une automatisation suspendue par un choix fait dans Windows, rouge quand une action est
