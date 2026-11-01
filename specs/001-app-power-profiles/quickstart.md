@@ -1,8 +1,8 @@
 # Valider PowerPlanSync sur Windows
 
-Ce guide décrit la validation à réaliser pendant l'implémentation. La version Slint et ses
-scripts existent ; leurs preuves sont dans `evidence/`. La migration GPUI (T046 à T072) reprend
-les mêmes vérifications sur la nouvelle interface. Un contrôle non exécuté porte la mention
+Ce guide décrit la validation à réaliser pendant l'implémentation. Les preuves de la version
+Slint, retirée en T071, restent dans `evidence/`. La migration GPUI (T046 à T072) reprend les
+mêmes vérifications sur la nouvelle interface. Un contrôle non exécuté porte la mention
 « non exécuté ».
 
 ## Préparer l'environnement
@@ -37,8 +37,8 @@ démarrage automatique sans étape explicite et réversible.
 
 ## Vérifier l'interface isolée
 
-Lancer le mode de démonstration. Pendant la migration, ajouter `--gpui` après T056 pour ouvrir
-l'interface GPUI. Après T071, GPUI est l'interface par défaut et `--gpui` n'existe plus.
+Lancer le mode de démonstration. Depuis T071, GPUI est la seule interface et `--gpui` n'existe
+plus.
 
 ```powershell
 cargo run --locked --release -- --demo --data-dir .audit/demo-data
@@ -60,7 +60,7 @@ vérifier le [contrat d'interface](contracts/user-interface.md). Vérifier aussi
 1. Les quatre transitions du contrat s'animent à la souris, jamais au clavier.
 2. En build debug, `POWERPLANSYNC_MOTION_SLOWDOWN=4` ralentit chaque animation quatre fois pour
    la juger au ressenti face aux images de [design/mouvement](design/mouvement), par exemple avec
-   `$env:POWERPLANSYNC_MOTION_SLOWDOWN=4; cargo run --locked -- --demo --gpui` (sans `--release`).
+   `$env:POWERPLANSYNC_MOTION_SLOWDOWN=4; cargo run --locked -- --demo` (sans `--release`).
 3. Avec « Effets d'animation » désactivé dans Windows, l'état final s'affiche directement, y
    compris après un changement du réglage pendant que l'application est ouverte.
 

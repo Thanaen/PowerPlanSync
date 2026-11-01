@@ -65,6 +65,6 @@ Les plans classiques d'alimentation et le mode **Recommandé** des Paramètres W
 
 Aucun gain de FPS, de température ou de consommation n'est garanti. Battlefield 6 n'a pas été testé pour cette version. Les essais de développement utilisent un petit exécutable témoin.
 
-Les informations Slint sont accessibles dans **À propos**. Les composants tiers et leurs textes de licence figurent dans [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) et [notices/THIRD_PARTY_LICENSES.txt](notices/THIRD_PARTY_LICENSES.txt). Ces notices ne définissent pas une licence de redistribution de PowerPlanSync.
+Les licences des composants sont accessibles dans **Aide et limites**, avec **Voir les licences**. Les composants tiers et leurs textes de licence figurent dans [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) et [notices/THIRD_PARTY_LICENSES.txt](notices/THIRD_PARTY_LICENSES.txt). Ces notices ne définissent pas une licence de redistribution de PowerPlanSync.
 
 Le fichier `manifest.json` donne la taille et le SHA-256 de l'exécutable et des documents livrés. Le fichier `.zip.sha256` fourni à côté de l'archive permet de comparer son empreinte. Ces empreintes vérifient l'identité des fichiers ; elles ne constituent pas une signature d'éditeur.

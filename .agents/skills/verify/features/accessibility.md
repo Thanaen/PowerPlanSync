@@ -13,16 +13,16 @@ Les actions principales doivent rester utilisables sans souris et conserver un f
 
 ## How to get to it (user POV)
 
-La fenêtre principale, Ajouter un logiciel, Modifier, Réglages et le menu de notification sont des entrées distinctes. Le formulaire expose **Nom du logiciel**, **Chemin complet du logiciel**, **Plan pendant l'exécution**, **Enregistrer la règle** et **Annuler les modifications**.
+La fenêtre principale, **Ajouter un logiciel**, **Modifier**, **Réglages** et le menu de l'icône sont des entrées distinctes. Le dialogue expose **Parcourir…**, **Application ouverte**, **Fichier** (chemin complet en lecture seule), **Nom affiché**, **Plan pendant l’exécution**, **Ajouter** et **Annuler**. Dans **Modifier**, le bouton principal est **Enregistrer**.
 
 ## Driving it with sky
 
 Preconditions: séance démo Doctor valide, fixture de règle disponible. Enregistrer les réglages Windows initiaux avant toute variation d'échelle ou de contraste autorisée. Ne pas modifier ces réglages pendant une autre campagne.
 
 - **Clavier.** Utiliser `sky.press_key({window: ppsWindow, key: 'Tab'})`, puis lire `focused_element` et la capture. Progresser contrôle par contrôle. Activer un bouton observé avec `Return` ou `space` et vérifier son effet. Ne pas traiter un ordre de tabulation supposé comme un résultat.
-- **Annuler.** Ouvrir l'éditeur, saisir un brouillon, puis utiliser `Escape`. Le panneau disparaît et aucune règle n'est enregistrée. Revenir à une nouvelle capture avant l'action suivante.
-- **Erreur.** Saisir un chemin invalide et activer **Enregistrer la règle**. Capturer le message, la saisie restante et le focus. Corriger le champ puis enregistrer. Vérifier que les mises à jour du statut ne réinitialisent pas le brouillon.
-- **Défilement.** Avec une liste longue, réduire la hauteur par le bord réel de la fenêtre observée. Parcourir jusqu'aux réglages et aux commandes de sortie. Utiliser `sky.scroll` uniquement avec des coordonnées et un screenshotId de la capture courante.
+- **Annuler.** Ouvrir **Ajouter un logiciel**, saisir un brouillon dans **Nom affiché**, puis utiliser `Escape`. Le dialogue se ferme, le focus revient à **Ajouter un logiciel** et aucune règle n'est enregistrée. Revenir à une nouvelle capture avant l'action suivante.
+- **Erreur.** Activer **Ajouter** sans fichier, sans nom ni plan. Capturer les messages sous les champs (« Choisissez le fichier du logiciel. », « Saisissez le nom affiché. », « Choisissez un plan. »), la saisie restante et le focus. Compléter les champs puis ajouter. Vérifier que les mises à jour du statut ne réinitialisent pas le brouillon.
+- **Défilement.** Avec une liste longue, réduire la hauteur par le bord réel de la fenêtre observée. Parcourir jusqu'à la dernière ligne de **Logiciels associés** et jusqu'à **Quitter** en bas de la barre latérale. Utiliser `sky.scroll` uniquement avec des coordonnées et un screenshotId de la capture courante.
 - **Échelle et contraste.** Exécuter les variantes Windows autorisées une à une, capturer l'échelle déclarée et le résultat réel. Vérifier les noms non tronqués, le focus, les dialogues et les messages. Restaurer ensuite les valeurs initiales et relire la fenêtre.
 - **Narrateur.** Effectuer une séance avec le Narrateur réellement actif. Noter les noms, rôles, états et annonces de changement entendus. Si aucune observation vocale n'est disponible, marquer access-narrator non exécuté, même si l'arbre sky paraît complet.
 

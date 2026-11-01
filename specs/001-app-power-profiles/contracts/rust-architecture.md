@@ -100,6 +100,5 @@ le coordinateur ni les adaptateurs.
   reçoit aucun accès au coordinateur, au stockage ni à Windows au-delà de sa fenêtre.
 - `reduce_motion` est une donnée de GPUI, mise à jour depuis `src/windows/preferences.rs` à chaque
   `WM_SETTINGCHANGE`. Aucune vue ne lit le registre ni n'appelle Win32 directement.
-- Jusqu'à T071, l'interface GPUI s'ouvre seulement avec `--gpui`. Les deux interfaces utilisent le
-  même `Controller` et ne s'exécutent jamais ensemble. À partir de T077, `--gpui` lance le
-  processus de suivi sans GPUI ; l'interface GPUI dans le même processus disparaît.
+- Depuis T071, GPUI est la seule interface : le lancement normal démarre le processus de suivi
+  sans GPUI, qui lance le processus de fenêtre. L'option `--gpui` n'existe plus.

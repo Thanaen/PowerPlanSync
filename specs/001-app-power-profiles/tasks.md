@@ -30,7 +30,7 @@ reste la preuve historique de l'interface Slint. Une case vide remplacée ne s'e
 ## Path Conventions
 
 Les chemins sont relatifs à la racine du projet. La couche GPUI vit dans `src/interface/`, ses
-ressources dans `assets/`. `ui/` et `src/ui.rs` disparaissent en T071. Les preuves restent sous le
+ressources dans `assets/`. `ui/` et `src/ui.rs` ont disparu en T071. Les preuves restent sous le
 dossier de cette spec.
 
 ## Phase 1: Setup et faisabilité
@@ -219,7 +219,7 @@ L'interface GPUI s'ouvre avec l'option de développement `--gpui` jusqu'à T071.
 
 **Purpose**: faire de GPUI l'unique interface, puis préparer la documentation livrée.
 
-- [ ] T071 Rendre GPUI, avec son processus de fenêtre (phase 13), l'interface par défaut et retirer Slint : supprimer `ui/`, `src/ui.rs`, `build.rs`, `slint` et `slint-build` de `Cargo.toml`, l'option `--gpui`, `examples/ui_probe.rs` et `examples/ui_candidate.rs`. Porter `examples/window_lifecycle.rs` vers le processus de fenêtre `--window` pour `scripts/verify-window-lifecycle.ps1`, ou le retirer si `scripts/measure-window-reopen.ps1` (T080) le remplace, retirer toute mention de Slint de `THIRD_PARTY_NOTICES.md` (section Slint et paragraphe des ressources intégrées) et de `docs/guide-utilisateur.md` (mention de **À propos**), régénérer `notices/THIRD_PARTY_LICENSES.txt`, mettre à jour la section prototype de `README.md` et retirer la boucle d'événements et l'icône de notification Slint de `src/runtime.rs`, mettre à jour les mentions Slint de `.agents/skills/verify/SKILL.md` et les fiches `.agents/skills/verify/features/*.md` avec les libellés de `contracts/user-interface.md`. Couvre FR-019, SC-007.
+- [x] T071 Rendre GPUI, avec son processus de fenêtre (phase 13), l'interface par défaut et retirer Slint : supprimer `ui/`, `src/ui.rs`, `build.rs`, `slint` et `slint-build` de `Cargo.toml`, l'option `--gpui`, `examples/ui_probe.rs` et `examples/ui_candidate.rs`. Porter `examples/window_lifecycle.rs` vers le processus de fenêtre `--window` pour `scripts/verify-window-lifecycle.ps1`, ou le retirer si `scripts/measure-window-reopen.ps1` (T080) le remplace, retirer toute mention de Slint de `THIRD_PARTY_NOTICES.md` (section Slint et paragraphe des ressources intégrées) et de `docs/guide-utilisateur.md` (mention de **À propos**), régénérer `notices/THIRD_PARTY_LICENSES.txt`, mettre à jour la section prototype de `README.md` et retirer la boucle d'événements et l'icône de notification Slint de `src/runtime.rs`, mettre à jour les mentions Slint de `.agents/skills/verify/SKILL.md` et les fiches `.agents/skills/verify/features/*.md` avec les libellés de `contracts/user-interface.md`. Couvre FR-019, SC-007. Le responsable produit a décidé le 2026-11-01 de retirer Slint dès maintenant, avant T070 : rien ne justifiait de le garder. Fait le 2026-11-01 : `--gpui` est refusé comme toute option inconnue, après mise à jour des scripts qui le passaient ; aucune entrée de démarrage ne le porte, `src/windows/startup.rs` n'écrit que `--start-minimized`. `examples/window_lifecycle.rs` est retiré, car `scripts/measure-window-reopen.ps1` mesure les cent cycles du vrai processus de fenêtre (T081) ; `scripts/verify-window-lifecycle.ps1` reste le pilote de `gpui_probe --lifecycle`. Le champ `show_first_hide_explanation`, lu par Slint seul, disparaît du modèle d'affichage. `scripts/generate-third-party-notices.ps1` régénère l'inventaire de `THIRD_PARTY_NOTICES.md` et `notices/THIRD_PARTY_LICENSES.txt` ; l'inventaire couvre désormais le graphe GPUI (280 paquets), absent depuis T046.
 - [ ] T072 À la livraison de l'interface GPUI, avec T044, remplacer `docs/guide-utilisateur.md` par le texte de `specs/001-app-power-profiles/design/guide-gpui.md` : retirer l'encadré de brouillon, reprendre les chemins des notices du paquet et le numéro de version dans le titre, puis laisser dans `design/guide-gpui.md` un renvoi vers `docs/guide-utilisateur.md`. Couvre FR-018, FR-020.
 
 **Checkpoint**: aucun fichier ni dépendance Slint ne reste, et les contrôles Cargo passent.
@@ -252,7 +252,7 @@ fichiers sont disjoints. T013 les assemble. Toute modification de Cargo reste s�
 Migration GPUI : T046 précède T047. T048 dépend de T047, T049 de T048. T049 autorise T051 à T057. T050 ne dépend pas du cadre graphique et a précédé T048.
 T050 précède les pages. T051, T052 et T055 sont disjoints. T053 attend T051, T054 attend T053,
 T056 attend T054, T055 et T012, qui fournit l'ouverture de la fenêtre dans la même session. T057 attend T056. Les phases 9 à 12 attendent T056. T061 précède T062.
-T064 précède T069, qui anime aussi l'échange de lignes. T070 attend T058 à T069 et T080. T071 attend T070 et T081.
+T064 précède T069, qui anime aussi l'échange de lignes. T070 attend T058 à T069, T071 et T080. T071 attend T081 ; par décision du responsable produit du 2026-11-01, Slint est retiré avant T070, qui vérifie le binaire sans Slint.
 
 Processus séparé (phase 13) : T073 a précédé la conception de D18 et autorise la phase. T074 et
 T075 sont disjoints. T076 attend les deux. T077 attend T076. T078 et T079 attendent T077 et touchent tous deux

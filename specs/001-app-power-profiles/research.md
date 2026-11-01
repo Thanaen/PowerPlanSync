@@ -263,7 +263,8 @@ La constitution admet une interface Rust sans navigateur embarqué. GPUI ne chan
 **Alternatives.** Garder Slint et imiter les maquettes : rejeté, deux design systems à maintenir.
 egui, Win32 et iced : non réévalués, la décision produit porte sur GPUI. Une bascule d'un seul
 bloc est rejetée : la couche GPUI grandit à côté de Slint derrière l'option de développement
-`--gpui`, puis T071 retire Slint et cette option. Voir Complexity Tracking dans [plan.md](plan.md).
+`--gpui`, puis T071 retire Slint et cette option. Le 2026-11-01, le responsable produit a fait
+retirer Slint avant la vérification Windows T070 : rien ne justifiait de le garder.
 
 **Version de Rust.** PowerPlanSync épingle Rust 1.98.1. Bientôt compile `gpui-pre` 0.3.9 avec
 Rust 1.97.0 (`rust-toolchain.toml`). T046 vérifie la compilation avec 1.98.1 par Clippy pour
