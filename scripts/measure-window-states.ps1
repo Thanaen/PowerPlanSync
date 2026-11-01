@@ -5,14 +5,14 @@
 Mesure le coût de PowerPlanSync en démonstration isolée, fenêtre ouverte puis fenêtre fermée.
 La fenêtre est fermée par UI Automation (WindowPattern.Close), comme le bouton de fermeture :
 l'application reste dans la zone de notification. Aucun plan Windows n'est modifié en démonstration.
-Avec `--gpui`, la fenêtre vit dans un processus `--window` enfant (D18) : fenêtre ouverte, les
-deux processus sont mesurés en même temps et leur somme est relevée ; fenêtre fermée, le script
-vérifie qu'aucun processus de fenêtre ne reste.
+La fenêtre vit dans un processus `--window` enfant (D18) : fenêtre ouverte, les deux processus
+sont mesurés en même temps et leur somme est relevée ; fenêtre fermée, le script vérifie qu'aucun
+processus de fenêtre ne reste.
 #>
 [CmdletBinding()]
 param(
     [string]$ExecutablePath = (Join-Path $PSScriptRoot '../target/release/power-plan-sync.exe'),
-    [string[]]$Arguments = @('--gpui'),
+    [string[]]$Arguments = @(),
     [Parameter(Mandatory)][string]$OutputDirectory,
     [ValidateRange(1, 3600)][int]$DurationSeconds = 60,
     [ValidateRange(0, 600)][int]$StabilizationSeconds = 10

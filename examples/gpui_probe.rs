@@ -188,7 +188,6 @@ mod probe {
             .timer(Duration::from_millis(5_000))
             .await;
         println!("phase=baseline_begin pid={pid} warmup=1 window=none");
-        // Laisser le script relever le marqueur avant la première ouverture, comme la sonde Slint.
         cx.background_executor()
             .timer(Duration::from_millis(200))
             .await;

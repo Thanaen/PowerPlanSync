@@ -6,7 +6,6 @@ use crate::{
     presentation::{self, GuideSection, RunningAppDisplay, UiAction, UiCommand, UiDisplayModel},
     runtime_power::RuntimePower,
     storage::{FileStore, Store as _},
-    ui::{UiPalette, UiRuntime},
     windows::{
         self,
         notifications::{NativeNotification, NativeNotifications},
@@ -14,13 +13,11 @@ use crate::{
     },
 };
 use std::{
-    cell::RefCell,
     collections::HashMap,
     ffi::OsString,
     fs::{File, OpenOptions},
     os::windows::{ffi::OsStringExt, fs::OpenOptionsExt, process::CommandExt as _},
     path::PathBuf,
-    rc::Rc,
     sync::{
         Arc, OnceLock,
         atomic::{AtomicBool, Ordering},
@@ -29,7 +26,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-thread_local! { static UI: RefCell<Option<UiRuntime>> = const { RefCell::new(None) }; }
 enum AppEvent {
     Ui(UiAction),
     Chosen(Result<Option<PathBuf>, String>),
@@ -55,7 +51,6 @@ fn packaged_notices() -> Option<PathBuf> {
     notices.is_file().then_some(notices)
 }
 
-/// L'interface en cours, Slint ou GPUI, vue depuis le thread du coordinateur.
 static UI_SINK: OnceLock<Box<dyn Fn(UiCommand) + Send + Sync>> = OnceLock::new();
 
 fn send_ui(command: UiCommand) {
@@ -64,26 +59,6 @@ fn send_ui(command: UiCommand) {
     }
 }
 
-fn slint_command(ui: &UiRuntime, command: UiCommand) {
-    match command {
-        UiCommand::Update { model, alert } => {
-            ui.update(*model);
-            if alert {
-                let _ = ui.open();
-            }
-        }
-        UiCommand::Open => {
-            let _ = ui.open();
-        }
-        UiCommand::Quit => ui.quit(),
-        UiCommand::QuitFailure(reason) => ui.show_quit_failure(reason),
-        UiCommand::EditorExecutable { text, label } => ui.set_editor_executable(text, label),
-        UiCommand::EditorError(error) => ui.set_editor_error(error),
-        UiCommand::FinishEditorSave => ui.finish_editor_save(),
-        UiCommand::RunningApps(apps) => ui.show_running_apps(apps),
-        UiCommand::PreferencesChanged => apply_preferences(ui),
-    }
-}
 fn read_power_source() -> PowerSource {
     match windows::power::power_source() {
         Ok(windows::power::PowerSource::Ac) => PowerSource::Ac,
@@ -107,56 +82,6 @@ fn empty_view(error: &str) -> ViewState {
 }
 
 pub fn run(options: Options) -> Result<(), String> {
-    if options.gpui {
-        return run_gpui(options);
-    }
-    let _ = UI_SINK.set(Box::new(|command| {
-        let _ = slint::invoke_from_event_loop(move || {
-            UI.with(|slot| {
-                if let Some(ui) = slot.borrow().as_ref() {
-                    slint_command(ui, command);
-                }
-            })
-        });
-    }));
-    let (tx, rx) = mpsc::channel();
-    let initial = presentation::display(
-        &empty_view("Initialisation en cours"),
-        options.demo,
-        false,
-        None,
-    );
-    let ui_tx = tx.clone();
-    let ui = UiRuntime::new(
-        initial,
-        Rc::new(move |action| {
-            if ui_tx.send(AppEvent::Ui(action)).is_err() {
-                let _ = slint::quit_event_loop();
-            }
-        }),
-        tray_icon(),
-    )
-    .map_err(|e| e.to_string())?;
-    apply_preferences(&ui);
-    if options.start_minimized {
-        ui.show_tray_only()
-    } else {
-        ui.show()
-    }
-    .map_err(|e| e.to_string())?;
-    UI.with(|slot| *slot.borrow_mut() = Some(ui));
-    let worker_tx = tx.clone();
-    let worker = std::thread::spawn(move || worker(options, worker_tx, rx));
-    let result = slint::run_event_loop().map_err(|e| e.to_string());
-    let _ = tx.send(AppEvent::Stop);
-    let _ = worker.join();
-    UI.with(|slot| slot.borrow_mut().take());
-    result
-}
-
-/// Interface GPUI (D18) : le processus de suivi garde le coordinateur sur son thread et
-/// l'icône sur le thread principal, sans GPUI. La fenêtre vit dans son propre processus.
-fn run_gpui(options: Options) -> Result<(), String> {
     let (tx, rx) = mpsc::channel();
     let (mailbox, inbox) = crate::tracker::mailbox()?;
     let sink = mailbox.clone();
@@ -577,26 +502,14 @@ impl Worker {
                     && !self.choosing.swap(true, Ordering::SeqCst)
                 {
                     let choosing = Arc::clone(&self.choosing);
-                    let gpui = self.options.gpui;
-                    let choose = move || {
-                        let result = if gpui {
-                            windows::file_dialog::choose_executable_in_sta()
-                        } else {
-                            windows::file_dialog::choose_executable(None)
-                        }
-                        .map_err(|_| {
-                            "Le sélecteur de fichier ne peut pas être ouvert.".to_string()
-                        });
+                    std::thread::spawn(move || {
+                        let result =
+                            windows::file_dialog::choose_executable_in_sta().map_err(|_| {
+                                "Le sélecteur de fichier ne peut pas être ouvert.".to_string()
+                            });
                         choosing.store(false, Ordering::SeqCst);
                         let _ = sender.send(AppEvent::Chosen(result));
-                    };
-                    // Jamais dans un écouteur GPUI (réentrance) : sous GPUI, le sélecteur a son
-                    // propre thread STA.
-                    if gpui {
-                        std::thread::spawn(choose);
-                    } else {
-                        let _ = slint::invoke_from_event_loop(choose);
-                    }
+                    });
                 }
                 return Ok(());
             }
@@ -1094,38 +1007,6 @@ fn worker(options: Options, tx: Sender<AppEvent>, rx: mpsc::Receiver<AppEvent>) 
     worker.open_listener = None;
     drop(notifications);
 }
-fn apply_preferences(ui: &UiRuntime) {
-    if let Ok(preferences) = windows::preferences::ui_preferences() {
-        ui.set_text_scale(preferences.text_scale_percent as f32 / 100.0);
-        if !preferences.high_contrast {
-            ui.clear_palette();
-        }
-        if preferences.high_contrast {
-            let color =
-                |c: windows::preferences::Rgb| slint::Color::from_rgb_u8(c.red, c.green, c.blue);
-            ui.set_palette(UiPalette {
-                background: color(preferences.palette.window),
-                alternate_background: color(preferences.palette.window),
-                foreground: color(preferences.palette.window_text),
-                accent: color(preferences.palette.highlight),
-                high_contrast: true,
-            });
-        }
-    }
-}
-fn tray_icon() -> slint::Image {
-    let mut buffer = slint::SharedPixelBuffer::<slint::Rgba8Pixel>::new(32, 32);
-    for (index, pixel) in buffer.make_mut_slice().iter_mut().enumerate() {
-        let x = index % 32;
-        let y = index / 32;
-        *pixel = if (11..21).contains(&x) && (4..28).contains(&y) {
-            slint::Rgba8Pixel::new(69, 177, 255, 255)
-        } else {
-            slint::Rgba8Pixel::new(0, 0, 0, 0)
-        };
-    }
-    slint::Image::from_rgba8(buffer)
-}
 
 #[cfg(test)]
 mod tests {
@@ -1161,7 +1042,6 @@ mod tests {
                 demo: true,
                 data_directory: directory,
                 start_minimized: false,
-                gpui: false,
             },
             owner: session::OwnerIdentity {
                 sid: "runtime-tests".into(),

@@ -26,7 +26,7 @@ $output = [IO.Path]::GetFullPath($OutputDirectory)
 $data = Join-Path $output 'data'
 if (Test-Path -LiteralPath $data) { throw "Le dossier de données existe déjà : $data" }
 [IO.Directory]::CreateDirectory($output) | Out-Null
-$arguments = @('--gpui', '--data-dir', ('"' + $data + '"'))
+$arguments = @('--data-dir', ('"' + $data + '"'))
 $planBefore = (& powercfg.exe /getactivescheme) -join "`n"
 $automation = [System.Windows.Automation.AutomationElement]
 

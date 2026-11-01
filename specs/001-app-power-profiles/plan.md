@@ -11,8 +11,8 @@ PowerPlanSync applique un plan Windows existant lorsqu'un logiciel configuré fo
 puis revient au plan explicitement choisi. Une interface Rust accessible expose les règles et l'état.
 Le premier développement démontre la faisabilité Windows, l'accessibilité et le coût de fonctionnement.
 La conception initiale est suivie d'un premier lot de sondes et d'adaptateurs Rust.
-Voir les [résultats réels](evidence/prototype-results.md). Une première version Slint fonctionne
-depuis, avec ses preuves dans `evidence/`.
+Voir les [résultats réels](evidence/prototype-results.md). Une première version Slint a servi
+jusqu'à son retrait en T071 ; ses preuves restent dans `evidence/`.
 
 Le 2026-10-25, le responsable produit a validé la migration de l'interface vers GPUI, avec les
 maquettes de [design/README.md](design/README.md) et la session de clarification du même jour.
@@ -37,7 +37,7 @@ versionnés. Interface GPUI : `gpui` `=0.3.9` (paquet `gpui-pre`) et `gpui_platf
 (`ico`, `png`), `futures` 0.3 et `raw-window-handle` 0.6. La fonctionnalité `screenshots` ajoute
 `gpui/test-support`, `gpui_platform/test-support` et `gpui_wgpu` `=0.3.9` (paquet `gpui-pre-wgpu`)
 sous Linux. Versions reprises de Bientôt (D12), épinglées en T046. `slint` 1.18.0 et `slint-build`
-restent jusqu'à leur retrait en T071. Bibliothèque standard pour le thread de surveillance, les
+ont été retirés en T071. Bibliothèque standard pour le thread de surveillance, les
 canaux et les horloges. L'exécuteur de GPUI sert la seule interface ; aucun runtime asynchrone
 général n'est ajouté au moteur.
 
@@ -135,7 +135,7 @@ specs/001-app-power-profiles/
 
 Structure cible après la migration. `src/interface/`, `src/bin/screenshots.rs`,
 `examples/gpui_probe.rs`, `assets/` et `tests/presentation.rs` sont planifiés. `src/ui.rs`,
-`ui/*.slint`, `build.rs` et les exemples Slint disparaissent en T071.
+`ui/*.slint`, `build.rs` et les exemples Slint ont disparu en T071.
 
 ```text
 Cargo.toml
@@ -196,10 +196,10 @@ tests/
 examples/
 ├── windows_probe.rs
 ├── gpui_probe.rs
-├── window_lifecycle.rs
 └── demo_target.rs
 scripts/
 ├── measure-overhead.ps1
+├── measure-window-reopen.ps1
 ├── verify-window-lifecycle.ps1
 └── verify-windows.ps1
 ```
@@ -235,7 +235,7 @@ seul processus de fenêtre (D18).
    toute interface GPUI définitive, comme l'exige la constitution.
 8. **Fondations GPUI, T050 à T057.** Modèle d'affichage neutre, thème, mouvement, composants,
    fenêtre, icône, branchement sur le coordinateur et captures hors écran. L'interface GPUI
-   s'ouvre avec l'option de développement `--gpui` ; l'application Slint reste le défaut.
+   s'ouvre avec l'option de développement `--gpui` ; l'application Slint reste le défaut jusqu'à T071.
 9. **US1 en GPUI, T058 à T060.** Page Logiciels, dialogue d'un logiciel et « Pour commencer ».
 10. **US2 en GPUI, T061 à T063.** Relecture des réglages, messages intégrés, pause et sortie.
 11. **US3 en GPUI, T064.** Suivre, réordonner, modifier et retirer avec annulation.
@@ -247,7 +247,8 @@ seul processus de fenêtre (D18).
     perdue ou sans réponse, dialogues et démonstration, puis vérification Windows. `--gpui` passe
     au processus de suivi avec T077. T071 attend T081.
 14. **Retrait de Slint, T071 et T072.** GPUI devient l'interface par défaut, Slint et `--gpui`
-    disparaissent. Le guide GPUI remplace `docs/guide-utilisateur.md` à la livraison.
+    disparaissent. Le responsable produit a décidé le 2026-11-01 de retirer Slint avant T070,
+    qui vérifie le binaire sans Slint. Le guide GPUI remplace `docs/guide-utilisateur.md` à la livraison.
 15. **Validation, T039 à T045.** Ressources, essais d'usage, exécutable témoin, conditionnement et
     revue finale, sur le binaire GPUI.
 
@@ -283,7 +284,6 @@ Une architecture différente exige une preuve de besoin dans `research.md` avant
 
 | Complexité temporaire | Pourquoi | Alternative plus simple rejetée |
 | --- | --- | --- |
-| Slint et GPUI dans le même binaire de T050 à T071, GPUI derrière `--gpui` | Garder une application utilisable et vérifiable pendant la migration | Bascule d'un seul bloc : aucune version utilisable avant la fin, revue impossible par étapes |
 | Deux processus du même exécutable et un protocole privé (D18) | GPUI occupe 59,7 Mio sans fenêtre : SC-004 fenêtre fermée exige qu'il ne tourne pas dans le processus de suivi | Amender SC-004 à 100 Mio : rejeté par le responsable produit le 2026-10-31 (D17) |
 
 ## Provenance du processus

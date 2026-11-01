@@ -16,13 +16,15 @@ Le [guide utilisateur](docs/guide-utilisateur.md) décrit le fonctionnement actu
 
 ## Utiliser l'application
 
-Lancer `target/release/power-plan-sync.exe`, ajouter un logiciel avec **Parcourir**,
-choisir son plan, confirmer le plan de retour, puis cocher **Activer l'automatisation**.
+Lancer `target/release/power-plan-sync.exe`, puis suivre « Pour commencer » : **Ajouter un
+logiciel** avec **Parcourir…** ou **Application ouverte** et choisir son plan, **Confirmer le plan
+de retour**, puis **Activer l'automatisation**.
 L'application utilise uniquement les plans déjà disponibles sur le PC.
 
-Le premier logiciel actif de la liste a priorité. Fermer la fenêtre conserve le suivi
-dans la zone de notification. **Pause** et **Quitter** tentent le retour choisi.
-Un changement manuel du plan dans Windows est conservé ; **Reprendre** relance le suivi.
+Le premier logiciel suivi de la liste a priorité. Fermer la fenêtre conserve le suivi
+dans la zone de notification. **Mettre en pause** et **Quitter** tentent le retour choisi.
+Un changement manuel du plan dans Windows est conservé ; **Reprendre l'automatisation** relance
+le suivi.
 Le retour d'un cycle déjà commencé reste celui choisi au début de ce cycle.
 
 Pour découvrir l'interface sans modifier Windows :
@@ -43,11 +45,11 @@ contiennent les mesures, les captures et les vérifications encore ouvertes.
 Sur cette machine, les exécutables compilés sont dans `target/release/examples/`.
 
 ```powershell
-.\target\release\examples\ui_probe.exe
+.\target\release\examples\gpui_probe.exe
 .\scripts\verify-prototypes.ps1
 ```
 
-La fenêtre utilise des données de démonstration et ne change aucun réglage Windows.
+La sonde GPUI ouvre une fenêtre d'essai et ne change aucun réglage Windows.
 La seconde commande vérifie les plans et les processus sans basculer de plan.
 Pour une séance dédiée de bascules réelles avec restauration du plan initial :
 
@@ -57,8 +59,8 @@ Pour une séance dédiée de bascules réelles avec restauration du plan initial
 
 La sonde choisit comme cible un autre plan existant, puis revient au plan actif au début du test.
 Le témoin dort dix secondes. Les essais différencient son chemin, ses instances,
-un fichier homonyme et un lanceur restant ouvert. Fermer la fenêtre laisse l'icône active ;
-utiliser **Quitter** pour arrêter la sonde UI.
+un fichier homonyme et un lanceur restant ouvert. Fermer la fenêtre de la sonde GPUI laisse son
+icône active ; utiliser **Quitter la sonde** pour l'arrêter.
 
 ## Compiler
 

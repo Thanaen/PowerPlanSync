@@ -1,9 +1,15 @@
 #requires -Version 7.5
 
+<#
+.SYNOPSIS
+Relève la dérive de mémoire privée et de handles sur cent cycles de fenêtre dans un même processus,
+avec la sonde GPUI `gpui_probe --lifecycle`. L'application, dont la fenêtre vit dans un processus
+`--window` enfant (D18), se mesure avec `scripts/measure-window-reopen.ps1`.
+#>
 [CmdletBinding()]
 param(
-    [string]$ExecutablePath = (Join-Path $PSScriptRoot '../target/release/examples/window_lifecycle.exe'),
-    [string[]]$Arguments = @(),
+    [string]$ExecutablePath = (Join-Path $PSScriptRoot '../target/release/examples/gpui_probe.exe'),
+    [string[]]$Arguments = @('--lifecycle'),
     [string]$EvidenceDirectory = (Join-Path $PSScriptRoot '../.audit/window-lifecycle'),
     [ValidateRange(1, 600)][int]$MarkerTimeoutSeconds = 60
 )
