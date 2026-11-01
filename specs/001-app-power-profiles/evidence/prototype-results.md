@@ -321,3 +321,60 @@ Narrateur a été arrêté ensuite ; aucun réglage d'affichage n'a été modifi
 SC-007 ne laissent aucun processus de fenêtre ni dérive. La campagne de 30 minutes de SC-004
 (T039) n'a pas été exécutée, ni le parcours complet au Narrateur et en contraste élevé (T070).
 
+
+## Réouverture sur erreur, notification et dialogues à travers les deux processus (T078, T080)
+
+Date : 1er novembre 2026, machine de référence (AMD Ryzen 7 9800X3D, Windows 11 Professionnel,
+build 26300). Binaire release de `caf54ff` (`cargo build --locked --release --bins --examples`),
+SHA-256 `FBD75C158DC2F8FE84671EA178FC85F6522C58F194D1227DD60434C8CFB6F10A`. Une seule instance à
+la fois, sauf l'incident décrit plus bas. `--gpui --demo` avec un dossier de données isolé, sauf
+l'essai « Plan modifié dans Windows », en vrai mode. Plan initial : Haute performance, relu avant
+et après ; rétabli et vérifié dans un bloc `finally`. Battlefield n'a pas été lancé.
+
+Pilotage : UI Automation (`scripts/uia-act.ps1`, `uia-inspect.ps1`), touche Espace par
+`send-keys.ps1` après vérification que le processus de fenêtre a le premier plan. L'icône est
+pilotée par `scripts/tray-act.ps1` : `-Action Click` poste le clic gauche à la fenêtre
+`tray_icon_app` (message 6002) ; `-Item` ouvre le vrai menu, lit l'identifiant de l'élément par
+`MN_GETHMENU`, ferme le menu, puis envoie `WM_COMMAND`. Le journal est
+`simulation/activity.log`.
+
+### Réouverture et notification (T078)
+
+| Essai | Résultat |
+| --- | --- |
+| Nouvelle erreur, fenêtre fermée | `simulation/config.json` rendu illisible, puis **Mettre en pause** dans le menu de l'icône (identifiant 1002). L'enregistrement échoue (`erreur Storage("expected value at line 1 column 1")`) et un processus de fenêtre se lance dans la même seconde que la ligne `erreur` du journal. Message « La configuration ou le journal ne peut pas être lu ou enregistré… » avec **Réessayer**. Fenêtre en état normal, à l'écran. Trois fois sur trois (essai principal et deux rejeux) |
+| Premier plan de cette fenêtre | **Non établi** : `msrdc` (fenêtre WSLg) gardait le premier plan. Sans saisie réelle, Windows peut refuser le premier plan à tout processus (voir T080 du 31 octobre). La fenêtre a obtenu le premier plan au premier contrôle activé par UI Automation |
+| Erreur au démarrage avec `--start-minimized` | Réglages illisibles : la fenêtre s'ouvre malgré l'option |
+| Notification au premier masquage | Fermeture par `WindowPattern.Close`, captures de l'angle de l'écran à 0,7, 2 et 3,5 s. À 2 s, la bulle « PowerPlanSync reste ouvert », source `power-plan-sync.exe` ([capture](window-lifecycle/split-20261101/hidden-notice.png)). Au même moment, l'Explorateur crée l'émetteur `NotifyIconGeneratedAumid_…` dans `wpndatabase.db` (lecture limitée aux émetteurs récents). La bulle n'est pas gardée dans l'historique. UI Automation ne voit pas la bulle |
+| Masquages suivants | Réouverture par un clic sur l'icône, puis par **Ouvrir PowerPlanSync**, chaque fois suivie d'une fermeture : aucune bulle sur les captures |
+
+La source affichée est `power-plan-sync.exe` : l'exécutable n'a pas de ressource de version
+(`FileDescription` vide), que Windows utiliserait comme nom.
+
+### Modifier et messages intégrés (T080)
+
+| Essai | Résultat |
+| --- | --- |
+| **Modifier Témoin** | Dialogue « Modifier Témoin » dans le processus de fenêtre, rempli : chemin, **Nom affiché** « Témoin », **Plan pendant l'exécution** « Haute performance (simulation) », **Annuler**, **Enregistrer** |
+| Choix d'un autre plan, **Enregistrer** | `UpdateRule` vers le processus de suivi ; `config.json` passe au plan 1, `config.backup.json` est écrit ; `FinishEditorSave` ferme le dialogue ; la ligne devient « plan Équilibré (simulation) ». La liste du sélecteur ne s'ouvre pas par `ExpandCollapsePattern`. Elle s'ouvre par la touche Espace, puis `SelectionItemPattern.Select` choisit l'élément |
+| **Modifier**, enregistrement en échec | Fichier rendu illisible avant **Enregistrer** : le dialogue reste ouvert, sans message. L'erreur n'apparaît que dans la page, presque cachée sous le dialogue. **Défaut ouvert : #51**. **Annuler** ferme le dialogue |
+| Message d'erreur bloquante | Après les échecs ci-dessus : « La configuration ou le journal ne peut pas être lu ou enregistré… », **Réessayer**. Fichier rétabli, puis **Réessayer** : message retiré, « Automatisation en attente » |
+| Message d'une action refusée | **Démarrer avec Windows** dans **Réglages** : « Le démarrage Windows est désactivé en démonstration. », affiché dans **Réglages** et **Logiciels**. La bascule reste désactivée et aucune entrée `Run` n'est créée |
+| Réglages illisibles | Au démarrage : « Les réglages sont illisibles… », **Ouvrir le dossier des données**, **Relire les réglages**, **Ouvrir le guide** ; fichier inchangé. Fichier rétabli, puis **Relire les réglages** : contrôle repris, règle affichée |
+| Contrôle indisponible | `demo.lock` tenu par un autre processus : « Cette démonstration est déjà ouverte dans ce dossier. », **Réessayer**. Verrou libéré, puis **Réessayer** : contrôle repris. Le statut dit « une autre session gère les plans », texte du vrai mode. Le verrou global du vrai mode a été vérifié le 31 octobre |
+| Plan modifié dans Windows, vrai mode | Règle pour `demo_target.exe` vers Utilisation normale. Le témoin passe le plan à Utilisation normale en moins d'une seconde. `powercfg /setactive` Économie d'énergie, puis message « Plan modifié dans Windows. Le plan Économie d'énergie a été choisi dans Windows pendant le cycle… » et statut « Automatisation suspendue, plan choisi dans Windows » ; le plan reste celui choisi. **Reprendre l'automatisation** : retour à Utilisation normale en 0,2 s, message retiré. Témoin arrêté : retour à Haute performance. **Quitter PowerPlanSync** (menu) : code 0, aucun processus restant |
+| Refus de Windows, retour échoué en quittant, arrêt du coordinateur, sur batterie | **Non exécutés** : la démonstration n'échoue jamais un changement de plan. Provoquer un refus en vrai mode demanderait d'altérer les plans de la machine. Le coordinateur démarre toujours ici, et ce PC n'a pas de batterie. Couverts par les tests de `tests/presentation.rs` et `src/interface/messages.rs` |
+| **Ouvrir le dossier des données**, **Ouvrir le guide**, **Ouvrir les options d'alimentation** | **Non exécutés** : ils ouvrent l'Explorateur, le navigateur ou les Paramètres de l'utilisateur |
+
+### Incident : Quitter sans effet (#52)
+
+Une fois, **Quitter PowerPlanSync** (menu, fenêtre ouverte, après la suite d'essais ci-dessus) n'a
+rien arrêté. Le processus de fenêtre est resté ouvert avec l'état d'avant, et aucune ligne n'a été
+ajoutée au journal. Ensuite, un second **Quitter**, **Mettre en pause** du menu et de la fenêtre
+sont restés sans effet ; le menu s'ouvrait encore. Les threads attendaient tous, sans CPU. Le
+lancement suivant, fait avant de le constater, a tourné en même temps que lui pendant deux minutes,
+avant `Stop-Process`. Non reproduit : deux rejeux complets de la même suite et six autres arrêts
+par le menu, dont un en vrai mode, ont quitté en moins de 5 s.
+
+`cargo test --locked --all-targets` passe (fenêtres GPUI réelles comprises), lancé pendant la
+session, sous le même verrou.
