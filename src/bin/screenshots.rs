@@ -1094,7 +1094,9 @@ mod shots {
                 let settings = matches!(view, View::Settings)
                     .then(|| cx.new(|cx| SettingsPage::new(model.clone(), |_, _| {}, window, cx)));
                 let dialog = match view {
-                    View::Dialog(case) => Some(cx.new(|cx| dialog(case, &model, window, cx))),
+                    View::Dialog(case) => {
+                        Some(cx.new(|cx| dialog(case, &model, false, window, cx)))
+                    }
                     View::Software | View::Settings | View::Help | View::Palette => None,
                 };
                 cx.new(|cx| {
