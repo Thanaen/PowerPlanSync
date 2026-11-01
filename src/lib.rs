@@ -11,8 +11,6 @@ pub mod window_protocol;
 #[cfg(target_os = "windows")]
 pub mod windows;
 
-pub mod ui;
-
 #[cfg(windows)]
 pub mod runtime;
 #[cfg(windows)]

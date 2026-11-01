@@ -3,7 +3,6 @@ name = "power-plan-sync"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.98.1"
-build = "build.rs"
 publish = false
 
 [features]
@@ -16,7 +15,6 @@ gpui_platform = { package = "gpui-pre-platform", version = "=0.3.9" }
 image = { version = "0.25", default-features = false, features = ["ico", "png"] }
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = "=1.0.151"
-slint = { version = "=1.18.0", default-features = false, features = ["std", "backend-winit", "renderer-software", "accessibility", "compat-1-18", "system-tray"] }
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "=0.62.2", features = [
@@ -59,6 +57,3 @@ required-features = ["screenshots"]
 
 [dev-dependencies]
 gpui = { package = "gpui-pre", version = "=0.3.9", features = ["test-support"] }
-
-[build-dependencies]
-slint-build = { version = "=1.18.0" }
