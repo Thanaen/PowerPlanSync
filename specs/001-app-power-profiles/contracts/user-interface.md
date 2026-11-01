@@ -79,6 +79,11 @@ exécutable. Un plan disparu de Windows est signalé sous son champ (« Ce plan 
 Windows. Choisissez-en un autre. ») et **Ajouter** reste indisponible. Un fichier déplacé
 s'annonce par « Fichier introuvable » ; l'utilisateur choisit le nouveau fichier et garde le plan.
 
+Si **Ajouter** ou **Enregistrer** échoue, que la règle soit refusée ou que la configuration ne
+puisse pas être enregistrée, le dialogue reste ouvert, garde la saisie et affiche l'erreur en
+tête. Rien n'est enregistré. L'utilisateur peut réessayer ou fermer par **Annuler**. La page
+affiche le même message, qui reste visible après la fermeture du dialogue.
+
 ## États signalés dans la fenêtre
 
 Les situations à signaler s'affichent dans un message intégré à la page, jamais
