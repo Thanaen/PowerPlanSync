@@ -158,14 +158,23 @@ raccourcis, toujours annoncés.
 
 ## Mouvement
 
-Le mouvement reste rare et court. Il suit la section Mouvement du design system Bientôt GPUI (MENU 200 ms,
-DIALOG 250 ms, poses `slide_in` et `slide_over`). Quatre transitions seulement sont animées :
+Le mouvement reste rare et court. Il suit la section Mouvement du design system Bientôt GPUI (PRESS 140 ms,
+MENU 200 ms, DIALOG 250 ms, poses `slide_in` et `slide_over`). Quatre transitions seulement sont
+animées, plus un retour de contrôle décrit ensuite :
 
 1. le message de retrait annulable, qui entre en glissant de 4 px, seulement si le retrait vient
    d'être fait fenêtre ouverte ;
 2. l'échange de deux lignes après **Monter** ou **Descendre** à la souris ;
 3. l'ouverture au clic du dialogue **Ajouter un logiciel** ;
 4. la pastille (coche) d'une étape validée dans « Pour commencer ».
+
+Le retour de contrôle se limite à la pastille des interrupteurs : **Suivre** sur chaque ligne de
+**Logiciels associés** et les interrupteurs de **Réglages**. Basculée au pointeur, la pastille
+glisse vers sa nouvelle place en PRESS (140 ms) avec `ease_in_out`, sans rebond. Un second clic
+pendant le glissement la renvoie depuis sa position du moment, sans saut. Basculé au clavier, par
+un raccourci ou par la palette, l'interrupteur montre directement son état final. La piste change
+de couleur sans transition. Le glissement ne déplace pas le focus et ne retarde pas l'état lu par
+le Narrateur.
 
 Une action au clavier n'est jamais animée. La palette, le menu de l'icône, les valeurs lues
 (plan, statut, compteur) et la navigation ne le sont pas non plus. Les fermetures sont

@@ -4,6 +4,8 @@
 //! de `specs/001-app-power-profiles/design/README.md`. Chaque composant porte un rôle, un nom et
 //! un état accessibles ; les couleurs sont choisies par des fonctions pures, testées sans GPUI.
 
+use std::time::{Duration, Instant};
+
 use gpui::accesskit::Live;
 use gpui::{
     AnyElement, App, BoxShadow, ClickEvent, Context, ElementId, EventEmitter, FocusHandle,
@@ -12,6 +14,7 @@ use gpui::{
     deferred, div, point, prelude::*, px, svg, transparent_black,
 };
 
+use crate::interface::motion;
 use crate::interface::strings;
 use crate::interface::theme::spacing::*;
 use crate::interface::theme::{Theme, TypeStyled as _, radius, rem, size as token, text};
@@ -387,6 +390,50 @@ impl RenderOnce for Button {
 pub const SWITCH_WIDTH: Pixels = px(28.);
 pub const SWITCH_HEIGHT: Pixels = px(16.);
 const KNOB: Pixels = px(10.);
+const KNOB_INSET: Pixels = px(2.);
+
+#[derive(Default)]
+struct KnobSlide {
+    shown: Option<bool>,
+    clicked_toward: Option<bool>,
+    from: f32,
+    slide: Option<(Instant, Duration)>,
+}
+
+impl KnobSlide {
+    fn position(&mut self, on: bool, window: &mut Window, cx: &App) -> f32 {
+        let now = cx.background_executor().now();
+        if self.shown != Some(on) {
+            let slides = self.shown.is_some() && self.clicked_toward == Some(on);
+            self.from = self.at(now);
+            self.shown = Some(on);
+            self.clicked_toward = None;
+            let length = motion::PRESS
+                .duration()
+                .mul_f32((f32::from(on) - self.from).abs());
+            self.slide = (slides && !length.is_zero()).then_some((now, length));
+        }
+        if cx.reduce_motion()
+            || self
+                .slide
+                .is_some_and(|(start, length)| now.saturating_duration_since(start) >= length)
+        {
+            self.slide = None;
+        }
+        if self.slide.is_some() {
+            window.request_animation_frame();
+        }
+        self.at(now)
+    }
+
+    fn at(&self, now: Instant) -> f32 {
+        let target = f32::from(self.shown.unwrap_or_default());
+        self.slide.map_or(target, |(start, length)| {
+            let time = now.saturating_duration_since(start).as_secs_f32() / length.as_secs_f32();
+            self.from + (target - self.from) * motion::ease_in_out()(time)
+        })
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SwitchColors {
@@ -467,7 +514,13 @@ impl RenderOnce for Switch {
         let colors = switch_colors(self.on, !self.disabled, &theme);
         let ring = FocusRing::on(&theme, self.backdrop);
         let on = self.on;
+        let slide = window.use_keyed_state(self.id.clone(), cx, |_, _| KnobSlide::default());
+        let position = slide.update(cx, |slide, cx| slide.position(on, window, cx));
+        let travel = SWITCH_WIDTH - KNOB - (KNOB_INSET + px(1.)) * 2.;
+        let selector = self.id.to_string();
+        let knob = format!("{selector}-knob");
         let control = div()
+            .debug_selector(|| selector)
             .id(self.id)
             .role(Role::Switch)
             .aria_label(self.name)
@@ -475,15 +528,22 @@ impl RenderOnce for Switch {
             .w(SWITCH_WIDTH)
             .h(SWITCH_HEIGHT)
             .flex_none()
-            .px(px(2.))
+            .px(KNOB_INSET)
             .flex()
             .items_center()
-            .when(on, |control| control.justify_end())
             .rounded_full()
             .border_1()
             .border_color(colors.border)
             .bg(colors.track)
-            .child(div().size(KNOB).rounded_full().bg(colors.knob));
+            .child(
+                div()
+                    .debug_selector(|| knob)
+                    .relative()
+                    .left(travel * position)
+                    .size(KNOB)
+                    .rounded_full()
+                    .bg(colors.knob),
+            );
         if self.disabled {
             return control
                 .a11y_synthetic_children(|children| children.parent_node().set_disabled());
@@ -493,7 +553,11 @@ impl RenderOnce for Switch {
             .cursor_pointer()
             .focus_visible(move |style| ring.apply(style))
             .when_some(self.on_toggle, |control, on_toggle| {
-                control.on_click(move |_, window, cx| on_toggle(!on, window, cx))
+                control.on_click(move |event, window, cx| {
+                    let clicked_toward = (!event.is_keyboard()).then_some(!on);
+                    slide.update(cx, |slide, _| slide.clicked_toward = clicked_toward);
+                    on_toggle(!on, window, cx)
+                })
             })
     }
 }

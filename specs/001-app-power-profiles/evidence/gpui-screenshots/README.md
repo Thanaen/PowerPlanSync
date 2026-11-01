@@ -75,6 +75,7 @@ coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-da
 | `motion-removed-000.png`, `motion-removed-050.png` | `Idle-000.png`, `Idle-050.png` | Conforme : le message glisse de 4 px sous la liste. Le bouton **Supprimer** de la ligne remontée reste survolé, là où le pointeur a cliqué. |
 | `motion-add-rule-000.png`, `motion-add-rule-050.png` | `AddRule-000.png`, `AddRule-050.png` | Conforme : rien à la première image, puis voile et carte opaques, la carte à quelques pixels de sa place. La maquette ouvre le dialogue depuis « Pour commencer », la capture depuis la liste. |
 | `motion-first-launch-ready-000.png`, `motion-first-launch-ready-050.png` | `FirstLaunchReady-000.png`, `FirstLaunchReady-050.png` | Conforme : la pastille de l'étape 2 part de rien et a presque atteint sa taille à mi-course. |
+| `motion-switch-000.png`, `motion-switch-050.png` | aucune | **Suivre** de Hollow Bloom basculé au clic : la piste est déjà en `accent` et la pastille encore à gauche, puis à 7 px sur 12 à mi-course (70 ms). La barre d'état garde « 2 logiciels suivis sur 3 » : la capture ne met à jour que le modèle de la page. |
 
 ## Texte agrandi et contraste élevé (T068)
 

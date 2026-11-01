@@ -39,6 +39,7 @@ pour une entrée, et `ease_in_out` = `cubic-bezier(0.77, 0, 0.175, 1)` pour un d
 | Monter ou Descendre à la souris | `with_spring` sans rebond, 0,2 s, sur la hauteur mesurée de l'autre ligne. La ligne qui descend part 40 ms plus tard. La ligne qui monte passe au-dessus avec une bordure `border` de 1 px, sans ombre, le temps du déplacement. Le numéro, le badge et le plan actif changent immédiatement. | [0 %](mouvement/Reorder-000.png), [50 %](mouvement/Reorder-050.png), [100 %](mouvement/Reorder-100.png) |
 | Ouverture au clic du dialogue Ajouter un logiciel | Voile en fondu sur DIALOG, carte en `slide_over(DIALOG, 6 px)`, opaque dès 10 % de l'animation, comme le composant Dialog du design system. Ctrl+N ouvre sans animation. La fermeture est instantanée. | [0 %](mouvement/AddRule-000.png), [50 %](mouvement/AddRule-050.png), [100 %](mouvement/AddRule-100.png) |
 | Étape validée dans « Pour commencer » | La pastille entre avec `with_spring` (bounce 0.2) en 250 ms. C'est un moment unique : ce rebond n'est pas un jeton. | [0 %](mouvement/FirstLaunchReady-000.png), [50 %](mouvement/FirstLaunchReady-050.png), [100 %](mouvement/FirstLaunchReady-100.png) |
+| Interrupteur basculé au pointeur (retour de contrôle) | La pastille glisse de 12 px en PRESS (140 ms) avec `ease_in_out`, sans rebond. Un second clic pendant le glissement la renvoie depuis sa position du moment, en une durée proportionnelle au trajet. La piste change de couleur sans transition. Au clavier, par un raccourci ou par la palette, l'état final paraît directement. | [0 %](../evidence/gpui-screenshots/motion-switch-000.png), [50 %](../evidence/gpui-screenshots/motion-switch-050.png) |
 
 Les messages Plan modifié dans Windows, Changement refusé et Retour échoué apparaissent sans
 animation. Ces événements surviennent surtout fenêtre fermée, et animer leur hauteur forcerait
@@ -63,7 +64,8 @@ thème, jusqu'à ce que Bientôt les adopte.
 - bouton Tinted désactivé : fond transparent, bordure `border`, texte `text-placeholder` ;
 - `g-badge--error` (texte `#e8999c` dans le thème sombre) et badge accent en `accent-on-active` ;
 - Switch éteint : pastille en `text-muted`, piste en `element-active` et bordure en `text-placeholder` ;
-- pastille du Switch sans glissement et liste déroulante ouverte sans `slide_over` : le contrat n'anime que quatre transitions, et la liste s'ouvre aussi au clavier ;
+- glissement de la pastille du Switch, que le code de Bientôt ne fait pas, en PRESS (140 ms) avec `ease_in_out` au lieu de 120 ms, et seulement au pointeur ;
+- liste déroulante ouverte sans `slide_over` : elle s'ouvre aussi au clavier ;
 - boutons de fenêtre comme ceux de Windows : glyphes de 10 px, glyphe blanc sur le rouge de **Fermer** survolé (`#c42b1c` dans le thème sombre, HighlightText sur Highlight en contraste élevé) et glyphe de restauration quand la fenêtre est agrandie ;
 - infobulles de la barre latérale étroite affichées sans le fondu `tooltip` de 150 ms : GPUI les montre au survol sans animation d'entrée.
 - liste **Application ouverte** sans barre de défilement visible, que GPUI ne dessine pas : la troisième ligne coupée signale le défilement ;
