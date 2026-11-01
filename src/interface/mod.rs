@@ -5,6 +5,7 @@ pub mod first_launch;
 pub mod help_page;
 pub mod messages;
 pub mod motion;
+pub mod palette;
 pub mod rule_dialog;
 pub mod settings_page;
 pub mod software_page;

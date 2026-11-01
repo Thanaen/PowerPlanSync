@@ -4,12 +4,13 @@
 //! de notification. Sous [`NARROW_WIDTH`], la barre latérale se réduit à ses icônes.
 
 use gpui::{
-    AnyView, App, AppContext as _, Bounds, Context, EventEmitter, FocusHandle, Focusable, Global,
-    Hsla, KeyBinding, Pixels, Role, SharedString, Size, Subscription, Window, WindowBounds,
+    AnyView, App, AppContext as _, Bounds, Context, Entity, EventEmitter, FocusHandle, Focusable,
+    Global, Hsla, KeyBinding, Pixels, Role, SharedString, Size, Subscription, Window, WindowBounds,
     WindowControlArea, WindowHandle, WindowOptions, actions, div, prelude::*, px, size,
 };
 
 use crate::domain::PowerSource;
+use crate::interface::palette::{self, Command, PaletteEvent, PaletteView, Situation};
 use crate::interface::strings;
 use crate::interface::theme::spacing::*;
 use crate::interface::theme::{Theme, TypeStyled as _, radius, size as token, text};
@@ -23,6 +24,9 @@ actions!(
         AddSoftware,
         TogglePause,
         UndoDelete,
+        ShowSettings,
+        ShowHelp,
+        Quit,
         FocusNext,
         FocusPrevious
     ]
@@ -49,6 +53,9 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("ctrl-n", AddSoftware, context),
         KeyBinding::new("ctrl-alt-p", TogglePause, context),
         KeyBinding::new("ctrl-z", UndoDelete, context),
+        KeyBinding::new("ctrl-,", ShowSettings, context),
+        KeyBinding::new("f1", ShowHelp, context),
+        KeyBinding::new("ctrl-q", Quit, context),
         KeyBinding::new("tab", FocusNext, context),
         KeyBinding::new("shift-tab", FocusPrevious, context),
     ]);
@@ -90,8 +97,6 @@ impl Page {
 /// Ce que la fenêtre demande à l'application.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ShellEvent {
-    /// **Commandes** ou Ctrl+Maj+P.
-    OpenCommands,
     /// **Quitter**, qui tente la restauration protégée avant l'arrêt.
     Quit,
     /// Ctrl+N : le dialogue **Ajouter un logiciel**, sans animation.
@@ -220,6 +225,12 @@ fn act(area: WindowControlArea, window: &mut Window) {
     };
 }
 
+struct OpenPalette {
+    view: Entity<PaletteView>,
+    opener: Option<FocusHandle>,
+    _events: Subscription,
+}
+
 pub struct MainWindow {
     focus_handle: FocusHandle,
     model: UiDisplayModel,
@@ -227,6 +238,7 @@ pub struct MainWindow {
     pages: [Option<AnyView>; 3],
     /// Le dialogue ouvert, sous son voile, au-dessus de la fenêtre.
     dialog: Option<AnyView>,
+    palette: Option<OpenPalette>,
     /// Quand l'élément focalisé disparaît, plus rien n'a le focus : sans contexte de touches,
     /// Tab et les raccourcis de la fenêtre ne répondraient plus. La fenêtre le reprend.
     _focus_lost: Subscription,
@@ -255,6 +267,7 @@ impl MainWindow {
             page: Page::default(),
             pages: [None, None, None],
             dialog: None,
+            palette: None,
         }
     }
 
@@ -287,7 +300,65 @@ impl MainWindow {
     pub fn set_model(&mut self, model: UiDisplayModel, cx: &mut Context<Self>) {
         if self.model != model {
             self.model = model;
+            if let Some(palette) = &self.palette {
+                let situation = Situation::of(&self.model, self.page);
+                palette
+                    .view
+                    .update(cx, |view, cx| view.set_situation(situation, cx));
+            }
             cx.notify();
+        }
+    }
+
+    pub fn open_commands(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.dialog.is_some() || self.palette.is_some() {
+            return;
+        }
+        let opener = window.focused(cx);
+        let situation = Situation::of(&self.model, self.page);
+        let view = cx.new(|cx| PaletteView::new(situation, window, cx));
+        let events = cx.subscribe_in(&view, window, |this, _, event, window, cx| {
+            this.close_commands(window, cx);
+            if let PaletteEvent::Run(command) = *event {
+                this.run(command, cx);
+            }
+        });
+        self.palette = Some(OpenPalette {
+            view,
+            opener,
+            _events: events,
+        });
+        cx.notify();
+    }
+
+    pub fn palette(&self) -> Option<&Entity<PaletteView>> {
+        self.palette.as_ref().map(|palette| &palette.view)
+    }
+
+    fn close_commands(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(palette) = self.palette.take() else {
+            return;
+        };
+        let focus = palette.opener.unwrap_or_else(|| self.focus_handle.clone());
+        window.focus(&focus, cx);
+        cx.notify();
+    }
+
+    fn run(&mut self, command: Command, cx: &mut Context<Self>) {
+        match command {
+            Command::AddSoftware => cx.emit(ShellEvent::AddSoftware),
+            Command::UndoDelete => cx.emit(ShellEvent::UndoDelete),
+            Command::TogglePause => cx.emit(ShellEvent::TogglePause),
+            Command::Quit => cx.emit(ShellEvent::Quit),
+            Command::ShowSoftware => self.show_page(Page::Software, cx),
+            Command::ShowSettings => self.show_page(Page::Settings, cx),
+            Command::ShowHelp => self.show_page(Page::Help, cx),
+        }
+    }
+
+    fn run_unless_palette_open(&mut self, command: Command, cx: &mut Context<Self>) {
+        if self.palette.is_none() {
+            self.run(command, cx);
         }
     }
 
@@ -349,7 +420,9 @@ impl MainWindow {
                         .icon("command")
                         .keys(strings::COMMANDS_KEYS)
                         .backdrop(theme.background)
-                        .on_click(cx.listener(|_, _, _, cx| cx.emit(ShellEvent::OpenCommands))),
+                        .on_click(
+                            cx.listener(|this, _, window, cx| this.open_commands(window, cx)),
+                        ),
                 )
         });
         div()
@@ -569,10 +642,29 @@ impl Render for MainWindow {
         div()
             .key_context(KEY_CONTEXT)
             .track_focus(&self.focus_handle)
-            .on_action(cx.listener(|_, _: &OpenCommands, _, cx| cx.emit(ShellEvent::OpenCommands)))
-            .on_action(cx.listener(|_, _: &AddSoftware, _, cx| cx.emit(ShellEvent::AddSoftware)))
-            .on_action(cx.listener(|_, _: &TogglePause, _, cx| cx.emit(ShellEvent::TogglePause)))
-            .on_action(cx.listener(|_, _: &UndoDelete, _, cx| cx.emit(ShellEvent::UndoDelete)))
+            .on_action(
+                cx.listener(|this, _: &OpenCommands, window, cx| this.open_commands(window, cx)),
+            )
+            .on_action(cx.listener(|this, _: &AddSoftware, _, cx| {
+                this.run_unless_palette_open(Command::AddSoftware, cx)
+            }))
+            .on_action(cx.listener(|this, _: &TogglePause, _, cx| {
+                this.run_unless_palette_open(Command::TogglePause, cx)
+            }))
+            .on_action(cx.listener(|this, _: &UndoDelete, _, cx| {
+                this.run_unless_palette_open(Command::UndoDelete, cx)
+            }))
+            .on_action(cx.listener(|this, _: &ShowSettings, _, cx| {
+                this.run_unless_palette_open(Command::ShowSettings, cx)
+            }))
+            .on_action(cx.listener(|this, _: &ShowHelp, _, cx| {
+                this.run_unless_palette_open(Command::ShowHelp, cx)
+            }))
+            .on_action(
+                cx.listener(|this, _: &Quit, _, cx| {
+                    this.run_unless_palette_open(Command::Quit, cx)
+                }),
+            )
             .on_action(|_: &FocusNext, window, cx| window.focus_next(cx))
             .on_action(|_: &FocusPrevious, window, cx| window.focus_prev(cx))
             .relative()
@@ -603,6 +695,11 @@ impl Render for MainWindow {
             )
             .child(self.status_bar(narrow, &theme))
             .children(self.dialog.clone())
+            .children(
+                self.palette
+                    .as_ref()
+                    .map(|palette| palette::overlay(&palette.view)),
+            )
     }
 }
 

@@ -466,6 +466,7 @@ mod shots {
             power_plan_sync::interface::window::bind_keys(cx);
             power_plan_sync::interface::text_input::bind_keys(cx);
             power_plan_sync::interface::rule_dialog::bind_keys(cx);
+            power_plan_sync::interface::palette::bind_keys(cx);
             anyhow::Ok(())
         })?;
         let cases = [
@@ -743,6 +744,38 @@ mod shots {
                     main.show_page(Page::Help, cx);
                     main
                 })
+            })?;
+            capture(&mut cx, window.into(), &output.join(format!("{name}.png")))?;
+        }
+        let palettes = [
+            ("palette", WindowAppearance::Dark, 880., 620., ""),
+            ("palette-light", WindowAppearance::Light, 880., 620., ""),
+            ("palette-filtered", WindowAppearance::Dark, 880., 620., "ou"),
+            (
+                "palette-no-match",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                "blender",
+            ),
+            ("palette-narrow", WindowAppearance::Dark, 420., 760., ""),
+        ];
+        for (name, appearance, width, height, query) in palettes {
+            cx.update(|cx| cx.set_global(ForcedAppearance(appearance)));
+            let model = shown(active());
+            let window = cx.open_window(size(px(width), px(height)), |window, cx| {
+                let page = cx.new(|_| SoftwarePage::new(model.clone(), |_, _| {}));
+                cx.new(|cx| {
+                    let mut main = MainWindow::new(model.clone(), window, cx);
+                    main.set_page_view(Page::Software, page.into(), cx);
+                    main
+                })
+            })?;
+            window.update(&mut cx, |main, window, cx| {
+                main.open_commands(window, cx);
+                if let Some(palette) = main.palette() {
+                    palette.update(cx, |palette, cx| palette.type_query(query, cx));
+                }
             })?;
             capture(&mut cx, window.into(), &output.join(format!("{name}.png")))?;
         }

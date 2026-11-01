@@ -84,3 +84,8 @@ trois points. La section **Limites** précise que les plans s'affichent sous leu
 comme le demande le contrat. La section sur le choix fait dans Windows dit « conserve ce choix »
 au lieu de « le garde », dont le pronom était ambigu. Le texte ne dépasse pas 680 px de large :
 fenêtre agrandie, les lignes restent lisibles. Le numéro de version est celui de l'exécutable.
+
+La palette de commandes (`src/interface/palette.rs`) suit `Palette.png`, sans le voile de la palette
+de Bientôt : la maquette laisse la page lisible derrière elle. Elle ajoute deux entrées absentes de
+la maquette, listées seulement quand elles servent : **Logiciels : annuler le retrait** après un
+retrait et **Logiciels : ouvrir** hors de la page **Logiciels**.

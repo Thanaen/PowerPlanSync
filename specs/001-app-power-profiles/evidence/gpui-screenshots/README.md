@@ -8,7 +8,7 @@ sudo apt-get install libfontconfig-dev mesa-vulkan-drivers
 cargo run --features screenshots --bin screenshots -- specs/001-app-power-profiles/evidence/gpui-screenshots
 ```
 
-La page **Logiciels** est en place (T058), avec ses dialogues **Ajouter un logiciel** et **Modifier** (T059) « Pour commencer » avant la première activation (T060) et ses messages intégrés (T062). Les pages **Réglages** et **Aide et limites** sont en place (T065). Les
+La page **Logiciels** est en place (T058), avec ses dialogues **Ajouter un logiciel** et **Modifier** (T059) « Pour commencer » avant la première activation (T060) et ses messages intégrés (T062). Les pages **Réglages** et **Aide et limites** sont en place (T065). La palette de commandes (T066) s'ouvre par-dessus la page **Logiciels**. Les
 coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-dark.png` et
 `widgets-light.png` montrent les composants de T053 seuls.
 
@@ -54,5 +54,10 @@ coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-da
 | `first-launch-unfollowed.png` | aucune | Seul logiciel non suivi : l'automatisation s'est arrêtée, les étapes reviennent et la liste reste dessous pour le suivre de nouveau. |
 | `first-launch-light.png` | aucune | Mêmes constats en thème clair. |
 | `first-launch-narrow.png` | aucune | Fenêtre étroite : chaque commande passe sous le texte de son étape. |
+| `palette.png` | `Palette.png` | Conforme : cinq entrées, raccourcis en capuchons, la page reste lisible sans voile. |
+| `palette-light.png` | aucune | Mêmes constats en thème clair. |
+| `palette-filtered.png` | aucune | Recherche « ou » : les verbes qui commencent par la saisie d'abord, la partie trouvée en accent. |
+| `palette-no-match.png` | aucune | Aucune entrée : « Aucune commande ne correspond. », et le pied ne garde que **Échap** **Fermer**. |
+| `palette-narrow.png` | aucune | Fenêtre étroite : sans le bouton **Commandes**, Ctrl+Maj+P ouvre la palette, centrée avec ses marges. |
 
 Aucun écart hors de ceux listés dans `design/README.md`.

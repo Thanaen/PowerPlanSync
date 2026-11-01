@@ -11,6 +11,7 @@ use futures::channel::mpsc::UnboundedReceiver;
 use gpui::{App, AppContext as _, Context, Entity, FocusHandle, Focusable as _, QuitMode, Window};
 
 use crate::interface::help_page::HelpPage;
+use crate::interface::palette;
 use crate::interface::rule_dialog::{self, RuleDialog, RuleDialogEvent, RuleDialogMode};
 use crate::interface::settings_page::SettingsPage;
 use crate::interface::software_page::{SoftwareEvent, SoftwarePage};
@@ -51,6 +52,7 @@ pub fn run(
             window::bind_keys(cx);
             text_input::bind_keys(cx);
             rule_dialog::bind_keys(cx);
+            palette::bind_keys(cx);
             apply_preferences(cx);
 
             let on_action: OnAction = Arc::new(on_action);
@@ -253,8 +255,6 @@ fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App, notify: bool) -> bool {
                 on_action(UiAction::UndoDelete);
             }
         }
-        // La palette de commandes arrive avec T067.
-        ShellEvent::OpenCommands => {}
     })
     .detach();
     true

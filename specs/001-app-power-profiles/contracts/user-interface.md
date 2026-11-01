@@ -41,7 +41,19 @@ même message et change son texte.
 
 La barre d'état reprend l'état de l'automatisation, le nombre de logiciels suivis (« 2 logiciels
 suivis sur 3 ») et la source d'alimentation. La palette de commandes (Ctrl+Maj+P, bouton
-**Commandes**) propose « Domaine : verbe », par exemple « Logiciels : ajouter ».
+**Commandes**) propose « Domaine : verbe », par exemple « Logiciels : ajouter ». Ses entrées
+sont, dans l'ordre : **Logiciels : ajouter** (Ctrl+N), **Logiciels : annuler le retrait**
+(Ctrl+Z), **Logiciels : ouvrir**, **Automatisation : mettre en pause** ou **reprendre**
+(Ctrl+Alt+P), **Réglages : ouvrir** (Ctrl+,), **Aide et limites : ouvrir** (F1) et
+**PowerPlanSync : quitter** (Ctrl+Q). Chacune fait ce que fait son bouton ou son raccourci. Une
+commande sans effet possible n'est pas listée : ajouter, annuler le retrait et la pause sans
+contrôle, annuler le retrait sans retrait récent, ouvrir la page déjà affichée. La recherche
+ignore la casse et les accents et place d'abord les entrées dont le domaine ou le verbe commence
+par la saisie. Le champ garde le focus : ↑ et ↓ choisissent une entrée, annoncée avec son
+raccourci et sa position (« Logiciels : ajouter, Ctrl+N, 1 sur 5 »), Entrée la lance, Échap ou
+un clic hors de la palette la ferme, et le focus revient à ce qui l'avait ouverte. Tab ne sort
+pas de la palette, qui ne s'ouvre pas par-dessus un dialogue. Tant qu'elle est ouverte, les
+raccourcis de la fenêtre ne font rien. Elle ne voile pas la page.
 
 ## Premier lancement
 
