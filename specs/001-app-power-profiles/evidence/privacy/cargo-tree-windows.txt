@@ -1,0 +1,1130 @@
+power-plan-sync v0.1.0 (D:\Dev\worktrees\PowerPlanSync\t3-8afaf7a5) []
+├── futures v0.3.34 [alloc,async-await,default,executor,futures-executor,std]
+│   ├── futures-channel v0.3.34 [alloc,futures-sink,sink,std]
+│   │   ├── futures-core v0.3.34 [alloc,std]
+│   │   └── futures-sink v0.3.34 [alloc,std]
+│   ├── futures-core v0.3.34 [alloc,std]
+│   ├── futures-executor v0.3.34 [std]
+│   │   ├── futures-core v0.3.34 [alloc,std]
+│   │   ├── futures-task v0.3.34 [alloc,std]
+│   │   └── futures-util v0.3.34 [alloc,async-await,async-await-macro,channel,futures-channel,futures-io,futures-macro,futures-sink,io,memchr,sink,slab,std]
+│   │       ├── futures-channel v0.3.34 [alloc,futures-sink,sink,std] (*)
+│   │       ├── futures-core v0.3.34 [alloc,std]
+│   │       ├── futures-io v0.3.34 [std]
+│   │       ├── futures-macro v0.3.34 (proc-macro) []
+│   │       │   ├── proc-macro2 v1.0.107 [default,proc-macro]
+│   │       │   │   └── unicode-ident v1.0.26 []
+│   │       │   ├── quote v1.0.47 [default,proc-macro]
+│   │       │   │   └── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │       │   └── syn v3.0.6 [clone-impls,default,derive,extra-traits,fold,full,parsing,printing,proc-macro,visit,visit-mut]
+│   │       │       ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │       │       ├── quote v1.0.47 [default,proc-macro] (*)
+│   │       │       └── unicode-ident v1.0.26 []
+│   │       ├── futures-sink v0.3.34 [alloc,std]
+│   │       ├── futures-task v0.3.34 [alloc,std]
+│   │       ├── memchr v2.8.3 [alloc,default,std]
+│   │       ├── pin-project-lite v0.2.17 []
+│   │       └── slab v0.4.12 [std]
+│   ├── futures-io v0.3.34 [std]
+│   ├── futures-sink v0.3.34 [alloc,std]
+│   ├── futures-task v0.3.34 [alloc,std]
+│   └── futures-util v0.3.34 [alloc,async-await,async-await-macro,channel,futures-channel,futures-io,futures-macro,futures-sink,io,memchr,sink,slab,std] (*)
+├── gpui-pre v0.3.9 [default,font-kit,wayland,windows-manifest,x11]
+│   ├── accesskit v0.24.1 [enumn]
+│   │   ├── enumn v0.1.14 (proc-macro) []
+│   │   │   ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   │   ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   │   └── syn v2.0.119 [clone-impls,default,derive,extra-traits,full,parsing,printing,proc-macro,visit,visit-mut]
+│   │   │       ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   │       ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   │       └── unicode-ident v1.0.26 []
+│   │   └── uuid v1.26.1 [default,rng,serde,sha1,std,v4,v5]
+│   │       ├── getrandom v0.4.3 []
+│   │       │   └── cfg-if v1.0.5 []
+│   │       ├── serde_core v1.0.229 [alloc,rc,result,std]
+│   │       └── sha1_smol v1.0.1 []
+│   ├── anyhow v1.0.104 [default,std]
+│   ├── async-channel v2.5.0 [std]
+│   │   ├── concurrent-queue v2.5.0 [std]
+│   │   │   └── crossbeam-utils v0.8.23 [default,std]
+│   │   ├── event-listener-strategy v0.5.4 [std]
+│   │   │   ├── event-listener v5.4.2 [parking,std]
+│   │   │   │   ├── parking v2.2.1 []
+│   │   │   │   └── pin-project-lite v0.2.17 []
+│   │   │   └── pin-project-lite v0.2.17 []
+│   │   ├── futures-core v0.3.34 [alloc,std]
+│   │   └── pin-project-lite v0.2.17 []
+│   ├── async-task v4.7.1 [default,std]
+│   ├── backtrace v0.3.76 [default,std]
+│   │   ├── cfg-if v1.0.5 []
+│   │   ├── rustc-demangle v0.1.28 []
+│   │   └── windows-link v0.2.1 []
+│   ├── bitflags v2.13.2 [serde,serde_core]
+│   │   └── serde_core v1.0.229 [alloc,rc,result,std]
+│   ├── chrono v0.4.45 [alloc,clock,default,iana-time-zone,js-sys,now,oldtime,serde,std,wasm-bindgen,wasmbind,winapi,windows-link]
+│   │   ├── num-traits v0.2.19 [default,i128,libm,std]
+│   │   │   └── libm v0.2.16 [arch,default]
+│   │   ├── serde v1.0.229 [alloc,default,derive,rc,serde_derive,std]
+│   │   │   ├── serde_core v1.0.229 [alloc,rc,result,std]
+│   │   │   └── serde_derive v1.0.229 (proc-macro) [default]
+│   │   │       ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   │       ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   │       └── syn v3.0.6 [clone-impls,default,derive,extra-traits,fold,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │   └── windows-link v0.2.1 []
+│   ├── ctor v1.0.13 [default,priority,proc_macro,std]
+│   │   ├── link-section v0.19.3 []
+│   │   └── linktime-proc-macro v0.2.3 (proc-macro) [ctor,default]
+│   ├── derive_more v2.1.1 [add,add_assign,default,deref,deref_mut,display,error,from,from_str,into,mul,mul_assign,not,std]
+│   │   └── derive_more-impl v2.1.1 (proc-macro) [add,add_assign,default,deref,deref_mut,display,error,from,from_str,into,mul,mul_assign,not]
+│   │       ├── convert_case v0.10.0 []
+│   │       │   └── unicode-segmentation v1.13.3 []
+│   │       ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │       ├── quote v1.0.47 [default,proc-macro] (*)
+│   │       ├── syn v2.0.119 [clone-impls,default,derive,extra-traits,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │       └── unicode-xid v0.2.6 [default]
+│   ├── etagere v0.2.15 []
+│   │   ├── euclid v0.22.14 [default,std]
+│   │   │   └── num-traits v0.2.19 [default,i128,libm,std] (*)
+│   │   └── svg_fmt v0.4.5 []
+│   ├── futures v0.3.34 [alloc,async-await,default,executor,futures-executor,std] (*)
+│   ├── gpui-pre-collections v0.3.9 []
+│   │   ├── gpui-pre-util v0.3.9 []
+│   │   │   ├── anyhow v1.0.104 [default,std]
+│   │   │   ├── log v0.4.34 [alloc,serde,serde_core,std]
+│   │   │   │   └── serde_core v1.0.229 [alloc,rc,result,std]
+│   │   │   └── which v8.0.6 [default,real-sys]
+│   │   ├── indexmap v2.14.2 [default,serde,std]
+│   │   │   ├── equivalent v1.0.2 []
+│   │   │   ├── hashbrown v0.17.1 [default-hasher,raw-entry]
+│   │   │   │   └── foldhash v0.2.0 []
+│   │   │   └── serde_core v1.0.229 [alloc,rc,result,std]
+│   │   └── rustc-hash v2.1.3 [default,std]
+│   ├── gpui-pre-http-client v0.3.9 []
+│   │   ├── anyhow v1.0.104 [default,std]
+│   │   ├── bytes v1.12.1 [default,std]
+│   │   ├── futures v0.3.34 [alloc,async-await,default,executor,futures-executor,std] (*)
+│   │   ├── http v1.5.0 [default,std]
+│   │   │   ├── bytes v1.12.1 [default,std]
+│   │   │   └── itoa v1.0.18 []
+│   │   ├── http-body v1.1.0 []
+│   │   │   ├── bytes v1.12.1 [default,std]
+│   │   │   └── http v1.5.0 [default,std] (*)
+│   │   ├── log v0.4.34 [alloc,serde,serde_core,std] (*)
+│   │   ├── parking_lot v0.12.5 [default]
+│   │   │   ├── lock_api v0.4.14 [atomic_usize,default]
+│   │   │   │   └── scopeguard v1.2.0 []
+│   │   │   └── parking_lot_core v0.9.12 []
+│   │   │       ├── cfg-if v1.0.5 []
+│   │   │       ├── smallvec v1.16.1 [const_generics,const_new,union]
+│   │   │       └── windows-link v0.2.1 []
+│   │   ├── serde v1.0.229 [alloc,default,derive,rc,serde_derive,std] (*)
+│   │   ├── serde_json v1.0.151 [alloc,default,indexmap,preserve_order,raw_value,std]
+│   │   │   ├── indexmap v2.14.2 [default,serde,std] (*)
+│   │   │   ├── itoa v1.0.18 []
+│   │   │   ├── memchr v2.8.3 [alloc,default,std]
+│   │   │   ├── serde_core v1.0.229 [alloc,rc,result,std]
+│   │   │   └── zmij v1.0.23 []
+│   │   ├── serde_urlencoded v0.7.1 []
+│   │   │   ├── form_urlencoded v1.2.2 [alloc,default,std]
+│   │   │   │   └── percent-encoding v2.3.2 [alloc,std]
+│   │   │   ├── itoa v1.0.18 []
+│   │   │   ├── ryu v1.0.23 []
+│   │   │   └── serde v1.0.229 [alloc,default,derive,rc,serde_derive,std] (*)
+│   │   └── url v2.5.8 [default,std]
+│   │       ├── form_urlencoded v1.2.2 [alloc,default,std] (*)
+│   │       ├── idna v1.1.0 [alloc,compiled_data,std]
+│   │       │   ├── idna_adapter v1.2.2 [compiled_data]
+│   │       │   │   ├── icu_normalizer v2.3.0 [compiled_data]
+│   │       │   │   │   ├── icu_collections v2.3.0 []
+│   │       │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) []
+│   │       │   │   │   │   │   ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │       │   │   │   │   │   ├── quote v1.0.47 [default,proc-macro] (*)
+│   │       │   │   │   │   │   └── syn v3.0.6 [clone-impls,default,derive,extra-traits,fold,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │       │   │   │   │   ├── potential_utf v0.1.6 [alloc,writeable,zerovec]
+│   │       │   │   │   │   │   ├── writeable v0.6.4 [alloc]
+│   │       │   │   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke]
+│   │       │   │   │   │   │       ├── yoke v0.8.3 [alloc,derive,zerofrom]
+│   │       │   │   │   │   │       │   ├── stable_deref_trait v1.2.1 [alloc]
+│   │       │   │   │   │   │       │   ├── yoke-derive v0.8.3 (proc-macro) []
+│   │       │   │   │   │   │       │   │   ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │       │   │   │   │   │       │   │   ├── quote v1.0.47 [default,proc-macro] (*)
+│   │       │   │   │   │   │       │   │   ├── syn v3.0.6 [clone-impls,default,derive,extra-traits,fold,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │       │   │   │   │   │       │   │   └── synstructure v0.14.0 [default,proc-macro]
+│   │       │   │   │   │   │       │   │       ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │       │   │   │   │   │       │   │       ├── quote v1.0.47 [default,proc-macro] (*)
+│   │       │   │   │   │   │       │   │       └── syn v3.0.6 [clone-impls,default,derive,extra-traits,fold,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │       │   │   │   │   │       │   └── zerofrom v0.1.8 [alloc,derive]
+│   │       │   │   │   │   │       │       └── zerofrom-derive v0.1.8 (proc-macro) []
+│   │       │   │   │   │   │       │           ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │       │   │   │   │   │       │           ├── quote v1.0.47 [default,proc-macro] (*)
+│   │       │   │   │   │   │       │           ├── syn v3.0.6 [clone-impls,default,derive,extra-traits,fold,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │       │   │   │   │   │       │           └── synstructure v0.14.0 [default,proc-macro] (*)
+│   │       │   │   │   │   │       ├── zerofrom v0.1.8 [alloc,derive] (*)
+│   │       │   │   │   │   │       └── zerovec-derive v0.11.6 (proc-macro) []
+│   │       │   │   │   │   │           ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │       │   │   │   │   │           ├── quote v1.0.47 [default,proc-macro] (*)
+│   │       │   │   │   │   │           └── syn v3.0.6 [clone-impls,default,derive,extra-traits,fold,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │       │   │   │   │   ├── utf8_iter v1.0.4 []
+│   │       │   │   │   │   ├── yoke v0.8.3 [alloc,derive,zerofrom] (*)
+│   │       │   │   │   │   ├── zerofrom v0.1.8 [alloc,derive] (*)
+│   │       │   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │       │   │   │   ├── icu_normalizer_data v2.3.0 []
+│   │       │   │   │   ├── icu_provider v2.3.1 [alloc,baked]
+│   │       │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) [] (*)
+│   │       │   │   │   │   ├── icu_locale_core v2.3.0 [alloc,zerovec]
+│   │       │   │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) [] (*)
+│   │       │   │   │   │   │   ├── litemap v0.8.3 [alloc]
+│   │       │   │   │   │   │   ├── tinystr v0.8.4 [alloc,zerovec]
+│   │       │   │   │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) [] (*)
+│   │       │   │   │   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │       │   │   │   │   │   ├── writeable v0.6.4 [alloc]
+│   │       │   │   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │       │   │   │   │   ├── stable_deref_trait v1.2.1 [alloc]
+│   │       │   │   │   │   ├── writeable v0.6.4 [alloc]
+│   │       │   │   │   │   ├── yoke v0.8.3 [alloc,derive,zerofrom] (*)
+│   │       │   │   │   │   ├── zerofrom v0.1.8 [alloc,derive] (*)
+│   │       │   │   │   │   ├── zerotrie v0.2.5 [alloc,yoke,zerofrom]
+│   │       │   │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) [] (*)
+│   │       │   │   │   │   │   ├── yoke v0.8.3 [alloc,derive,zerofrom] (*)
+│   │       │   │   │   │   │   └── zerofrom v0.1.8 [alloc,derive] (*)
+│   │       │   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │       │   │   │   ├── smallvec v1.16.1 [const_generics,const_new,union]
+│   │       │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │       │   │   └── icu_properties v2.3.0 [compiled_data]
+│   │       │   │       ├── displaydoc v0.2.7 (proc-macro) [] (*)
+│   │       │   │       ├── icu_collections v2.3.0 [] (*)
+│   │       │   │       ├── icu_locale_core v2.3.0 [alloc,zerovec] (*)
+│   │       │   │       ├── icu_properties_data v2.3.0 []
+│   │       │   │       ├── icu_provider v2.3.1 [alloc,baked] (*)
+│   │       │   │       ├── zerotrie v0.2.5 [alloc,yoke,zerofrom] (*)
+│   │       │   │       └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │       │   ├── smallvec v1.16.1 [const_generics,const_new,union]
+│   │       │   └── utf8_iter v1.0.4 []
+│   │       └── percent-encoding v2.3.2 [alloc,std]
+│   ├── gpui-pre-macros v0.3.9 (proc-macro) []
+│   │   ├── heck v0.5.0 []
+│   │   ├── proc-macro-crate v3.5.0 []
+│   │   │   └── toml_edit v0.25.15+spec-1.1.0 [default,display,parse]
+│   │   │       ├── indexmap v2.14.2 [default,std]
+│   │   │       │   ├── equivalent v1.0.2 []
+│   │   │       │   └── hashbrown v0.17.1 [default-hasher,raw-entry]
+│   │   │       │       └── foldhash v0.2.0 []
+│   │   │       ├── toml_datetime v1.1.1+spec-1.1.0 [alloc,default,serde,std]
+│   │   │       │   └── serde_core v1.0.229 [alloc,std]
+│   │   │       ├── toml_parser v1.1.3+spec-1.1.0 [alloc,default,std]
+│   │   │       │   └── winnow v1.0.4 [alloc,ascii,binary,default,parser,std]
+│   │   │       ├── toml_writer v1.1.2+spec-1.1.0 [alloc,default,std]
+│   │   │       └── winnow v1.0.4 [alloc,ascii,binary,default,parser,std]
+│   │   ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   └── syn v2.0.119 [clone-impls,default,derive,extra-traits,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   ├── gpui-pre-refineable v0.3.9 []
+│   │   └── gpui-pre-derive-refineable v0.3.9 (proc-macro) []
+│   │       ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │       ├── quote v1.0.47 [default,proc-macro] (*)
+│   │       └── syn v2.0.119 [clone-impls,default,derive,extra-traits,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   ├── gpui-pre-scheduler v0.3.9 []
+│   │   ├── async-task v4.7.1 [default,std]
+│   │   ├── backtrace v0.3.76 [default,std] (*)
+│   │   ├── chrono v0.4.45 [alloc,clock,default,iana-time-zone,js-sys,now,oldtime,serde,std,wasm-bindgen,wasmbind,winapi,windows-link] (*)
+│   │   ├── flume v0.12.0 [async,futures-core,futures-sink]
+│   │   │   ├── futures-core v0.3.34 [alloc,std]
+│   │   │   ├── futures-sink v0.3.34 [alloc,std]
+│   │   │   └── spin v0.9.9 [barrier,default,lazy,lock_api,lock_api_crate,mutex,once,rwlock,spin_mutex]
+│   │   │       └── lock_api v0.4.14 [atomic_usize,default] (*)
+│   │   ├── futures v0.3.34 [alloc,async-await,default,executor,futures-executor,std] (*)
+│   │   ├── parking_lot v0.12.5 [default] (*)
+│   │   ├── rand v0.9.5 [alloc,os_rng,small_rng,std,std_rng,thread_rng]
+│   │   │   ├── rand_chacha v0.9.0 [std]
+│   │   │   │   ├── ppv-lite86 v0.2.21 [simd,std]
+│   │   │   │   │   └── zerocopy v0.8.57 [derive,simd,zerocopy-derive]
+│   │   │   │   │       └── zerocopy-derive v0.8.57 (proc-macro) []
+│   │   │   │   │           ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   │   │   │           ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   │   │   │           └── syn v2.0.119 [clone-impls,default,derive,extra-traits,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │   │   │   └── rand_core v0.9.5 [os_rng,std]
+│   │   │   │       └── getrandom v0.3.4 [std]
+│   │   │   │           └── cfg-if v1.0.5 []
+│   │   │   └── rand_core v0.9.5 [os_rng,std] (*)
+│   │   └── web-time v1.1.0 []
+│   ├── gpui-pre-shared-string v0.3.9 []
+│   │   ├── schemars v1.2.3 [derive,indexmap2,schemars_derive,std]
+│   │   │   ├── dyn-clone v1.0.20 []
+│   │   │   ├── indexmap v2.14.2 [default,serde,std] (*)
+│   │   │   ├── ref-cast v1.0.27 []
+│   │   │   │   └── ref-cast-impl v1.0.27 (proc-macro) []
+│   │   │   │       ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   │   │       ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   │   │       └── syn v3.0.6 [clone-impls,default,derive,extra-traits,fold,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │   │   ├── schemars_derive v1.2.3 (proc-macro) []
+│   │   │   │   ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   │   │   ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   │   │   ├── serde_derive_internals v0.30.0 []
+│   │   │   │   │   ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   │   │   │   ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   │   │   │   └── syn v3.0.6 [clone-impls,default,derive,extra-traits,fold,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │   │   │   └── syn v3.0.6 [clone-impls,default,derive,extra-traits,fold,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │   │   ├── serde v1.0.229 [alloc,default,derive,rc,serde_derive,std] (*)
+│   │   │   └── serde_json v1.0.151 [alloc,default,indexmap,preserve_order,raw_value,std] (*)
+│   │   ├── serde v1.0.229 [alloc,default,derive,rc,serde_derive,std] (*)
+│   │   └── smol_str v0.3.6 [serde]
+│   │       └── serde_core v1.0.229 [alloc,rc,result,std]
+│   ├── gpui-pre-sum-tree v0.3.9 []
+│   │   ├── gpui-pre-ztracing v0.3.9 []
+│   │   │   ├── gpui-pre-ztracing-macro v0.3.9 (proc-macro) []
+│   │   │   └── tracing v0.1.44 [attributes,default,std,tracing-attributes]
+│   │   │       ├── pin-project-lite v0.2.17 []
+│   │   │       ├── tracing-attributes v0.1.31 (proc-macro) []
+│   │   │       │   ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   │       │   ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   │       │   └── syn v2.0.119 [clone-impls,default,derive,extra-traits,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │   │       └── tracing-core v0.1.36 [once_cell,std]
+│   │   │           └── once_cell v1.21.4 [alloc,critical-section,default,portable-atomic,race,std]
+│   │   │               ├── critical-section v1.2.0 []
+│   │   │               └── portable-atomic v1.15.0 [critical-section,default,fallback]
+│   │   │                   └── critical-section v1.2.0 []
+│   │   ├── heapless v0.9.3 []
+│   │   │   ├── hash32 v0.3.1 []
+│   │   │   │   └── byteorder v1.5.0 []
+│   │   │   └── stable_deref_trait v1.2.1 [alloc]
+│   │   ├── rayon v1.12.0 []
+│   │   │   ├── either v1.18.0 [std,use_std]
+│   │   │   └── rayon-core v1.13.0 []
+│   │   │       ├── crossbeam-deque v0.8.8 [default,std]
+│   │   │       │   ├── crossbeam-epoch v0.9.21 [alloc,std]
+│   │   │       │   │   └── crossbeam-utils v0.8.23 [default,std]
+│   │   │       │   └── crossbeam-utils v0.8.23 [default,std]
+│   │   │       └── crossbeam-utils v0.8.23 [default,std]
+│   │   └── tracing v0.1.44 [attributes,default,std,tracing-attributes] (*)
+│   ├── gpui-pre-util v0.3.9 [] (*)
+│   ├── heapless v0.9.3 [] (*)
+│   ├── image v0.25.10 [bmp,dds,exr,ff,gif,hdr,ico,jpeg,png,pnm,qoi,rayon,tga,tiff,webp]
+│   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd]
+│   │   │   └── bytemuck_derive v1.12.1 (proc-macro) []
+│   │   │       ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   │       ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   │       └── syn v3.0.6 [clone-impls,default,derive,extra-traits,fold,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │   ├── byteorder-lite v0.1.0 [default,std]
+│   │   ├── color_quant v1.1.0 []
+│   │   ├── exr v1.74.2 [rayon]
+│   │   │   ├── bit_field v0.10.3 []
+│   │   │   ├── half v2.7.1 [alloc,default,std]
+│   │   │   │   ├── cfg-if v1.0.5 []
+│   │   │   │   └── zerocopy v0.8.57 [derive,simd,zerocopy-derive] (*)
+│   │   │   ├── lebe v0.5.3 []
+│   │   │   ├── miniz_oxide v0.8.9 [default,simd,simd-adler32,with-alloc]
+│   │   │   │   ├── adler2 v2.0.1 []
+│   │   │   │   └── simd-adler32 v0.3.10 [const-generics,default,std]
+│   │   │   ├── num-complex v0.4.6 [bytemuck,default,std]
+│   │   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   │   │   └── num-traits v0.2.19 [default,i128,libm,std] (*)
+│   │   │   ├── pulp v0.22.3 [default,relaxed-simd,std,x86-v3]
+│   │   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   │   │   ├── cfg-if v1.0.5 []
+│   │   │   │   ├── libm v0.2.16 [arch,default]
+│   │   │   │   ├── num-complex v0.4.6 [bytemuck,default,std] (*)
+│   │   │   │   ├── paste v1.0.15 (proc-macro) []
+│   │   │   │   ├── pulp-wasm-simd-flag v0.1.1 [relaxed-simd]
+│   │   │   │   ├── raw-cpuid v11.6.0 []
+│   │   │   │   │   └── bitflags v2.13.2 [serde,serde_core] (*)
+│   │   │   │   └── reborrow v0.5.5 [default]
+│   │   │   ├── rayon-core v1.13.0 [] (*)
+│   │   │   ├── smallvec v1.16.1 [const_generics,const_new,union]
+│   │   │   └── zune-inflate v0.2.54 [simd-adler32,zlib]
+│   │   │       └── simd-adler32 v0.3.10 [const-generics,default,std]
+│   │   ├── gif v0.14.2 [color_quant,default,raii_no_panic,std]
+│   │   │   ├── color_quant v1.1.0 []
+│   │   │   └── weezl v0.1.12 [alloc,default,std]
+│   │   ├── image-webp v0.2.4 []
+│   │   │   ├── byteorder-lite v0.1.0 [default,std]
+│   │   │   └── quick-error v2.0.1 []
+│   │   ├── moxcms v0.8.1 [avx,avx_luts,avx_shaper_fixed_point_paths,avx_shaper_paths,default,lut,neon,neon_luts,neon_shaper_fixed_point_paths,neon_shaper_paths,sse,sse_luts,sse_shaper_fixed_point_paths,sse_shaper_paths]
+│   │   │   ├── num-traits v0.2.19 [default,i128,libm,std] (*)
+│   │   │   └── pxfm v0.1.30 []
+│   │   ├── num-traits v0.2.19 [default,i128,libm,std] (*)
+│   │   ├── png v0.18.1 []
+│   │   │   ├── bitflags v2.13.2 [serde,serde_core] (*)
+│   │   │   ├── crc32fast v1.5.2 [default,std]
+│   │   │   │   └── cfg-if v1.0.5 []
+│   │   │   ├── fdeflate v0.3.7 []
+│   │   │   │   └── simd-adler32 v0.3.10 [const-generics,default,std]
+│   │   │   ├── flate2 v1.1.10 [any_impl,default,miniz_oxide,runtime_detection,rust_backend]
+│   │   │   │   ├── crc32fast v1.5.2 [default,std] (*)
+│   │   │   │   └── miniz_oxide v0.9.1 [default,simd,simd-adler32,with-alloc]
+│   │   │   │       ├── adler2 v2.0.1 []
+│   │   │   │       └── simd-adler32 v0.3.10 [const-generics,default,std]
+│   │   │   └── miniz_oxide v0.8.9 [default,simd,simd-adler32,with-alloc] (*)
+│   │   ├── qoi v0.4.1 [default,std]
+│   │   │   └── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   ├── rayon v1.12.0 [] (*)
+│   │   ├── tiff v0.11.3 [default,deflate,fax,jpeg,lzw]
+│   │   │   ├── fax v0.2.7 []
+│   │   │   ├── flate2 v1.1.10 [any_impl,default,miniz_oxide,runtime_detection,rust_backend] (*)
+│   │   │   ├── half v2.7.1 [alloc,default,std] (*)
+│   │   │   ├── quick-error v2.0.1 []
+│   │   │   ├── weezl v0.1.12 [alloc,default,std]
+│   │   │   └── zune-jpeg v0.5.15 [default,neon,std,x86]
+│   │   │       └── zune-core v0.5.3 [std]
+│   │   ├── zune-core v0.5.3 [std]
+│   │   └── zune-jpeg v0.5.15 [default,neon,std,x86] (*)
+│   ├── inventory v0.3.25 []
+│   ├── itertools v0.14.0 [default,use_alloc,use_std]
+│   │   └── either v1.18.0 [std,use_std]
+│   ├── log v0.4.34 [alloc,serde,serde_core,std] (*)
+│   ├── lyon v1.0.19 []
+│   │   ├── lyon_algorithms v1.0.21 [default,std]
+│   │   │   ├── lyon_path v1.0.19 [std]
+│   │   │   │   ├── lyon_geom v1.0.19 [std]
+│   │   │   │   │   ├── arrayvec v0.7.8 [std]
+│   │   │   │   │   ├── euclid v0.22.14 [default,std] (*)
+│   │   │   │   │   └── num-traits v0.2.19 [default,i128,libm,std] (*)
+│   │   │   │   └── num-traits v0.2.19 [default,i128,libm,std] (*)
+│   │   │   └── num-traits v0.2.19 [default,i128,libm,std] (*)
+│   │   └── lyon_tessellation v1.0.23 [default,std]
+│   │       ├── float_next_after v1.0.0 []
+│   │       ├── lyon_path v1.0.19 [std] (*)
+│   │       └── num-traits v0.2.19 [default,i128,libm,std] (*)
+│   ├── num_cpus v1.17.0 []
+│   ├── parking v2.2.1 []
+│   ├── parking_lot v0.12.5 [default] (*)
+│   ├── pin-project v1.1.13 []
+│   │   └── pin-project-internal v1.1.13 (proc-macro) []
+│   │       ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │       ├── quote v1.0.47 [default,proc-macro] (*)
+│   │       └── syn v2.0.119 [clone-impls,default,derive,extra-traits,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   ├── pollster v0.4.0 []
+│   ├── profiling v1.0.18 [default,procmacros,profiling-procmacros]
+│   │   └── profiling-procmacros v1.0.18 (proc-macro) []
+│   │       ├── quote v1.0.47 [default,proc-macro] (*)
+│   │       └── syn v2.0.119 [clone-impls,default,derive,extra-traits,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   ├── rand v0.9.5 [alloc,os_rng,small_rng,std,std_rng,thread_rng] (*)
+│   ├── raw-window-handle v0.6.2 [alloc,std]
+│   ├── regex v1.13.1 [default,perf,perf-backtrack,perf-cache,perf-dfa,perf-inline,perf-literal,perf-onepass,std,unicode,unicode-age,unicode-bool,unicode-case,unicode-gencat,unicode-perl,unicode-script,unicode-segment]
+│   │   ├── aho-corasick v1.1.5 [perf-literal,std]
+│   │   │   └── memchr v2.8.3 [alloc,default,std]
+│   │   ├── memchr v2.8.3 [alloc,default,std]
+│   │   ├── regex-automata v0.4.18 [alloc,dfa-onepass,hybrid,meta,nfa-backtrack,nfa-pikevm,nfa-thompson,perf-inline,perf-literal,perf-literal-multisubstring,perf-literal-substring,std,syntax,unicode,unicode-age,unicode-bool,unicode-case,unicode-gencat,unicode-perl,unicode-script,unicode-segment,unicode-word-boundary]
+│   │   │   ├── aho-corasick v1.1.5 [perf-literal,std] (*)
+│   │   │   ├── memchr v2.8.3 [alloc,default,std]
+│   │   │   └── regex-syntax v0.8.11 [default,std,unicode,unicode-age,unicode-bool,unicode-case,unicode-gencat,unicode-perl,unicode-script,unicode-segment]
+│   │   └── regex-syntax v0.8.11 [default,std,unicode,unicode-age,unicode-bool,unicode-case,unicode-gencat,unicode-perl,unicode-script,unicode-segment]
+│   ├── resvg v0.46.0 [gif,image-webp,memmap-fonts,raster-images,system-fonts,text]
+│   │   ├── gif v0.14.2 [color_quant,default,raii_no_panic,std] (*)
+│   │   ├── image-webp v0.2.4 [] (*)
+│   │   ├── log v0.4.34 [alloc,serde,serde_core,std] (*)
+│   │   ├── pico-args v0.5.0 [default,eq-separator]
+│   │   ├── rgb v0.8.53 [argb,as-bytes,bytemuck,default,grb]
+│   │   │   └── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   ├── svgtypes v0.16.1 [default,std]
+│   │   │   ├── kurbo v0.13.1 [default,std]
+│   │   │   │   ├── arrayvec v0.7.8 [std]
+│   │   │   │   ├── polycool v0.4.0 [std]
+│   │   │   │   │   └── arrayvec v0.7.8 [std]
+│   │   │   │   └── smallvec v1.16.1 [const_generics,const_new,union]
+│   │   │   └── siphasher v1.0.3 [default,std]
+│   │   ├── tiny-skia v0.11.4 [default,png,png-format,simd,std]
+│   │   │   ├── arrayref v0.3.9 []
+│   │   │   ├── arrayvec v0.7.8 [std]
+│   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   │   ├── cfg-if v1.0.5 []
+│   │   │   ├── log v0.4.34 [alloc,serde,serde_core,std] (*)
+│   │   │   ├── png v0.17.16 []
+│   │   │   │   ├── bitflags v1.3.2 [default]
+│   │   │   │   ├── crc32fast v1.5.2 [default,std] (*)
+│   │   │   │   ├── fdeflate v0.3.7 [] (*)
+│   │   │   │   ├── flate2 v1.1.10 [any_impl,default,miniz_oxide,runtime_detection,rust_backend] (*)
+│   │   │   │   └── miniz_oxide v0.8.9 [default,simd,simd-adler32,with-alloc] (*)
+│   │   │   └── tiny-skia-path v0.11.4 [default,std]
+│   │   │       ├── arrayref v0.3.9 []
+│   │   │       ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   │       └── strict-num v0.1.1 [approx-eq,default,float-cmp]
+│   │   │           └── float-cmp v0.9.0 [std]
+│   │   ├── usvg v0.46.0 [fontdb,memmap-fonts,rustybuzz,system-fonts,text,unicode-bidi,unicode-script,unicode-vo]
+│   │   │   ├── base64 v0.22.1 [alloc,default,std]
+│   │   │   ├── data-url v0.3.2 [alloc,default,std]
+│   │   │   ├── flate2 v1.1.10 [any_impl,default,miniz_oxide,runtime_detection,rust_backend] (*)
+│   │   │   ├── fontdb v0.23.0 [fontconfig,fontconfig-parser,fs,memmap,memmap2,std]
+│   │   │   │   ├── log v0.4.34 [alloc,serde,serde_core,std] (*)
+│   │   │   │   ├── memmap2 v0.9.11 []
+│   │   │   │   ├── slotmap v1.1.1 [default,std]
+│   │   │   │   ├── tinyvec v1.13.3 [alloc,default]
+│   │   │   │   └── ttf-parser v0.25.1 [apple-layout,core_maths,default,glyph-names,no-std-float,opentype-layout,std,variable-fonts]
+│   │   │   │       └── core_maths v0.1.1 []
+│   │   │   │           └── libm v0.2.16 [arch,default]
+│   │   │   ├── imagesize v0.14.0 [aesprite,bmp,dds,default,exr,farbfeld,gif,hdr,heif,ico,ilbm,jpeg,jxl,ktx2,mod,png,pnm,psd,qoi,tga,tiff,vtf,webp]
+│   │   │   ├── kurbo v0.13.1 [default,std] (*)
+│   │   │   ├── log v0.4.34 [alloc,serde,serde_core,std] (*)
+│   │   │   ├── pico-args v0.5.0 [default,eq-separator]
+│   │   │   ├── roxmltree v0.21.1 [default,positions,std]
+│   │   │   │   └── memchr v2.8.3 [alloc,default,std]
+│   │   │   ├── rustybuzz v0.20.1 [default,std]
+│   │   │   │   ├── bitflags v2.13.2 [serde,serde_core] (*)
+│   │   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   │   │   ├── core_maths v0.1.1 [] (*)
+│   │   │   │   ├── log v0.4.34 [alloc,serde,serde_core,std] (*)
+│   │   │   │   ├── smallvec v1.16.1 [const_generics,const_new,union]
+│   │   │   │   ├── ttf-parser v0.25.1 [apple-layout,core_maths,default,glyph-names,no-std-float,opentype-layout,std,variable-fonts] (*)
+│   │   │   │   ├── unicode-bidi-mirroring v0.4.0 []
+│   │   │   │   ├── unicode-ccc v0.4.0 []
+│   │   │   │   ├── unicode-properties v0.1.4 [general-category]
+│   │   │   │   └── unicode-script v0.5.8 []
+│   │   │   ├── simplecss v0.2.2 [default,std]
+│   │   │   │   └── log v0.4.34 [alloc,serde,serde_core,std] (*)
+│   │   │   ├── siphasher v1.0.3 [default,std]
+│   │   │   ├── strict-num v0.1.1 [approx-eq,default,float-cmp] (*)
+│   │   │   ├── svgtypes v0.16.1 [default,std] (*)
+│   │   │   ├── tiny-skia-path v0.11.4 [default,std] (*)
+│   │   │   ├── unicode-bidi v0.3.18 [default,hardcoded-data,std]
+│   │   │   ├── unicode-script v0.5.8 []
+│   │   │   ├── unicode-vo v0.1.0 []
+│   │   │   └── xmlwriter v0.1.0 []
+│   │   └── zune-jpeg v0.5.15 [default,neon,std,x86] (*)
+│   ├── schemars v1.2.3 [derive,indexmap2,schemars_derive,std] (*)
+│   ├── seahash v4.1.0 [default]
+│   ├── serde v1.0.229 [alloc,default,derive,rc,serde_derive,std] (*)
+│   ├── serde_json v1.0.151 [alloc,default,indexmap,preserve_order,raw_value,std] (*)
+│   ├── slotmap v1.1.1 [default,std]
+│   ├── smallvec v1.16.1 [const_generics,const_new,union]
+│   ├── spin v0.10.1 [lock_api,mutex,spin_mutex]
+│   │   └── lock_api v0.4.14 [atomic_usize,default] (*)
+│   ├── strum v0.28.0 [default,derive,std,strum_macros]
+│   │   └── strum_macros v0.28.0 (proc-macro) []
+│   │       ├── heck v0.5.0 []
+│   │       ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │       ├── quote v1.0.47 [default,proc-macro] (*)
+│   │       └── syn v2.0.119 [clone-impls,default,derive,extra-traits,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   ├── taffy v0.13.0 [alloc,block_layout,content_size,flexbox,float_layout,grid,std,taffy_tree]
+│   │   ├── arrayvec v0.7.8 [std]
+│   │   ├── slotmap v1.1.1 [default,std]
+│   │   └── smallvec v1.16.1 [const_generics,const_new,union]
+│   ├── thiserror v2.0.20 [default,std]
+│   │   └── thiserror-impl v2.0.20 (proc-macro) []
+│   │       ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │       ├── quote v1.0.47 [default,proc-macro] (*)
+│   │       └── syn v3.0.6 [clone-impls,default,derive,extra-traits,fold,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   ├── ttf-parser v0.25.1 [apple-layout,core_maths,default,glyph-names,no-std-float,opentype-layout,std,variable-fonts] (*)
+│   ├── url v2.5.8 [default,std] (*)
+│   ├── usvg v0.46.0 [fontdb,memmap-fonts,rustybuzz,system-fonts,text,unicode-bidi,unicode-script,unicode-vo] (*)
+│   ├── uuid v1.26.1 [default,rng,serde,sha1,std,v4,v5] (*)
+│   ├── waker-fn v1.2.0 []
+│   └── windows v0.62.2 [Data,Data_Xml,Data_Xml_Dom,Foundation,UI,UI_Notifications,UI_ViewManagement,Wdk,Wdk_System,Wdk_System_SystemServices,Win32,Win32_Foundation,Win32_Globalization,Win32_Graphics,Win32_Graphics_Direct3D,Win32_Graphics_Direct3D11,Win32_Graphics_Direct3D_Fxc,Win32_Graphics_DirectComposition,Win32_Graphics_DirectManipulation,Win32_Graphics_DirectWrite,Win32_Graphics_Dwm,Win32_Graphics_Dxgi,Win32_Graphics_Dxgi_Common,Win32_Graphics_Gdi,Win32_Graphics_Hlsl,Win32_Media,Win32_Security,Win32_Security_Authorization,Win32_Security_Credentials,Win32_Storage,Win32_Storage_FileSystem,Win32_Storage_Packaging,Win32_Storage_Packaging_Appx,Win32_System,Win32_System_Com,Win32_System_Com_StructuredStorage,Win32_System_Console,Win32_System_DataExchange,Win32_System_Diagnostics,Win32_System_Diagnostics_Debug,Win32_System_Diagnostics_ToolHelp,Win32_System_IO,Win32_System_LibraryLoader,Win32_System_Memory,Win32_System_Ole,Win32_System_Performance,Win32_System_Pipes,Win32_System_Power,Win32_System_Registry,Win32_System_RemoteDesktop,Win32_System_StationsAndDesktops,Win32_System_SystemInformation,Win32_System_SystemServices,Win32_System_Threading,Win32_System_Variant,Win32_System_WindowsProgramming,Win32_UI,Win32_UI_Accessibility,Win32_UI_Controls,Win32_UI_Controls_Dialogs,Win32_UI_HiDpi,Win32_UI_Input,Win32_UI_Input_Ime,Win32_UI_Input_KeyboardAndMouse,Win32_UI_Input_Pointer,Win32_UI_Shell,Win32_UI_Shell_Common,Win32_UI_Shell_PropertiesSystem,Win32_UI_WindowsAndMessaging,default,std]
+│       ├── windows-collections v0.3.2 [std]
+│       │   └── windows-core v0.62.2 [default,std]
+│       │       ├── windows-implement v0.60.2 (proc-macro) []
+│       │       │   ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│       │       │   ├── quote v1.0.47 [default,proc-macro] (*)
+│       │       │   └── syn v2.0.119 [clone-impls,default,derive,extra-traits,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│       │       ├── windows-interface v0.59.3 (proc-macro) []
+│       │       │   ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│       │       │   ├── quote v1.0.47 [default,proc-macro] (*)
+│       │       │   └── syn v2.0.119 [clone-impls,default,derive,extra-traits,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│       │       ├── windows-link v0.2.1 []
+│       │       ├── windows-result v0.4.1 [std]
+│       │       │   └── windows-link v0.2.1 []
+│       │       └── windows-strings v0.5.1 [std]
+│       │           └── windows-link v0.2.1 []
+│       ├── windows-core v0.62.2 [default,std] (*)
+│       ├── windows-future v0.3.2 [std]
+│       │   ├── windows-core v0.62.2 [default,std] (*)
+│       │   ├── windows-link v0.2.1 []
+│       │   └── windows-threading v0.2.1 []
+│       │       └── windows-link v0.2.1 []
+│       └── windows-numerics v0.3.1 [default,std]
+│           ├── windows-core v0.62.2 [default,std] (*)
+│           └── windows-link v0.2.1 []
+├── gpui-pre-platform v0.3.9 [default,multithreaded]
+│   ├── anyhow v1.0.104 [default,std]
+│   ├── gpui-pre v0.3.9 [default,font-kit,wayland,windows-manifest,x11] (*)
+│   └── gpui-pre-windows v0.3.9 []
+│       ├── accesskit v0.24.1 [enumn] (*)
+│       ├── accesskit_windows v0.34.0 []
+│       │   ├── accesskit v0.24.1 [enumn] (*)
+│       │   ├── accesskit_consumer v0.38.0 []
+│       │   │   ├── accesskit v0.24.1 [enumn] (*)
+│       │   │   └── hashbrown v0.16.1 [allocator-api2,default,default-hasher,equivalent,inline-more,raw-entry]
+│       │   │       ├── allocator-api2 v0.2.21 [alloc]
+│       │   │       ├── equivalent v1.0.2 []
+│       │   │       └── foldhash v0.2.0 []
+│       │   ├── hashbrown v0.16.1 [allocator-api2,default,default-hasher,equivalent,inline-more,raw-entry] (*)
+│       │   ├── static_assertions v1.1.0 []
+│       │   ├── windows v0.62.2 [Data,Data_Xml,Data_Xml_Dom,Foundation,UI,UI_Notifications,UI_ViewManagement,Wdk,Wdk_System,Wdk_System_SystemServices,Win32,Win32_Foundation,Win32_Globalization,Win32_Graphics,Win32_Graphics_Direct3D,Win32_Graphics_Direct3D11,Win32_Graphics_Direct3D_Fxc,Win32_Graphics_DirectComposition,Win32_Graphics_DirectManipulation,Win32_Graphics_DirectWrite,Win32_Graphics_Dwm,Win32_Graphics_Dxgi,Win32_Graphics_Dxgi_Common,Win32_Graphics_Gdi,Win32_Graphics_Hlsl,Win32_Media,Win32_Security,Win32_Security_Authorization,Win32_Security_Credentials,Win32_Storage,Win32_Storage_FileSystem,Win32_Storage_Packaging,Win32_Storage_Packaging_Appx,Win32_System,Win32_System_Com,Win32_System_Com_StructuredStorage,Win32_System_Console,Win32_System_DataExchange,Win32_System_Diagnostics,Win32_System_Diagnostics_Debug,Win32_System_Diagnostics_ToolHelp,Win32_System_IO,Win32_System_LibraryLoader,Win32_System_Memory,Win32_System_Ole,Win32_System_Performance,Win32_System_Pipes,Win32_System_Power,Win32_System_Registry,Win32_System_RemoteDesktop,Win32_System_StationsAndDesktops,Win32_System_SystemInformation,Win32_System_SystemServices,Win32_System_Threading,Win32_System_Variant,Win32_System_WindowsProgramming,Win32_UI,Win32_UI_Accessibility,Win32_UI_Controls,Win32_UI_Controls_Dialogs,Win32_UI_HiDpi,Win32_UI_Input,Win32_UI_Input_Ime,Win32_UI_Input_KeyboardAndMouse,Win32_UI_Input_Pointer,Win32_UI_Shell,Win32_UI_Shell_Common,Win32_UI_Shell_PropertiesSystem,Win32_UI_WindowsAndMessaging,default,std] (*)
+│       │   └── windows-core v0.62.2 [default,std] (*)
+│       ├── anyhow v1.0.104 [default,std]
+│       ├── dunce v1.0.5 []
+│       ├── etagere v0.2.15 [] (*)
+│       ├── futures v0.3.34 [alloc,async-await,default,executor,futures-executor,std] (*)
+│       ├── gpui-pre v0.3.9 [default,font-kit,wayland,windows-manifest,x11] (*)
+│       ├── gpui-pre-collections v0.3.9 [] (*)
+│       ├── gpui-pre-scheduler v0.3.9 [] (*)
+│       ├── gpui-pre-util v0.3.9 [] (*)
+│       ├── image v0.25.10 [bmp,dds,exr,ff,gif,hdr,ico,jpeg,png,pnm,qoi,rayon,tga,tiff,webp] (*)
+│       ├── itertools v0.14.0 [default,use_alloc,use_std] (*)
+│       ├── log v0.4.34 [alloc,serde,serde_core,std] (*)
+│       ├── parking_lot v0.12.5 [default] (*)
+│       ├── rand v0.9.5 [alloc,os_rng,small_rng,std,std_rng,thread_rng] (*)
+│       ├── raw-window-handle v0.6.2 [alloc,std]
+│       ├── smallvec v1.16.1 [const_generics,const_new,union]
+│       ├── uuid v1.26.1 [default,rng,serde,sha1,std,v4,v5] (*)
+│       ├── windows v0.62.2 [Data,Data_Xml,Data_Xml_Dom,Foundation,UI,UI_Notifications,UI_ViewManagement,Wdk,Wdk_System,Wdk_System_SystemServices,Win32,Win32_Foundation,Win32_Globalization,Win32_Graphics,Win32_Graphics_Direct3D,Win32_Graphics_Direct3D11,Win32_Graphics_Direct3D_Fxc,Win32_Graphics_DirectComposition,Win32_Graphics_DirectManipulation,Win32_Graphics_DirectWrite,Win32_Graphics_Dwm,Win32_Graphics_Dxgi,Win32_Graphics_Dxgi_Common,Win32_Graphics_Gdi,Win32_Graphics_Hlsl,Win32_Media,Win32_Security,Win32_Security_Authorization,Win32_Security_Credentials,Win32_Storage,Win32_Storage_FileSystem,Win32_Storage_Packaging,Win32_Storage_Packaging_Appx,Win32_System,Win32_System_Com,Win32_System_Com_StructuredStorage,Win32_System_Console,Win32_System_DataExchange,Win32_System_Diagnostics,Win32_System_Diagnostics_Debug,Win32_System_Diagnostics_ToolHelp,Win32_System_IO,Win32_System_LibraryLoader,Win32_System_Memory,Win32_System_Ole,Win32_System_Performance,Win32_System_Pipes,Win32_System_Power,Win32_System_Registry,Win32_System_RemoteDesktop,Win32_System_StationsAndDesktops,Win32_System_SystemInformation,Win32_System_SystemServices,Win32_System_Threading,Win32_System_Variant,Win32_System_WindowsProgramming,Win32_UI,Win32_UI_Accessibility,Win32_UI_Controls,Win32_UI_Controls_Dialogs,Win32_UI_HiDpi,Win32_UI_Input,Win32_UI_Input_Ime,Win32_UI_Input_KeyboardAndMouse,Win32_UI_Input_Pointer,Win32_UI_Shell,Win32_UI_Shell_Common,Win32_UI_Shell_PropertiesSystem,Win32_UI_WindowsAndMessaging,default,std] (*)
+│       ├── windows-core v0.62.2 [default,std] (*)
+│       ├── windows-numerics v0.3.1 [default,std] (*)
+│       └── windows-registry v0.6.1 [default,std]
+│           ├── windows-link v0.2.1 []
+│           ├── windows-result v0.4.1 [std] (*)
+│           └── windows-strings v0.5.1 [std] (*)
+├── image v0.25.10 [bmp,dds,exr,ff,gif,hdr,ico,jpeg,png,pnm,qoi,rayon,tga,tiff,webp] (*)
+├── raw-window-handle v0.6.2 [alloc,std]
+├── serde v1.0.229 [alloc,default,derive,rc,serde_derive,std] (*)
+├── serde_json v1.0.151 [alloc,default,indexmap,preserve_order,raw_value,std] (*)
+├── slint v1.18.0 [accessibility,backend-winit,compat-1-18,renderer-software,std,system-tray]
+│   ├── const-field-offset v0.2.1 []
+│   │   ├── const-field-offset-macro v0.2.1 (proc-macro) []
+│   │   │   ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   │   ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   │   └── syn v3.0.6 [clone-impls,default,derive,extra-traits,fold,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │   └── field-offset v0.3.6 []
+│   │       └── memoffset v0.9.1 [default]
+│   ├── i-slint-backend-selector v1.18.0 [accessibility,backend-winit,backend-winit-wayland,backend-winit-x11,i-slint-backend-winit,renderer-software]
+│   │   ├── cfg-if v1.0.5 []
+│   │   ├── i-slint-backend-winit v1.18.0 [accessibility,default,muda,renderer-software,wayland,x11]
+│   │   │   ├── accesskit v0.24.1 [enumn] (*)
+│   │   │   ├── accesskit_winit v0.33.2 [accesskit_unix,async-io,rwh_06]
+│   │   │   │   ├── accesskit v0.24.1 [enumn] (*)
+│   │   │   │   ├── accesskit_windows v0.34.0 [] (*)
+│   │   │   │   ├── raw-window-handle v0.6.2 [alloc,std]
+│   │   │   │   └── winit v0.30.13 [ahash,bytemuck,memmap2,percent-encoding,rwh_06,sctk,sctk-adwaita,wayland,wayland-backend,wayland-client,wayland-csd-adwaita,wayland-protocols,wayland-protocols-plasma,x11,x11-dl,x11rb]
+│   │   │   │       ├── bitflags v2.13.2 [serde,serde_core] (*)
+│   │   │   │       ├── cursor-icon v1.2.0 [alloc,default,std]
+│   │   │   │       ├── dpi v0.1.2 [default,std]
+│   │   │   │       ├── raw-window-handle v0.6.2 [alloc,std]
+│   │   │   │       ├── smol_str v0.2.2 [default,std]
+│   │   │   │       ├── tracing v0.1.44 [attributes,default,std,tracing-attributes] (*)
+│   │   │   │       ├── unicode-segmentation v1.13.3 []
+│   │   │   │       └── windows-sys v0.52.0 [Win32,Win32_Devices,Win32_Devices_HumanInterfaceDevice,Win32_Foundation,Win32_Globalization,Win32_Graphics,Win32_Graphics_Dwm,Win32_Graphics_Gdi,Win32_Media,Win32_Security,Win32_System,Win32_System_Com,Win32_System_Com_StructuredStorage,Win32_System_LibraryLoader,Win32_System_Ole,Win32_System_SystemInformation,Win32_System_SystemServices,Win32_System_Threading,Win32_System_WindowsProgramming,Win32_UI,Win32_UI_Accessibility,Win32_UI_Controls,Win32_UI_HiDpi,Win32_UI_Input,Win32_UI_Input_Ime,Win32_UI_Input_KeyboardAndMouse,Win32_UI_Input_Pointer,Win32_UI_Input_Touch,Win32_UI_Shell,Win32_UI_TextServices,Win32_UI_WindowsAndMessaging,default]
+│   │   │   │           └── windows-targets v0.52.6 []
+│   │   │   │               └── windows_x86_64_msvc v0.52.6 []
+│   │   │   ├── arboard v3.6.1 [wayland-data-control,wl-clipboard-rs]
+│   │   │   │   ├── clipboard-win v5.4.1 [std]
+│   │   │   │   │   └── error-code v3.4.0 [std]
+│   │   │   │   ├── log v0.4.34 [alloc,serde,serde_core,std] (*)
+│   │   │   │   └── windows-sys v0.60.2 [Win32,Win32_Foundation,Win32_Storage,Win32_Storage_FileSystem,Win32_System,Win32_System_DataExchange,Win32_System_Memory,Win32_System_Ole,Win32_UI,Win32_UI_Shell,default]
+│   │   │   │       └── windows-targets v0.53.5 []
+│   │   │   │           └── windows_x86_64_msvc v0.53.1 []
+│   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   │   ├── cfg-if v1.0.5 []
+│   │   │   ├── i-slint-common v1.18.0 [color-parsing,default,locale-decimal-separator,markdown,shared-fontique,svg-text]
+│   │   │   │   ├── derive_more v2.1.1 [add,add_assign,default,deref,deref_mut,display,error,from,from_str,into,mul,mul_assign,not,std] (*)
+│   │   │   │   ├── fontique v0.11.1 [default,std,system]
+│   │   │   │   │   ├── hashbrown v0.17.1 [default-hasher,raw-entry] (*)
+│   │   │   │   │   ├── linebender_resource_handle v0.1.1 []
+│   │   │   │   │   ├── memmap2 v0.9.11 []
+│   │   │   │   │   ├── parlance v0.1.0 [std]
+│   │   │   │   │   ├── read-fonts v0.41.0 [experimental_font_api,std]
+│   │   │   │   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   │   │   │   │   ├── font-types v0.12.5 [bytemuck,std]
+│   │   │   │   │   │   │   └── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   │   │   │   │   └── once_cell v1.21.4 [alloc,critical-section,default,portable-atomic,race,std] (*)
+│   │   │   │   │   ├── smallvec v1.16.1 [const_generics,const_new,union]
+│   │   │   │   │   ├── windows v0.62.2 [Data,Data_Xml,Data_Xml_Dom,Foundation,UI,UI_Notifications,UI_ViewManagement,Wdk,Wdk_System,Wdk_System_SystemServices,Win32,Win32_Foundation,Win32_Globalization,Win32_Graphics,Win32_Graphics_Direct3D,Win32_Graphics_Direct3D11,Win32_Graphics_Direct3D_Fxc,Win32_Graphics_DirectComposition,Win32_Graphics_DirectManipulation,Win32_Graphics_DirectWrite,Win32_Graphics_Dwm,Win32_Graphics_Dxgi,Win32_Graphics_Dxgi_Common,Win32_Graphics_Gdi,Win32_Graphics_Hlsl,Win32_Media,Win32_Security,Win32_Security_Authorization,Win32_Security_Credentials,Win32_Storage,Win32_Storage_FileSystem,Win32_Storage_Packaging,Win32_Storage_Packaging_Appx,Win32_System,Win32_System_Com,Win32_System_Com_StructuredStorage,Win32_System_Console,Win32_System_DataExchange,Win32_System_Diagnostics,Win32_System_Diagnostics_Debug,Win32_System_Diagnostics_ToolHelp,Win32_System_IO,Win32_System_LibraryLoader,Win32_System_Memory,Win32_System_Ole,Win32_System_Performance,Win32_System_Pipes,Win32_System_Power,Win32_System_Registry,Win32_System_RemoteDesktop,Win32_System_StationsAndDesktops,Win32_System_SystemInformation,Win32_System_SystemServices,Win32_System_Threading,Win32_System_Variant,Win32_System_WindowsProgramming,Win32_UI,Win32_UI_Accessibility,Win32_UI_Controls,Win32_UI_Controls_Dialogs,Win32_UI_HiDpi,Win32_UI_Input,Win32_UI_Input_Ime,Win32_UI_Input_KeyboardAndMouse,Win32_UI_Input_Pointer,Win32_UI_Shell,Win32_UI_Shell_Common,Win32_UI_Shell_PropertiesSystem,Win32_UI_WindowsAndMessaging,default,std] (*)
+│   │   │   │   │   └── windows-core v0.62.2 [default,std] (*)
+│   │   │   │   ├── htmlparser v0.2.1 [default,std]
+│   │   │   │   ├── icu_decimal v2.3.0 [compiled_data,default]
+│   │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) [] (*)
+│   │   │   │   │   ├── fixed_decimal v0.7.2 []
+│   │   │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) [] (*)
+│   │   │   │   │   │   ├── smallvec v1.16.1 [const_generics,const_new,union]
+│   │   │   │   │   │   └── writeable v0.6.4 [alloc]
+│   │   │   │   │   ├── icu_decimal_data v2.3.0 []
+│   │   │   │   │   ├── icu_locale_core v2.3.0 [alloc,zerovec] (*)
+│   │   │   │   │   ├── icu_locale_fallback v2.3.0 [compiled_data]
+│   │   │   │   │   │   ├── icu_locale_core v2.3.0 [alloc,zerovec] (*)
+│   │   │   │   │   │   ├── icu_locale_fallback_data v2.3.0 []
+│   │   │   │   │   │   ├── icu_provider v2.3.1 [alloc,baked] (*)
+│   │   │   │   │   │   ├── potential_utf v0.1.6 [alloc,writeable,zerovec] (*)
+│   │   │   │   │   │   ├── tinystr v0.8.4 [alloc,zerovec] (*)
+│   │   │   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │   │   │   │   ├── icu_provider v2.3.1 [alloc,baked] (*)
+│   │   │   │   │   ├── writeable v0.6.4 [alloc]
+│   │   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │   │   │   ├── icu_locale_core v2.3.0 [alloc,zerovec] (*)
+│   │   │   │   ├── icu_provider v2.3.1 [alloc,baked] (*)
+│   │   │   │   ├── pulldown-cmark v0.13.4 []
+│   │   │   │   │   ├── bitflags v2.13.2 [serde,serde_core] (*)
+│   │   │   │   │   ├── memchr v2.8.3 [alloc,default,std]
+│   │   │   │   │   └── unicase v2.9.0 []
+│   │   │   │   ├── resvg v0.48.1 [gif,image-webp,raster-images,svgz,text]
+│   │   │   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   │   │   │   ├── gif v0.14.2 [color_quant,default,raii_no_panic,std] (*)
+│   │   │   │   │   ├── image-webp v0.2.4 [] (*)
+│   │   │   │   │   ├── log v0.4.34 [alloc,serde,serde_core,std] (*)
+│   │   │   │   │   ├── pico-args v0.5.0 [default,eq-separator]
+│   │   │   │   │   ├── rgb v0.8.53 [argb,as-bytes,bytemuck,default,grb] (*)
+│   │   │   │   │   ├── svgtypes v0.16.1 [default,std] (*)
+│   │   │   │   │   ├── tiny-skia v0.12.0 [default,png-format,simd,std]
+│   │   │   │   │   │   ├── arrayref v0.3.9 []
+│   │   │   │   │   │   ├── arrayvec v0.7.8 [std]
+│   │   │   │   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   │   │   │   │   ├── cfg-if v1.0.5 []
+│   │   │   │   │   │   ├── log v0.4.34 [alloc,serde,serde_core,std] (*)
+│   │   │   │   │   │   ├── png v0.18.1 [] (*)
+│   │   │   │   │   │   └── tiny-skia-path v0.12.0 [default,std]
+│   │   │   │   │   │       ├── arrayref v0.3.9 []
+│   │   │   │   │   │       ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   │   │   │   │       └── strict-num v0.1.1 [approx-eq,default,float-cmp] (*)
+│   │   │   │   │   ├── usvg v0.48.1 [base64,flate2,fontdb,harfrust,skrifa,svgz,text,unicode-bidi,unicode-script,unicode-vo,writer,xmlwriter]
+│   │   │   │   │   │   ├── base64 v0.23.1 [alloc,default,simd-unsafe,std]
+│   │   │   │   │   │   ├── data-url v0.3.2 [alloc,default,std]
+│   │   │   │   │   │   ├── flate2 v1.1.10 [any_impl,default,miniz_oxide,runtime_detection,rust_backend] (*)
+│   │   │   │   │   │   ├── fontdb v0.24.0 []
+│   │   │   │   │   │   │   ├── log v0.4.34 [alloc,serde,serde_core,std] (*)
+│   │   │   │   │   │   │   ├── slotmap v1.1.1 [default,std]
+│   │   │   │   │   │   │   └── tinyvec v1.13.3 [alloc,default]
+│   │   │   │   │   │   ├── harfrust v0.12.0 [default,std]
+│   │   │   │   │   │   │   ├── bitflags v2.13.2 [serde,serde_core] (*)
+│   │   │   │   │   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   │   │   │   │   │   ├── read-fonts v0.41.0 [experimental_font_api,std] (*)
+│   │   │   │   │   │   │   └── smallvec v1.16.1 [const_generics,const_new,union]
+│   │   │   │   │   │   ├── imagesize v0.15.0 [aesprite,astc,atc,bmp,dds,default,eac,etc2,exr,farbfeld,gif,hdr,heif,ico,ilbm,jpeg,jxl,ktx2,mod,png,pnm,psd,pvrtc,qoi,tga,tiff,vtf,webp]
+│   │   │   │   │   │   ├── kurbo v0.13.1 [default,std] (*)
+│   │   │   │   │   │   ├── log v0.4.34 [alloc,serde,serde_core,std] (*)
+│   │   │   │   │   │   ├── pico-args v0.5.0 [default,eq-separator]
+│   │   │   │   │   │   ├── roxmltree v0.21.1 [default,positions,std] (*)
+│   │   │   │   │   │   ├── simplecss v0.2.2 [default,std] (*)
+│   │   │   │   │   │   ├── siphasher v1.0.3 [default,std]
+│   │   │   │   │   │   ├── skrifa v0.44.0 [autohint_shaping,default,std]
+│   │   │   │   │   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   │   │   │   │   │   └── read-fonts v0.41.0 [experimental_font_api,std] (*)
+│   │   │   │   │   │   ├── strict-num v0.1.1 [approx-eq,default,float-cmp] (*)
+│   │   │   │   │   │   ├── svgtypes v0.16.1 [default,std] (*)
+│   │   │   │   │   │   ├── tiny-skia-path v0.12.0 [default,std] (*)
+│   │   │   │   │   │   ├── unicode-bidi v0.3.18 [default,hardcoded-data,std]
+│   │   │   │   │   │   ├── unicode-script v0.5.8 []
+│   │   │   │   │   │   ├── unicode-vo v0.1.0 []
+│   │   │   │   │   │   └── xmlwriter v0.1.0 []
+│   │   │   │   │   └── zune-jpeg v0.5.15 [default,neon,std,x86] (*)
+│   │   │   │   └── skrifa v0.44.0 [autohint_shaping,default,std] (*)
+│   │   │   ├── i-slint-core v1.18.0 [accessibility-text,default,image-decoders,path,shared-fontique,shared-parley,shared-swash,std,svg,system-tray,unicode,unicode-linebreak,unicode-script]
+│   │   │   │   ├── accesskit v0.24.1 [enumn] (*)
+│   │   │   │   ├── bitflags v2.13.2 [serde,serde_core] (*)
+│   │   │   │   ├── cfg-if v1.0.5 []
+│   │   │   │   ├── chrono v0.4.45 [alloc,clock,default,iana-time-zone,js-sys,now,oldtime,serde,std,wasm-bindgen,wasmbind,winapi,windows-link] (*)
+│   │   │   │   ├── clru v0.6.3 []
+│   │   │   │   │   └── hashbrown v0.16.1 [allocator-api2,default,default-hasher,equivalent,inline-more,raw-entry] (*)
+│   │   │   │   ├── const-field-offset v0.2.1 [] (*)
+│   │   │   │   ├── derive_more v2.1.1 [add,add_assign,default,deref,deref_mut,display,error,from,from_str,into,mul,mul_assign,not,std] (*)
+│   │   │   │   ├── euclid v0.22.14 [default,std] (*)
+│   │   │   │   ├── i-slint-common v1.18.0 [color-parsing,default,locale-decimal-separator,markdown,shared-fontique,svg-text] (*)
+│   │   │   │   ├── i-slint-core-macros v1.18.0 (proc-macro) [default]
+│   │   │   │   │   ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   │   │   │   ├── serde_json v1.0.151 [default,std]
+│   │   │   │   │   │   ├── itoa v1.0.18 []
+│   │   │   │   │   │   ├── memchr v2.8.3 [alloc,default,std]
+│   │   │   │   │   │   ├── serde_core v1.0.229 [alloc,std]
+│   │   │   │   │   │   └── zmij v1.0.23 []
+│   │   │   │   │   └── syn v3.0.6 [clone-impls,default,derive,extra-traits,fold,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │   │   │   ├── icu_normalizer v2.3.0 [compiled_data] (*)
+│   │   │   │   ├── image v0.25.10 [bmp,dds,exr,ff,gif,hdr,ico,jpeg,png,pnm,qoi,rayon,tga,tiff,webp] (*)
+│   │   │   │   ├── lyon_algorithms v1.0.21 [default,std] (*)
+│   │   │   │   ├── lyon_extra v1.1.0 []
+│   │   │   │   │   ├── lyon_path v1.0.19 [std] (*)
+│   │   │   │   │   └── thiserror v2.0.20 [default,std] (*)
+│   │   │   │   ├── lyon_geom v1.0.19 [std] (*)
+│   │   │   │   ├── lyon_path v1.0.19 [std] (*)
+│   │   │   │   ├── num-traits v0.2.19 [default,i128,libm,std] (*)
+│   │   │   │   ├── once_cell v1.21.4 [alloc,critical-section,default,portable-atomic,race,std] (*)
+│   │   │   │   ├── parley v0.11.1 [accesskit,complex-scripts,default,std,system]
+│   │   │   │   │   ├── accesskit v0.24.1 [enumn] (*)
+│   │   │   │   │   ├── fontique v0.11.1 [default,std,system] (*)
+│   │   │   │   │   ├── harfrust v0.12.0 [default,std] (*)
+│   │   │   │   │   ├── hashbrown v0.17.1 [default-hasher,raw-entry] (*)
+│   │   │   │   │   ├── icu_normalizer v2.3.0 [compiled_data] (*)
+│   │   │   │   │   ├── icu_properties v2.3.0 [compiled_data] (*)
+│   │   │   │   │   ├── icu_segmenter v2.3.0 [compiled_data]
+│   │   │   │   │   │   ├── icu_collections v2.3.0 [] (*)
+│   │   │   │   │   │   ├── icu_locale_fallback v2.3.0 [compiled_data] (*)
+│   │   │   │   │   │   ├── icu_provider v2.3.1 [alloc,baked] (*)
+│   │   │   │   │   │   ├── icu_segmenter_data v2.3.0 []
+│   │   │   │   │   │   ├── potential_utf v0.1.6 [alloc,writeable,zerovec] (*)
+│   │   │   │   │   │   ├── smallvec v1.16.1 [const_generics,const_new,union]
+│   │   │   │   │   │   ├── utf8_iter v1.0.4 []
+│   │   │   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │   │   │   │   ├── linebender_resource_handle v0.1.1 []
+│   │   │   │   │   ├── parlance v0.1.0 [std]
+│   │   │   │   │   ├── parley_data v0.11.1 [baked]
+│   │   │   │   │   │   └── icu_properties v2.3.0 [compiled_data] (*)
+│   │   │   │   │   └── skrifa v0.44.0 [autohint_shaping,default,std] (*)
+│   │   │   │   ├── pin-project v1.1.13 [] (*)
+│   │   │   │   ├── pin-weak v1.1.0 [default,sync]
+│   │   │   │   ├── portable-atomic v1.15.0 [critical-section,default,fallback] (*)
+│   │   │   │   ├── resvg v0.48.1 [gif,image-webp,raster-images,svgz,text] (*)
+│   │   │   │   ├── rgb v0.8.53 [argb,as-bytes,bytemuck,default,grb] (*)
+│   │   │   │   ├── scopeguard v1.2.0 []
+│   │   │   │   ├── skrifa v0.44.0 [autohint_shaping,default,std] (*)
+│   │   │   │   ├── slab v0.4.12 [std]
+│   │   │   │   ├── strum v0.28.0 [default,derive,std,strum_macros] (*)
+│   │   │   │   ├── swash v0.2.10 [render,scale,std]
+│   │   │   │   │   ├── skrifa v0.44.0 [autohint_shaping,default,std] (*)
+│   │   │   │   │   ├── yazi v0.2.1 [std]
+│   │   │   │   │   └── zeno v0.3.3 [eval,std]
+│   │   │   │   ├── sys-locale v0.3.2 [js,js-sys,wasm-bindgen,web-sys]
+│   │   │   │   ├── taffy v0.10.1 [alloc,flexbox,std,taffy_tree]
+│   │   │   │   │   ├── arrayvec v0.7.8 [std]
+│   │   │   │   │   └── slotmap v1.1.1 [default,std]
+│   │   │   │   ├── unicode-linebreak v0.1.5 []
+│   │   │   │   ├── unicode-script v0.5.8 []
+│   │   │   │   ├── unicode-segmentation v1.13.3 []
+│   │   │   │   ├── vtable v0.5.0 []
+│   │   │   │   │   ├── const-field-offset v0.2.1 [] (*)
+│   │   │   │   │   ├── portable-atomic v1.15.0 [critical-section,default,fallback] (*)
+│   │   │   │   │   ├── stable_deref_trait v1.2.1 [alloc]
+│   │   │   │   │   └── vtable-macro v0.5.0 (proc-macro) []
+│   │   │   │   │       ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   │   │   │       ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   │   │   │       └── syn v3.0.6 [clone-impls,default,derive,extra-traits,fold,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │   │   │   └── windows v0.62.2 [Data,Data_Xml,Data_Xml_Dom,Foundation,UI,UI_Notifications,UI_ViewManagement,Wdk,Wdk_System,Wdk_System_SystemServices,Win32,Win32_Foundation,Win32_Globalization,Win32_Graphics,Win32_Graphics_Direct3D,Win32_Graphics_Direct3D11,Win32_Graphics_Direct3D_Fxc,Win32_Graphics_DirectComposition,Win32_Graphics_DirectManipulation,Win32_Graphics_DirectWrite,Win32_Graphics_Dwm,Win32_Graphics_Dxgi,Win32_Graphics_Dxgi_Common,Win32_Graphics_Gdi,Win32_Graphics_Hlsl,Win32_Media,Win32_Security,Win32_Security_Authorization,Win32_Security_Credentials,Win32_Storage,Win32_Storage_FileSystem,Win32_Storage_Packaging,Win32_Storage_Packaging_Appx,Win32_System,Win32_System_Com,Win32_System_Com_StructuredStorage,Win32_System_Console,Win32_System_DataExchange,Win32_System_Diagnostics,Win32_System_Diagnostics_Debug,Win32_System_Diagnostics_ToolHelp,Win32_System_IO,Win32_System_LibraryLoader,Win32_System_Memory,Win32_System_Ole,Win32_System_Performance,Win32_System_Pipes,Win32_System_Power,Win32_System_Registry,Win32_System_RemoteDesktop,Win32_System_StationsAndDesktops,Win32_System_SystemInformation,Win32_System_SystemServices,Win32_System_Threading,Win32_System_Variant,Win32_System_WindowsProgramming,Win32_UI,Win32_UI_Accessibility,Win32_UI_Controls,Win32_UI_Controls_Dialogs,Win32_UI_HiDpi,Win32_UI_Input,Win32_UI_Input_Ime,Win32_UI_Input_KeyboardAndMouse,Win32_UI_Input_Pointer,Win32_UI_Shell,Win32_UI_Shell_Common,Win32_UI_Shell_PropertiesSystem,Win32_UI_WindowsAndMessaging,default,std] (*)
+│   │   │   ├── i-slint-core-macros v1.18.0 (proc-macro) [default] (*)
+│   │   │   ├── i-slint-renderer-software v1.18.0 [path,std,systemfonts]
+│   │   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics,wasm_simd] (*)
+│   │   │   │   ├── clru v0.6.3 [] (*)
+│   │   │   │   ├── derive_more v2.1.1 [add,add_assign,default,deref,deref_mut,display,error,from,from_str,into,mul,mul_assign,not,std] (*)
+│   │   │   │   ├── euclid v0.22.14 [default,std] (*)
+│   │   │   │   ├── i-slint-common v1.18.0 [color-parsing,default,locale-decimal-separator,markdown,shared-fontique,svg-text] (*)
+│   │   │   │   ├── i-slint-core v1.18.0 [accessibility-text,default,image-decoders,path,shared-fontique,shared-parley,shared-swash,std,svg,system-tray,unicode,unicode-linebreak,unicode-script] (*)
+│   │   │   │   ├── lyon_path v1.0.19 [std] (*)
+│   │   │   │   ├── num-traits v0.2.19 [default,i128,libm,std] (*)
+│   │   │   │   ├── skrifa v0.44.0 [autohint_shaping,default,std] (*)
+│   │   │   │   ├── swash v0.2.10 [render,scale,std] (*)
+│   │   │   │   └── zeno v0.3.3 [eval,std]
+│   │   │   ├── imgref v1.12.3 [default,deprecated]
+│   │   │   ├── lyon_path v1.0.19 [std] (*)
+│   │   │   ├── muda v0.19.3 []
+│   │   │   │   ├── crossbeam-channel v0.5.17 [default,std]
+│   │   │   │   │   └── crossbeam-utils v0.8.23 [default,std]
+│   │   │   │   ├── dpi v0.1.2 [default,std]
+│   │   │   │   ├── keyboard-types v0.7.0 [default,serde,unicode-segmentation,webdriver]
+│   │   │   │   │   ├── bitflags v2.13.2 [serde,serde_core] (*)
+│   │   │   │   │   ├── serde v1.0.229 [alloc,default,derive,rc,serde_derive,std] (*)
+│   │   │   │   │   └── unicode-segmentation v1.13.3 []
+│   │   │   │   ├── once_cell v1.21.4 [alloc,critical-section,default,portable-atomic,race,std] (*)
+│   │   │   │   ├── thiserror v2.0.20 [default,std] (*)
+│   │   │   │   └── windows-sys v0.61.2 [Win32,Win32_Foundation,Win32_Globalization,Win32_Graphics,Win32_Graphics_Gdi,Win32_System,Win32_System_LibraryLoader,Win32_System_SystemServices,Win32_UI,Win32_UI_Accessibility,Win32_UI_Controls,Win32_UI_HiDpi,Win32_UI_Input,Win32_UI_Input_KeyboardAndMouse,Win32_UI_Shell,Win32_UI_WindowsAndMessaging,default]
+│   │   │   │       └── windows-link v0.2.1 []
+│   │   │   ├── pin-weak v1.1.0 [default,sync]
+│   │   │   ├── raw-window-handle v0.6.2 [alloc,std]
+│   │   │   ├── rgb v0.8.53 [argb,as-bytes,bytemuck,default,grb] (*)
+│   │   │   ├── scoped-tls-hkt v0.1.5 []
+│   │   │   ├── scopeguard v1.2.0 []
+│   │   │   ├── softbuffer v0.4.8 [as-raw-xcb-connection,bytemuck,fastrand,memmap2,rustix,tiny-xlib,wayland,wayland-backend,wayland-client,wayland-dlopen,wayland-sys,x11,x11-dlopen,x11rb]
+│   │   │   │   ├── raw-window-handle v0.6.2 [alloc,std]
+│   │   │   │   ├── tracing v0.1.44 [attributes,default,std,tracing-attributes] (*)
+│   │   │   │   └── windows-sys v0.61.2 [Win32,Win32_Foundation,Win32_Globalization,Win32_Graphics,Win32_Graphics_Gdi,Win32_System,Win32_System_LibraryLoader,Win32_System_SystemServices,Win32_UI,Win32_UI_Accessibility,Win32_UI_Controls,Win32_UI_HiDpi,Win32_UI_Input,Win32_UI_Input_KeyboardAndMouse,Win32_UI_Shell,Win32_UI_WindowsAndMessaging,default] (*)
+│   │   │   ├── strum v0.28.0 [default,derive,std,strum_macros] (*)
+│   │   │   ├── vtable v0.5.0 [] (*)
+│   │   │   ├── webbrowser v1.2.4 []
+│   │   │   │   ├── log v0.4.34 [alloc,serde,serde_core,std] (*)
+│   │   │   │   └── url v2.5.8 [default,std] (*)
+│   │   │   ├── windows v0.62.2 [Data,Data_Xml,Data_Xml_Dom,Foundation,UI,UI_Notifications,UI_ViewManagement,Wdk,Wdk_System,Wdk_System_SystemServices,Win32,Win32_Foundation,Win32_Globalization,Win32_Graphics,Win32_Graphics_Direct3D,Win32_Graphics_Direct3D11,Win32_Graphics_Direct3D_Fxc,Win32_Graphics_DirectComposition,Win32_Graphics_DirectManipulation,Win32_Graphics_DirectWrite,Win32_Graphics_Dwm,Win32_Graphics_Dxgi,Win32_Graphics_Dxgi_Common,Win32_Graphics_Gdi,Win32_Graphics_Hlsl,Win32_Media,Win32_Security,Win32_Security_Authorization,Win32_Security_Credentials,Win32_Storage,Win32_Storage_FileSystem,Win32_Storage_Packaging,Win32_Storage_Packaging_Appx,Win32_System,Win32_System_Com,Win32_System_Com_StructuredStorage,Win32_System_Console,Win32_System_DataExchange,Win32_System_Diagnostics,Win32_System_Diagnostics_Debug,Win32_System_Diagnostics_ToolHelp,Win32_System_IO,Win32_System_LibraryLoader,Win32_System_Memory,Win32_System_Ole,Win32_System_Performance,Win32_System_Pipes,Win32_System_Power,Win32_System_Registry,Win32_System_RemoteDesktop,Win32_System_StationsAndDesktops,Win32_System_SystemInformation,Win32_System_SystemServices,Win32_System_Threading,Win32_System_Variant,Win32_System_WindowsProgramming,Win32_UI,Win32_UI_Accessibility,Win32_UI_Controls,Win32_UI_Controls_Dialogs,Win32_UI_HiDpi,Win32_UI_Input,Win32_UI_Input_Ime,Win32_UI_Input_KeyboardAndMouse,Win32_UI_Input_Pointer,Win32_UI_Shell,Win32_UI_Shell_Common,Win32_UI_Shell_PropertiesSystem,Win32_UI_WindowsAndMessaging,default,std] (*)
+│   │   │   └── winit v0.30.13 [ahash,bytemuck,memmap2,percent-encoding,rwh_06,sctk,sctk-adwaita,wayland,wayland-backend,wayland-client,wayland-csd-adwaita,wayland-protocols,wayland-protocols-plasma,x11,x11-dl,x11rb] (*)
+│   │   ├── i-slint-core v1.18.0 [accessibility-text,default,image-decoders,path,shared-fontique,shared-parley,shared-swash,std,svg,system-tray,unicode,unicode-linebreak,unicode-script] (*)
+│   │   └── i-slint-core-macros v1.18.0 (proc-macro) [default] (*)
+│   ├── i-slint-common v1.18.0 [color-parsing,default,locale-decimal-separator,markdown,shared-fontique,svg-text] (*)
+│   ├── i-slint-core v1.18.0 [accessibility-text,default,image-decoders,path,shared-fontique,shared-parley,shared-swash,std,svg,system-tray,unicode,unicode-linebreak,unicode-script] (*)
+│   ├── i-slint-core-macros v1.18.0 (proc-macro) [default] (*)
+│   ├── i-slint-renderer-software v1.18.0 [path,std,systemfonts] (*)
+│   ├── num-traits v0.2.19 [default,i128,libm,std] (*)
+│   ├── once_cell v1.21.4 [alloc,critical-section,default,portable-atomic,race,std] (*)
+│   ├── pin-weak v1.1.0 [default,sync]
+│   ├── slint-macros v1.18.0 (proc-macro) []
+│   │   ├── i-slint-compiler v1.18.0 [bundle-translations,default,display-diagnostics,image,proc-macro2,proc_macro_span,quote,renderer-software,rust]
+│   │   │   ├── annotate-snippets v0.12.16 [default,std]
+│   │   │   │   ├── anstyle v1.0.14 [std]
+│   │   │   │   └── unicode-width v0.2.2 [cjk,default]
+│   │   │   ├── by_address v1.2.1 []
+│   │   │   ├── data-url v0.3.2 [alloc,default,std]
+│   │   │   ├── derive_more v2.1.1 [add,add_assign,deref,deref_mut,display,error,from,into,mul,not,std]
+│   │   │   │   └── derive_more-impl v2.1.1 (proc-macro) [add,add_assign,default,deref,deref_mut,display,error,from,from_str,into,mul,mul_assign,not] (*)
+│   │   │   ├── i-slint-common v1.18.0 [color-parsing,default,locale-decimal-separator,markdown,shared-fontique,svg-text]
+│   │   │   │   ├── derive_more v2.1.1 [add,add_assign,deref,deref_mut,display,error,from,into,mul,not,std] (*)
+│   │   │   │   ├── fontique v0.11.1 [default,std,system]
+│   │   │   │   │   ├── hashbrown v0.17.1 [default-hasher,raw-entry] (*)
+│   │   │   │   │   ├── linebender_resource_handle v0.1.1 []
+│   │   │   │   │   ├── memmap2 v0.9.11 []
+│   │   │   │   │   ├── parlance v0.1.0 [std]
+│   │   │   │   │   ├── read-fonts v0.41.0 [experimental_font_api,std]
+│   │   │   │   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics]
+│   │   │   │   │   │   │   └── bytemuck_derive v1.12.1 (proc-macro) [] (*)
+│   │   │   │   │   │   ├── font-types v0.12.5 [bytemuck,std]
+│   │   │   │   │   │   │   └── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics] (*)
+│   │   │   │   │   │   └── once_cell v1.21.4 [alloc,race]
+│   │   │   │   │   ├── smallvec v1.16.1 [const_generics,const_new]
+│   │   │   │   │   ├── windows v0.62.2 [Win32,Win32_Foundation,Win32_Graphics,Win32_Graphics_DirectWrite,default,std]
+│   │   │   │   │   │   ├── windows-collections v0.3.2 [std]
+│   │   │   │   │   │   │   └── windows-core v0.62.2 [default,std]
+│   │   │   │   │   │   │       ├── windows-implement v0.60.2 (proc-macro) [] (*)
+│   │   │   │   │   │   │       ├── windows-interface v0.59.3 (proc-macro) [] (*)
+│   │   │   │   │   │   │       ├── windows-link v0.2.1 []
+│   │   │   │   │   │   │       ├── windows-result v0.4.1 [std]
+│   │   │   │   │   │   │       │   └── windows-link v0.2.1 []
+│   │   │   │   │   │   │       └── windows-strings v0.5.1 [std]
+│   │   │   │   │   │   │           └── windows-link v0.2.1 []
+│   │   │   │   │   │   ├── windows-core v0.62.2 [default,std] (*)
+│   │   │   │   │   │   ├── windows-future v0.3.2 [std]
+│   │   │   │   │   │   │   ├── windows-core v0.62.2 [default,std] (*)
+│   │   │   │   │   │   │   ├── windows-link v0.2.1 []
+│   │   │   │   │   │   │   └── windows-threading v0.2.1 []
+│   │   │   │   │   │   │       └── windows-link v0.2.1 []
+│   │   │   │   │   │   └── windows-numerics v0.3.1 [std]
+│   │   │   │   │   │       ├── windows-core v0.62.2 [default,std] (*)
+│   │   │   │   │   │       └── windows-link v0.2.1 []
+│   │   │   │   │   └── windows-core v0.62.2 [default,std] (*)
+│   │   │   │   ├── htmlparser v0.2.1 [default,std]
+│   │   │   │   ├── icu_decimal v2.3.0 [compiled_data,default]
+│   │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) [] (*)
+│   │   │   │   │   ├── fixed_decimal v0.7.2 []
+│   │   │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) [] (*)
+│   │   │   │   │   │   ├── smallvec v1.16.1 [const_generics,const_new]
+│   │   │   │   │   │   └── writeable v0.6.4 [alloc]
+│   │   │   │   │   ├── icu_decimal_data v2.3.0 []
+│   │   │   │   │   ├── icu_locale_core v2.3.0 [alloc,zerovec]
+│   │   │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) [] (*)
+│   │   │   │   │   │   ├── litemap v0.8.3 [alloc]
+│   │   │   │   │   │   ├── tinystr v0.8.4 [alloc,zerovec]
+│   │   │   │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) [] (*)
+│   │   │   │   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke]
+│   │   │   │   │   │   │       ├── yoke v0.8.3 [alloc,derive,zerofrom]
+│   │   │   │   │   │   │       │   ├── stable_deref_trait v1.2.1 [alloc]
+│   │   │   │   │   │   │       │   ├── yoke-derive v0.8.3 (proc-macro) [] (*)
+│   │   │   │   │   │   │       │   └── zerofrom v0.1.8 [alloc,derive]
+│   │   │   │   │   │   │       │       └── zerofrom-derive v0.1.8 (proc-macro) [] (*)
+│   │   │   │   │   │   │       ├── zerofrom v0.1.8 [alloc,derive] (*)
+│   │   │   │   │   │   │       └── zerovec-derive v0.11.6 (proc-macro) [] (*)
+│   │   │   │   │   │   ├── writeable v0.6.4 [alloc]
+│   │   │   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │   │   │   │   ├── icu_locale_fallback v2.3.0 [compiled_data]
+│   │   │   │   │   │   ├── icu_locale_core v2.3.0 [alloc,zerovec] (*)
+│   │   │   │   │   │   ├── icu_locale_fallback_data v2.3.0 []
+│   │   │   │   │   │   ├── icu_provider v2.3.1 [alloc,baked]
+│   │   │   │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) [] (*)
+│   │   │   │   │   │   │   ├── icu_locale_core v2.3.0 [alloc,zerovec] (*)
+│   │   │   │   │   │   │   ├── stable_deref_trait v1.2.1 [alloc]
+│   │   │   │   │   │   │   ├── writeable v0.6.4 [alloc]
+│   │   │   │   │   │   │   ├── yoke v0.8.3 [alloc,derive,zerofrom] (*)
+│   │   │   │   │   │   │   ├── zerofrom v0.1.8 [alloc,derive] (*)
+│   │   │   │   │   │   │   ├── zerotrie v0.2.5 [alloc,yoke,zerofrom]
+│   │   │   │   │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) [] (*)
+│   │   │   │   │   │   │   │   ├── yoke v0.8.3 [alloc,derive,zerofrom] (*)
+│   │   │   │   │   │   │   │   └── zerofrom v0.1.8 [alloc,derive] (*)
+│   │   │   │   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │   │   │   │   │   ├── potential_utf v0.1.6 [alloc,writeable,zerovec]
+│   │   │   │   │   │   │   ├── writeable v0.6.4 [alloc]
+│   │   │   │   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │   │   │   │   │   ├── tinystr v0.8.4 [alloc,zerovec] (*)
+│   │   │   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │   │   │   │   ├── icu_provider v2.3.1 [alloc,baked] (*)
+│   │   │   │   │   ├── writeable v0.6.4 [alloc]
+│   │   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │   │   │   ├── icu_locale_core v2.3.0 [alloc,zerovec] (*)
+│   │   │   │   ├── icu_provider v2.3.1 [alloc,baked] (*)
+│   │   │   │   ├── pulldown-cmark v0.13.4 []
+│   │   │   │   │   ├── bitflags v2.13.2 []
+│   │   │   │   │   ├── memchr v2.8.3 [alloc,default,std]
+│   │   │   │   │   └── unicase v2.9.0 []
+│   │   │   │   ├── resvg v0.48.1 [gif,image-webp,raster-images,svgz,text]
+│   │   │   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics] (*)
+│   │   │   │   │   ├── gif v0.14.2 [color_quant,default,raii_no_panic,std]
+│   │   │   │   │   │   ├── color_quant v1.1.0 []
+│   │   │   │   │   │   └── weezl v0.1.12 [alloc,default,std]
+│   │   │   │   │   ├── image-webp v0.2.4 []
+│   │   │   │   │   │   ├── byteorder-lite v0.1.0 [default,std]
+│   │   │   │   │   │   └── quick-error v2.0.1 []
+│   │   │   │   │   ├── log v0.4.34 [alloc,std]
+│   │   │   │   │   ├── pico-args v0.5.0 [default,eq-separator]
+│   │   │   │   │   ├── rgb v0.8.53 [argb,as-bytes,bytemuck,default,grb]
+│   │   │   │   │   │   └── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics] (*)
+│   │   │   │   │   ├── svgtypes v0.16.1 [default,std]
+│   │   │   │   │   │   ├── kurbo v0.13.1 [default,std]
+│   │   │   │   │   │   │   ├── arrayvec v0.7.8 [std]
+│   │   │   │   │   │   │   ├── polycool v0.4.0 [std]
+│   │   │   │   │   │   │   │   └── arrayvec v0.7.8 [std]
+│   │   │   │   │   │   │   └── smallvec v1.16.1 [const_generics,const_new]
+│   │   │   │   │   │   └── siphasher v1.0.3 [default,std]
+│   │   │   │   │   ├── tiny-skia v0.12.0 [default,png-format,simd,std]
+│   │   │   │   │   │   ├── arrayref v0.3.9 []
+│   │   │   │   │   │   ├── arrayvec v0.7.8 [std]
+│   │   │   │   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics] (*)
+│   │   │   │   │   │   ├── cfg-if v1.0.5 []
+│   │   │   │   │   │   ├── log v0.4.34 [alloc,std]
+│   │   │   │   │   │   ├── png v0.18.1 []
+│   │   │   │   │   │   │   ├── bitflags v2.13.2 []
+│   │   │   │   │   │   │   ├── crc32fast v1.5.2 [default,std]
+│   │   │   │   │   │   │   │   └── cfg-if v1.0.5 []
+│   │   │   │   │   │   │   ├── fdeflate v0.3.7 []
+│   │   │   │   │   │   │   │   └── simd-adler32 v0.3.10 [const-generics,default,std]
+│   │   │   │   │   │   │   ├── flate2 v1.1.10 [any_impl,default,miniz_oxide,runtime_detection,rust_backend]
+│   │   │   │   │   │   │   │   ├── crc32fast v1.5.2 [default,std] (*)
+│   │   │   │   │   │   │   │   └── miniz_oxide v0.9.1 [default,simd,simd-adler32,with-alloc]
+│   │   │   │   │   │   │   │       ├── adler2 v2.0.1 []
+│   │   │   │   │   │   │   │       └── simd-adler32 v0.3.10 [const-generics,default,std]
+│   │   │   │   │   │   │   └── miniz_oxide v0.8.9 [default,simd,simd-adler32,with-alloc]
+│   │   │   │   │   │   │       ├── adler2 v2.0.1 []
+│   │   │   │   │   │   │       └── simd-adler32 v0.3.10 [const-generics,default,std]
+│   │   │   │   │   │   └── tiny-skia-path v0.12.0 [default,std]
+│   │   │   │   │   │       ├── arrayref v0.3.9 []
+│   │   │   │   │   │       ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics] (*)
+│   │   │   │   │   │       └── strict-num v0.1.1 [approx-eq,default,float-cmp]
+│   │   │   │   │   │           └── float-cmp v0.9.0 [std]
+│   │   │   │   │   ├── usvg v0.48.1 [base64,flate2,fontdb,harfrust,skrifa,svgz,text,unicode-bidi,unicode-script,unicode-vo,writer,xmlwriter]
+│   │   │   │   │   │   ├── base64 v0.23.1 [alloc,default,simd-unsafe,std]
+│   │   │   │   │   │   ├── data-url v0.3.2 [alloc,default,std]
+│   │   │   │   │   │   ├── flate2 v1.1.10 [any_impl,default,miniz_oxide,runtime_detection,rust_backend] (*)
+│   │   │   │   │   │   ├── fontdb v0.24.0 []
+│   │   │   │   │   │   │   ├── log v0.4.34 [alloc,std]
+│   │   │   │   │   │   │   ├── slotmap v1.1.1 []
+│   │   │   │   │   │   │   └── tinyvec v1.13.3 [alloc,default]
+│   │   │   │   │   │   ├── harfrust v0.12.0 [default,std]
+│   │   │   │   │   │   │   ├── bitflags v2.13.2 []
+│   │   │   │   │   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics] (*)
+│   │   │   │   │   │   │   ├── read-fonts v0.41.0 [experimental_font_api,std] (*)
+│   │   │   │   │   │   │   └── smallvec v1.16.1 [const_generics,const_new]
+│   │   │   │   │   │   ├── imagesize v0.15.0 [aesprite,astc,atc,bmp,dds,default,eac,etc2,exr,farbfeld,gif,hdr,heif,ico,ilbm,jpeg,jxl,ktx2,mod,png,pnm,psd,pvrtc,qoi,tga,tiff,vtf,webp]
+│   │   │   │   │   │   ├── kurbo v0.13.1 [default,std] (*)
+│   │   │   │   │   │   ├── log v0.4.34 [alloc,std]
+│   │   │   │   │   │   ├── pico-args v0.5.0 [default,eq-separator]
+│   │   │   │   │   │   ├── roxmltree v0.21.1 [default,positions,std]
+│   │   │   │   │   │   │   └── memchr v2.8.3 [alloc,default,std]
+│   │   │   │   │   │   ├── simplecss v0.2.2 [default,std]
+│   │   │   │   │   │   │   └── log v0.4.34 [alloc,std]
+│   │   │   │   │   │   ├── siphasher v1.0.3 [default,std]
+│   │   │   │   │   │   ├── skrifa v0.44.0 [autohint_shaping,default,std]
+│   │   │   │   │   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics] (*)
+│   │   │   │   │   │   │   └── read-fonts v0.41.0 [experimental_font_api,std] (*)
+│   │   │   │   │   │   ├── strict-num v0.1.1 [approx-eq,default,float-cmp] (*)
+│   │   │   │   │   │   ├── svgtypes v0.16.1 [default,std] (*)
+│   │   │   │   │   │   ├── tiny-skia-path v0.12.0 [default,std] (*)
+│   │   │   │   │   │   ├── unicode-bidi v0.3.18 [default,hardcoded-data,std]
+│   │   │   │   │   │   ├── unicode-script v0.5.8 []
+│   │   │   │   │   │   ├── unicode-vo v0.1.0 []
+│   │   │   │   │   │   └── xmlwriter v0.1.0 []
+│   │   │   │   │   └── zune-jpeg v0.5.15 [default,neon,std,x86]
+│   │   │   │   │       └── zune-core v0.5.3 [std]
+│   │   │   │   └── skrifa v0.44.0 [autohint_shaping,default,std] (*)
+│   │   │   ├── icu_normalizer v2.3.0 [compiled_data]
+│   │   │   │   ├── icu_collections v2.3.0 []
+│   │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) [] (*)
+│   │   │   │   │   ├── potential_utf v0.1.6 [alloc,writeable,zerovec] (*)
+│   │   │   │   │   ├── utf8_iter v1.0.4 []
+│   │   │   │   │   ├── yoke v0.8.3 [alloc,derive,zerofrom] (*)
+│   │   │   │   │   ├── zerofrom v0.1.8 [alloc,derive] (*)
+│   │   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │   │   │   ├── icu_normalizer_data v2.3.0 []
+│   │   │   │   ├── icu_provider v2.3.1 [alloc,baked] (*)
+│   │   │   │   ├── smallvec v1.16.1 [const_generics,const_new]
+│   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │   │   ├── icu_properties v2.3.0 [compiled_data,default]
+│   │   │   │   ├── displaydoc v0.2.7 (proc-macro) [] (*)
+│   │   │   │   ├── icu_collections v2.3.0 [] (*)
+│   │   │   │   ├── icu_locale_core v2.3.0 [alloc,zerovec] (*)
+│   │   │   │   ├── icu_properties_data v2.3.0 []
+│   │   │   │   ├── icu_provider v2.3.1 [alloc,baked] (*)
+│   │   │   │   ├── zerotrie v0.2.5 [alloc,yoke,zerofrom] (*)
+│   │   │   │   └── zerovec v0.11.8 [alloc,derive,yoke] (*)
+│   │   │   ├── image v0.25.10 [jpeg,png]
+│   │   │   │   ├── bytemuck v1.25.2 [aarch64_simd,bytemuck_derive,derive,extern_crate_alloc,min_const_generics] (*)
+│   │   │   │   ├── byteorder-lite v0.1.0 [default,std]
+│   │   │   │   ├── moxcms v0.8.1 [avx,avx_luts,avx_shaper_fixed_point_paths,avx_shaper_paths,default,lut,neon,neon_luts,neon_shaper_fixed_point_paths,neon_shaper_paths,sse,sse_luts,sse_shaper_fixed_point_paths,sse_shaper_paths]
+│   │   │   │   │   ├── num-traits v0.2.19 [default,libm,std]
+│   │   │   │   │   │   └── libm v0.2.16 [arch,default]
+│   │   │   │   │   └── pxfm v0.1.30 []
+│   │   │   │   ├── num-traits v0.2.19 [default,libm,std] (*)
+│   │   │   │   ├── png v0.18.1 [] (*)
+│   │   │   │   ├── zune-core v0.5.3 [std]
+│   │   │   │   └── zune-jpeg v0.5.15 [default,neon,std,x86] (*)
+│   │   │   ├── indexmap v2.14.2 [default,std] (*)
+│   │   │   ├── itertools v0.15.0 [default,use_alloc,use_std]
+│   │   │   │   └── either v1.18.0 [std,use_std]
+│   │   │   ├── lyon_extra v1.1.0 [default,std]
+│   │   │   │   ├── lyon_path v1.0.19 [std]
+│   │   │   │   │   ├── lyon_geom v1.0.19 [std]
+│   │   │   │   │   │   ├── arrayvec v0.7.8 [std]
+│   │   │   │   │   │   ├── euclid v0.22.14 [std]
+│   │   │   │   │   │   │   └── num-traits v0.2.19 [default,libm,std] (*)
+│   │   │   │   │   │   └── num-traits v0.2.19 [default,libm,std] (*)
+│   │   │   │   │   └── num-traits v0.2.19 [default,libm,std] (*)
+│   │   │   │   └── thiserror v2.0.20 [std]
+│   │   │   │       └── thiserror-impl v2.0.20 (proc-macro) [] (*)
+│   │   │   ├── lyon_path v1.0.19 [std] (*)
+│   │   │   ├── num_enum v0.7.6 [default,std]
+│   │   │   │   ├── num_enum_derive v0.7.6 (proc-macro) [proc-macro-crate,std]
+│   │   │   │   │   ├── proc-macro-crate v3.5.0 [] (*)
+│   │   │   │   │   ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   │   │   │   ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   │   │   │   └── syn v2.0.119 [clone-impls,default,derive,extra-traits,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │   │   │   └── rustversion v1.0.23 (proc-macro) []
+│   │   │   ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   │   ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   │   ├── rayon v1.12.0 []
+│   │   │   │   ├── either v1.18.0 [std,use_std]
+│   │   │   │   └── rayon-core v1.13.0 []
+│   │   │   │       ├── crossbeam-deque v0.8.8 [default,std]
+│   │   │   │       │   ├── crossbeam-epoch v0.9.21 [alloc,std]
+│   │   │   │       │   │   └── crossbeam-utils v0.8.23 [default,std]
+│   │   │   │       │   └── crossbeam-utils v0.8.23 [default,std]
+│   │   │   │       └── crossbeam-utils v0.8.23 [default,std]
+│   │   │   ├── resvg v0.48.1 [gif,image-webp,raster-images,svgz,text] (*)
+│   │   │   ├── rowan v0.17.0 []
+│   │   │   │   ├── countme v3.0.1 []
+│   │   │   │   ├── hashbrown v0.14.5 [inline-more]
+│   │   │   │   ├── memoffset v0.9.1 [default]
+│   │   │   │   ├── rustc-hash v1.1.0 [default,std]
+│   │   │   │   └── text-size v1.1.1 []
+│   │   │   ├── rspolib v0.1.2 []
+│   │   │   │   ├── lazy_static v1.5.0 []
+│   │   │   │   ├── natord v1.0.9 []
+│   │   │   │   ├── snafu v0.8.9 [alloc,default,rust_1_61,rust_1_65,std]
+│   │   │   │   │   └── snafu-derive v0.8.9 (proc-macro) [rust_1_61]
+│   │   │   │   │       ├── heck v0.5.0 []
+│   │   │   │   │       ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   │   │   │       ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   │   │   │       └── syn v2.0.119 [clone-impls,default,derive,extra-traits,full,parsing,printing,proc-macro,visit,visit-mut] (*)
+│   │   │   │   ├── unicode-linebreak v0.1.5 []
+│   │   │   │   └── unicode-width v0.2.2 [cjk,default]
+│   │   │   ├── skrifa v0.44.0 [autohint_shaping,default,std] (*)
+│   │   │   ├── smol_str v0.3.6 [default,std]
+│   │   │   ├── strum v0.28.0 [derive,strum_macros]
+│   │   │   │   └── strum_macros v0.28.0 (proc-macro) [] (*)
+│   │   │   ├── swash v0.2.10 [render,scale,std]
+│   │   │   │   ├── skrifa v0.44.0 [autohint_shaping,default,std] (*)
+│   │   │   │   ├── yazi v0.2.1 [std]
+│   │   │   │   └── zeno v0.3.3 [eval,std]
+│   │   │   ├── typed-index-collections v3.5.0 [alloc,default,std]
+│   │   │   ├── unicode-segmentation v1.13.3 []
+│   │   │   └── url v2.5.8 [default,std]
+│   │   │       ├── form_urlencoded v1.2.2 [alloc,std]
+│   │   │       │   └── percent-encoding v2.3.2 [alloc,std]
+│   │   │       ├── idna v1.1.0 [alloc,compiled_data,std]
+│   │   │       │   ├── idna_adapter v1.2.2 [compiled_data]
+│   │   │       │   │   ├── icu_normalizer v2.3.0 [compiled_data] (*)
+│   │   │       │   │   └── icu_properties v2.3.0 [compiled_data,default] (*)
+│   │   │       │   ├── smallvec v1.16.1 [const_generics,const_new]
+│   │   │       │   └── utf8_iter v1.0.4 []
+│   │   │       └── percent-encoding v2.3.2 [alloc,std]
+│   │   ├── proc-macro2 v1.0.107 [default,proc-macro] (*)
+│   │   ├── quote v1.0.47 [default,proc-macro] (*)
+│   │   └── spin_on v0.1.1 []
+│   │       └── pin-utils v0.1.0 []
+│   ├── unicode-segmentation v1.13.3 []
+│   └── vtable v0.5.0 [] (*)
+├── tray-icon v0.26.1 []
+│   ├── crossbeam-channel v0.5.17 [default,std] (*)
+│   ├── muda v0.21.2 []
+│   │   ├── crossbeam-channel v0.5.17 [default,std] (*)
+│   │   ├── dpi v0.1.2 [default,std]
+│   │   ├── keyboard-types v0.8.3 [default,std]
+│   │   │   └── bitflags v2.13.2 [serde,serde_core] (*)
+│   │   ├── thiserror v2.0.20 [default,std] (*)
+│   │   └── windows-sys v0.61.2 [Win32,Win32_Foundation,Win32_Globalization,Win32_Graphics,Win32_Graphics_Gdi,Win32_System,Win32_System_LibraryLoader,Win32_System_SystemServices,Win32_UI,Win32_UI_Accessibility,Win32_UI_Controls,Win32_UI_HiDpi,Win32_UI_Input,Win32_UI_Input_KeyboardAndMouse,Win32_UI_Shell,Win32_UI_WindowsAndMessaging,default] (*)
+│   ├── once_cell v1.21.4 [alloc,critical-section,default,portable-atomic,race,std] (*)
+│   ├── thiserror v2.0.20 [default,std] (*)
+│   └── windows-sys v0.61.2 [Win32,Win32_Foundation,Win32_Globalization,Win32_Graphics,Win32_Graphics_Gdi,Win32_System,Win32_System_LibraryLoader,Win32_System_SystemServices,Win32_UI,Win32_UI_Accessibility,Win32_UI_Controls,Win32_UI_HiDpi,Win32_UI_Input,Win32_UI_Input_KeyboardAndMouse,Win32_UI_Shell,Win32_UI_WindowsAndMessaging,default] (*)
+├── windows v0.62.2 [Data,Data_Xml,Data_Xml_Dom,Foundation,UI,UI_Notifications,UI_ViewManagement,Wdk,Wdk_System,Wdk_System_SystemServices,Win32,Win32_Foundation,Win32_Globalization,Win32_Graphics,Win32_Graphics_Direct3D,Win32_Graphics_Direct3D11,Win32_Graphics_Direct3D_Fxc,Win32_Graphics_DirectComposition,Win32_Graphics_DirectManipulation,Win32_Graphics_DirectWrite,Win32_Graphics_Dwm,Win32_Graphics_Dxgi,Win32_Graphics_Dxgi_Common,Win32_Graphics_Gdi,Win32_Graphics_Hlsl,Win32_Media,Win32_Security,Win32_Security_Authorization,Win32_Security_Credentials,Win32_Storage,Win32_Storage_FileSystem,Win32_Storage_Packaging,Win32_Storage_Packaging_Appx,Win32_System,Win32_System_Com,Win32_System_Com_StructuredStorage,Win32_System_Console,Win32_System_DataExchange,Win32_System_Diagnostics,Win32_System_Diagnostics_Debug,Win32_System_Diagnostics_ToolHelp,Win32_System_IO,Win32_System_LibraryLoader,Win32_System_Memory,Win32_System_Ole,Win32_System_Performance,Win32_System_Pipes,Win32_System_Power,Win32_System_Registry,Win32_System_RemoteDesktop,Win32_System_StationsAndDesktops,Win32_System_SystemInformation,Win32_System_SystemServices,Win32_System_Threading,Win32_System_Variant,Win32_System_WindowsProgramming,Win32_UI,Win32_UI_Accessibility,Win32_UI_Controls,Win32_UI_Controls_Dialogs,Win32_UI_HiDpi,Win32_UI_Input,Win32_UI_Input_Ime,Win32_UI_Input_KeyboardAndMouse,Win32_UI_Input_Pointer,Win32_UI_Shell,Win32_UI_Shell_Common,Win32_UI_Shell_PropertiesSystem,Win32_UI_WindowsAndMessaging,default,std] (*)
+└── windows-core v0.62.2 [default,std] (*)
