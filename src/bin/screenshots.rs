@@ -32,6 +32,7 @@ mod shots {
     };
     use power_plan_sync::interface::assets::Assets;
     use power_plan_sync::interface::rule_dialog::{RuleDialog, RuleDialogMode};
+    use power_plan_sync::interface::settings_page::SettingsPage;
     use power_plan_sync::interface::software_page::SoftwarePage;
     use power_plan_sync::interface::strings;
     use power_plan_sync::interface::text_input::TextInput;
@@ -111,6 +112,18 @@ mod shots {
             poll_processes: true,
             can_exit: false,
         }
+    }
+
+    /// Le plan de retour passe à Économies d'énergie pendant un cycle commencé avec
+    /// Utilisation normale.
+    fn reserved_return() -> ViewState {
+        let mut view = active();
+        view.plans.push(PowerPlan {
+            id: PlanId(4),
+            name: "Économies d'énergie".into(),
+        });
+        view.configuration.return_plan = Some(PlanId(4));
+        view
     }
 
     fn paused() -> ViewState {
@@ -634,6 +647,58 @@ mod shots {
                 cx.new(|cx| {
                     let mut main = MainWindow::new(model.clone(), window, cx);
                     main.set_page_view(Page::Software, page.into(), cx);
+                    main
+                })
+            })?;
+            capture(&mut cx, window.into(), &output.join(format!("{name}.png")))?;
+        }
+        let settings = [
+            (
+                "settings",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                reserved_return(),
+            ),
+            (
+                "settings-light",
+                WindowAppearance::Light,
+                880.,
+                620.,
+                reserved_return(),
+            ),
+            (
+                "settings-idle",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                paused(),
+            ),
+            (
+                "settings-narrow",
+                WindowAppearance::Dark,
+                420.,
+                900.,
+                reserved_return(),
+            ),
+            (
+                "settings-read-only",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                paused(),
+            ),
+        ];
+        for (name, appearance, width, height, view) in settings {
+            let mut model = display(&view, false, false, None);
+            model.read_only = name.ends_with("read-only");
+            cx.update(|cx| cx.set_global(ForcedAppearance(appearance)));
+            let window = cx.open_window(size(px(width), px(height)), |window, cx| {
+                let settings = cx.new(|cx| SettingsPage::new(model.clone(), |_, _| {}, window, cx));
+                cx.new(|cx| {
+                    let mut main = MainWindow::new(model.clone(), window, cx);
+                    main.set_page_view(Page::Settings, settings.into(), cx);
+                    main.show_page(Page::Settings, cx);
                     main
                 })
             })?;

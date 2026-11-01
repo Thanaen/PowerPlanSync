@@ -263,7 +263,7 @@ impl RuleDialog {
         let mut options: Vec<SelectOption> = plans
             .iter()
             .map(|plan| SelectOption {
-                label: plan.name.clone().into(),
+                label: strings::plan_label(&plan.name).into(),
             })
             .collect();
         if selected == Some(plans.len()) {

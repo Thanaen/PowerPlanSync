@@ -11,6 +11,7 @@ use futures::channel::mpsc::UnboundedReceiver;
 use gpui::{App, AppContext as _, Context, Entity, FocusHandle, Focusable as _, QuitMode, Window};
 
 use crate::interface::rule_dialog::{self, RuleDialog, RuleDialogEvent, RuleDialogMode};
+use crate::interface::settings_page::SettingsPage;
 use crate::interface::software_page::{SoftwareEvent, SoftwarePage};
 use crate::interface::theme::{self, HighContrast};
 use crate::interface::window::{self, MainWindow, Page, ShellEvent};
@@ -27,6 +28,7 @@ struct Shell {
     /// n'ouvre pas une autre fenêtre, et le processus de suivi relancera si elle le demandait.
     closing: bool,
     page: Option<Entity<SoftwarePage>>,
+    settings: Option<Entity<SettingsPage>>,
     dialog: Option<Entity<RuleDialog>>,
     /// Ce qui avait le focus avant le dialogue : il le retrouve à la fermeture.
     opener: Option<FocusHandle>,
@@ -56,6 +58,7 @@ pub fn run(
                 started: false,
                 closing: false,
                 page: None,
+                settings: None,
                 dialog: None,
                 opener: None,
                 on_action: Arc::clone(&on_action),
@@ -103,6 +106,11 @@ fn handle(shell: &Rc<RefCell<Shell>>, command: UiCommand, cx: &mut App) -> bool 
             if window::update(model.clone(), cx) {
                 if let Some(dialog) = dialog {
                     dialog.update(cx, |dialog, cx| dialog.set_model(&model, cx));
+                }
+                let settings = shell.borrow().settings.clone();
+                if let Some(settings) = settings {
+                    let model = model.clone();
+                    settings.update(cx, |settings, cx| settings.set_model(model, cx));
                 }
                 if let Some(page) = page {
                     page.update(cx, |page, cx| page.set_model(model, cx));
@@ -177,6 +185,11 @@ fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App, notify: bool) -> bool {
         let model = model.clone();
         page.update(cx, |page, cx| page.set_model(model, cx));
     }
+    let settings = shell.borrow().settings.clone();
+    if existed && let Some(settings) = settings {
+        let model = model.clone();
+        settings.update(cx, |settings, cx| settings.set_model(model, cx));
+    }
     let Ok(handle) = window::open(model.clone(), cx) else {
         return false;
     };
@@ -187,7 +200,7 @@ fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App, notify: bool) -> bool {
         return true;
     }
     let send = Arc::clone(&on_action);
-    let page = cx.new(|_| SoftwarePage::new(model, move |action, _| send(action)));
+    let page = cx.new(|_| SoftwarePage::new(model.clone(), move |action, _| send(action)));
     let opened = Rc::clone(shell);
     cx.subscribe(&page, move |_, event: &SoftwareEvent, cx| match *event {
         SoftwareEvent::Add { keyboard } => open_dialog(&opened, None, !keyboard, cx),
@@ -195,13 +208,18 @@ fn show(shell: &Rc<RefCell<Shell>>, cx: &mut App, notify: bool) -> bool {
         SoftwareEvent::Edit(rule_id) => open_dialog(&opened, Some(rule_id), false, cx),
     })
     .detach();
-    let Ok(main) = handle.update(cx, |main, _, cx| {
+    let send = Arc::clone(&on_action);
+    let Ok((main, settings)) = handle.update(cx, |main, window, cx| {
+        let settings = cx
+            .new(|cx| SettingsPage::new(model.clone(), move |action, _| send(action), window, cx));
         main.set_page_view(Page::Software, page.clone().into(), cx);
-        cx.entity()
+        main.set_page_view(Page::Settings, settings.clone().into(), cx);
+        (cx.entity(), settings)
     }) else {
         return true;
     };
     shell.borrow_mut().page = Some(page);
+    shell.borrow_mut().settings = Some(settings);
     let opened = Rc::clone(shell);
     cx.subscribe(&main, move |_, event, cx| match event {
         ShellEvent::Quit => on_action(UiAction::Quit),

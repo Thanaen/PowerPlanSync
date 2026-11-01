@@ -179,7 +179,7 @@ impl FirstLaunch {
             .plans
             .iter()
             .map(|plan| SelectOption {
-                label: plan.name.clone().into(),
+                label: strings::plan_label(&plan.name).into(),
             })
             .collect();
         let selected = usize::try_from(model.return_plan_index).ok();
@@ -337,7 +337,7 @@ impl Render for FirstLaunch {
             let name = usize::try_from(model.return_plan_index)
                 .ok()
                 .and_then(|index| model.plans.get(index))
-                .map(|plan| plan.name.clone())
+                .map(|plan| strings::plan_label(&plan.name))
                 .unwrap_or_default();
             Self::summary(name, &theme).into_any_element()
         } else {
