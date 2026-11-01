@@ -34,6 +34,7 @@ mod shots {
         ViewState,
     };
     use power_plan_sync::interface::assets::Assets;
+    use power_plan_sync::interface::first_launch::note_validating_input;
     use power_plan_sync::interface::help_page::HelpPage;
     use power_plan_sync::interface::rule_dialog::{RuleDialog, RuleDialogMode};
     use power_plan_sync::interface::settings_page::SettingsPage;
@@ -531,6 +532,7 @@ mod shots {
         let mut pending = first_launch(true, true);
         pending.configuration.return_plan = None;
         let (page, window) = main_window(cx, display(&pending, false, false, None))?;
+        cx.update(|cx| note_validating_input(false, cx));
         set_model(
             cx,
             &page,

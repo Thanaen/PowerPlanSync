@@ -7,7 +7,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Context, Entity, EventEmitter, FocusHandle, FontWeight,
+    AnyElement, App, ClickEvent, Context, Entity, EventEmitter, FocusHandle, FontWeight, Global,
     IntoElement, ParentElement, Render, Role, SharedString, Styled, Subscription, Window, div,
     prelude::*, px,
 };
@@ -22,6 +22,18 @@ use crate::presentation::{PlanDisplay, RuleDisplay, UiAction, UiDisplayModel};
 
 const PILL: gpui::Pixels = px(20.);
 const SELECT_WIDTH: gpui::Pixels = px(186.);
+
+/// L'entrée qui vient de valider une étape, notée au moment du clic ou de la touche : la pastille
+/// ne paraît qu'au retour de l'état, après d'autres entrées possibles.
+struct ValidatingInput {
+    keyboard: bool,
+}
+
+impl Global for ValidatingInput {}
+
+pub fn note_validating_input(keyboard: bool, cx: &mut App) {
+    cx.set_global(ValidatingInput { keyboard });
+}
 
 /// **Ajouter un logiciel**, relayé à la page qui ouvre le dialogue.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -119,7 +131,6 @@ pub struct FirstLaunch {
     /// Les plans et la proposition déjà posés dans la liste : un état reçu sans changement
     /// ne remplace pas le choix en cours.
     proposed: (Vec<PlanDisplay>, i32),
-    just_validated: [bool; 2],
     pills: [Entrance; 2],
     /// **Confirmer** disparaît une fois l'étape validée : le focus passe à l'étape suivante
     /// plutôt que de tomber sur la fenêtre.
@@ -148,7 +159,6 @@ impl FirstLaunch {
             on_action,
             plan,
             proposed: (Vec::new(), -1),
-            just_validated: [false; 2],
             pills: [Entrance::at_rest(), Entrance::at_rest()],
             add_focus: cx.focus_handle(),
             activate_focus: cx.focus_handle(),
@@ -164,8 +174,23 @@ impl FirstLaunch {
             return;
         }
         let (before, after) = (Steps::of(&self.model), Steps::of(&model));
-        self.just_validated[0] |= !before.software && after.software;
-        self.just_validated[1] |= !before.return_plan && after.return_plan;
+        let validated = [
+            !before.software && after.software,
+            !before.return_plan && after.return_plan,
+        ];
+        if validated.contains(&true) {
+            let keyboard = cx
+                .try_global::<ValidatingInput>()
+                .is_none_or(|input| input.keyboard);
+            cx.remove_global::<ValidatingInput>();
+            for (pill, _) in self.pills.iter_mut().zip(validated).filter(|(_, new)| *new) {
+                *pill = if keyboard {
+                    Entrance::at_rest()
+                } else {
+                    Entrance::default()
+                };
+            }
+        }
         self.propose(&model, cx);
         self.model = model;
         cx.notify();
@@ -308,16 +333,8 @@ impl Render for FirstLaunch {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = Theme::of(window, cx);
         let narrow = is_narrow(window.viewport_size().width);
-        let keyboard = window.last_input_was_keyboard();
         let mut scales = [1.; 2];
         for (index, scale) in scales.iter_mut().enumerate() {
-            if std::mem::take(&mut self.just_validated[index]) {
-                self.pills[index] = if keyboard {
-                    Entrance::at_rest()
-                } else {
-                    Entrance::default()
-                };
-            }
             let spring = motion::spring(motion::STEP_DONE, motion::STEP_DONE_BOUNCE);
             *scale = 1. - self.pills[index].spring(spring, Duration::ZERO, window, cx);
         }
@@ -367,8 +384,9 @@ impl Render for FirstLaunch {
                 .child(
                     Button::new("confirm-return", strings::CONFIRM, ButtonStyle::Outlined)
                         .disabled(chosen.is_none())
-                        .on_click(move |_, window, cx| {
+                        .on_click(move |event, window, cx| {
                             if let Some(plan_id) = chosen.clone() {
+                                note_validating_input(event.is_keyboard(), cx);
                                 on_action(UiAction::SetReturnPlan { plan_id }, cx);
                                 window.focus(&next, cx);
                             }

@@ -379,6 +379,16 @@ fn a_validated_step_pill_appears_at_rest_after_a_key(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+fn a_pill_validated_by_a_key_stays_at_rest_after_a_later_mouse_move(cx: &mut TestAppContext) {
+    let (page, cx, actions) = open_page(cx, getting_started());
+    focus_then_press_enter(cx, "confirm-return");
+    cx.simulate_mouse_move(point(px(10.), px(10.)), None, Modifiers::default());
+    confirm_return_plan(&page, cx, &actions);
+    assert_close(pill(cx), 20.);
+    assert_at_rest(cx);
+}
+
+#[gpui::test]
 fn a_validated_step_pill_appears_at_rest_with_reduced_motion(cx: &mut TestAppContext) {
     reduce_motion(cx);
     let (page, cx, actions) = open_page(cx, getting_started());
