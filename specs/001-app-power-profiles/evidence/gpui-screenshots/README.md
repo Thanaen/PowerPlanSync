@@ -72,4 +72,33 @@ coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-da
 | `motion-add-rule-000.png`, `motion-add-rule-050.png` | `AddRule-000.png`, `AddRule-050.png` | Conforme : rien à la première image, puis voile et carte opaques, la carte à quelques pixels de sa place. La maquette ouvre le dialogue depuis « Pour commencer », la capture depuis la liste. |
 | `motion-first-launch-ready-000.png`, `motion-first-launch-ready-050.png` | `FirstLaunchReady-000.png`, `FirstLaunchReady-050.png` | Conforme : la pastille de l'étape 2 part de rien et a presque atteint sa taille à mi-course. |
 
+## Texte agrandi et contraste élevé (T068)
+
+Rendus avec `TextScale` et `HighContrast` posés comme le ferait le processus de fenêtre. Les
+couleurs système sont celles des thèmes « Ciel nocturne » et « Désert » de Windows 11. À 100 %,
+toutes les captures ci-dessus sont restées identiques au pixel près. Aucune maquette.
+
+| Capture | Constat |
+| --- | --- |
+| `text-125.png` | 880 × 620 à 125 % : barre latérale entière, lignes sur plusieurs niveaux pour garder le nom lisible. |
+| `text-150.png` | 880 × 620 à 150 % : sous le seuil de la fenêtre étroite (900 px), barre latérale réduite aux icônes. |
+| `text-200.png` | 880 × 620 à 200 % : même disposition que `Narrow.png`, le texte double, les icônes gardent leur taille. |
+| `text-200-wide.png` | 1 280 × 720 à 200 % : barre latérale entière de 400 px, lignes sur plusieurs niveaux. |
+| `text-200-narrow.png` | 420 × 760 à 200 % : capuchons des raccourcis masqués, barre d'état coupée par des points de suspension. |
+| `text-200-settings.png` | **Réglages** à 200 % : la liste passe sous son texte, le message défile. |
+| `text-200-first-launch.png` | « Pour commencer » à 200 %. |
+| `text-200-refused.png` | Message d'erreur intégré à 200 %. |
+| `text-200-removed.png` | Message de retrait annulable à 200 %. |
+| `text-200-help.png` | **Aide et limites** à 200 % : la largeur de lecture suit la taille du texte, la page défile. |
+| `text-200-palette.png` | Palette de commandes à 200 % : la recherche, le titre du groupe et les entrées suivent la taille du texte, la liste défile dans la fenêtre. |
+| `text-200-add-rule.png` | **Ajouter un logiciel** invalide à 200 % : le corps du dialogue défile, le pied reste visible. |
+| `text-200-add-rule-plan.png` | **Ajouter un logiciel** à 200 % dans une fenêtre de 880 px de large : la liste **Plan pendant l'exécution** s'aligne sur **Nom affiché** sans sortir du dialogue. |
+| `contrast-dark.png` | Ciel nocturne : couleurs système, sans ombre ; l'état reste porté par l'icône et le mot. |
+| `contrast-light.png` | Désert : mêmes constats sur fond clair. |
+| `contrast-help.png` | **Aide et limites** en Ciel nocturne. |
+| `contrast-settings.png` | **Réglages** en Ciel nocturne. |
+| `contrast-refused.png` | Message d'erreur en Ciel nocturne : bord WindowText, sans fond teinté. |
+| `contrast-add-rule.png` | **Ajouter un logiciel** en Désert, sans voile ni ombre. |
+| `contrast-text-200.png` | Ciel nocturne avec texte à 200 %. |
+
 Aucun écart hors de ceux listés dans `design/README.md`.

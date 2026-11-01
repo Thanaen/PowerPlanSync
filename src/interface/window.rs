@@ -5,15 +5,18 @@
 
 use gpui::{
     AnyView, App, AppContext as _, Bounds, Context, Entity, EventEmitter, FocusHandle, Focusable,
-    Global, Hsla, KeyBinding, Pixels, Role, SharedString, Size, Subscription, Window, WindowBounds,
-    WindowControlArea, WindowHandle, WindowOptions, actions, div, prelude::*, px, size,
+    Global, Hsla, KeyBinding, Pixels, Rems, Role, SharedString, Size, Subscription, Window,
+    WindowBounds, WindowControlArea, WindowHandle, WindowOptions, actions, div, prelude::*, px,
+    size,
 };
 
 use crate::domain::PowerSource;
 use crate::interface::palette::{self, Command, PaletteEvent, PaletteView, Situation};
 use crate::interface::strings;
 use crate::interface::theme::spacing::*;
-use crate::interface::theme::{Theme, TypeStyled as _, radius, size as token, text};
+use crate::interface::theme::{
+    TextScale, Theme, TypeStyled as _, radius, rem, size as token, text,
+};
 use crate::interface::widgets::{self, Button, ButtonStyle, FocusRing};
 use crate::presentation::{Automation, Notice, UiDisplayModel};
 
@@ -38,11 +41,12 @@ pub const OPENING_SIZE: Size<Pixels> = size(px(880.), px(620.));
 pub const MINIMUM_SIZE: Size<Pixels> = size(px(360.), px(420.));
 /// En dessous, la barre latérale ne garde que ses icônes et la barre de titre perd
 /// **Commandes**, toujours offert par Ctrl+Maj+P.
-pub const NARROW_WIDTH: Pixels = px(600.);
-pub const SIDEBAR_WIDTH: Pixels = px(200.);
+pub const NARROW_WIDTH: Rems = rem(600.);
+pub const SIDEBAR_WIDTH: Rems = rem(200.);
 pub const NARROW_SIDEBAR_WIDTH: Pixels = px(44.);
+const NARROW_ITEM: Pixels = px(28.);
 /// La zone de **Quitter** : 48 px sous son filet de 1 px, comme dans les maquettes.
-const QUIT_AREA_HEIGHT: Pixels = px(49.);
+const QUIT_AREA_HEIGHT: Rems = rem(49.);
 /// Les glyphes des boutons de fenêtre, plus fins que les icônes, comme ceux de Windows.
 const CONTROL_GLYPH: Pixels = px(10.);
 
@@ -107,8 +111,12 @@ pub enum ShellEvent {
     UndoDelete,
 }
 
-pub fn is_narrow(width: Pixels) -> bool {
-    width < NARROW_WIDTH
+pub fn is_narrow(window: &Window) -> bool {
+    narrow_at(window.viewport_size().width, window.rem_size())
+}
+
+fn narrow_at(width: Pixels, rem_size: Pixels) -> bool {
+    width < NARROW_WIDTH.to_pixels(rem_size)
 }
 
 /// Une erreur attend l'utilisateur. Sans contrôle, le refus d'une autre session a son message
@@ -491,14 +499,13 @@ impl MainWindow {
                 .aria_label(label)
                 .when(narrow, |item| item.tooltip(widgets::Tooltip::text(label)))
                 .tab_index(0)
-                .h(token::BUTTON_MEDIUM)
                 .flex_none()
                 .flex()
                 .items_center()
                 .gap(BASE_08)
                 .rounded(radius::SM)
-                .when(narrow, |item| item.w(token::BUTTON_MEDIUM).justify_center())
-                .when(!narrow, |item| item.px(BASE_08))
+                .when(narrow, |item| item.size(NARROW_ITEM).justify_center())
+                .when(!narrow, |item| item.h(token::BUTTON_MEDIUM).px(BASE_08))
                 .when(selected, |item| item.bg(theme.element_active))
                 .when(!selected, |item| {
                     item.hover(move |style| style.bg(hover))
@@ -525,11 +532,8 @@ impl MainWindow {
         // Étroite, les entrées de 28 px sont centrées dans les 43 px laissés par le filet.
         let padding = if narrow { px(0.) } else { BASE_08 };
         div()
-            .w(if narrow {
-                NARROW_SIDEBAR_WIDTH
-            } else {
-                SIDEBAR_WIDTH
-            })
+            .when(narrow, |sidebar| sidebar.w(NARROW_SIDEBAR_WIDTH))
+            .when(!narrow, |sidebar| sidebar.w(SIDEBAR_WIDTH))
             .flex_none()
             .h_full()
             .flex()
@@ -579,6 +583,7 @@ impl MainWindow {
             div()
                 .whitespace_nowrap()
                 .overflow_hidden()
+                .text_ellipsis()
                 .text_color(theme.text_muted)
                 .child(content)
         };
@@ -636,8 +641,9 @@ impl Focusable for MainWindow {
 
 impl Render for MainWindow {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        window.set_rem_size(TextScale::of(cx).rem_size());
         let theme = Theme::of(window, cx);
-        let narrow = is_narrow(window.viewport_size().width);
+        let narrow = is_narrow(window);
         let page = self.pages[self.page.index()].clone();
         div()
             .key_context(KEY_CONTEXT)
@@ -775,11 +781,22 @@ mod tests {
 
     #[test]
     fn the_sidebar_folds_to_icons_below_the_narrow_width() {
-        assert!(is_narrow(px(420.)));
-        assert!(is_narrow(NARROW_WIDTH - px(1.)));
-        assert!(!is_narrow(NARROW_WIDTH));
-        assert!(!is_narrow(OPENING_SIZE.width));
-        assert!(MINIMUM_SIZE.width < NARROW_WIDTH);
+        let rem = TextScale::NONE.rem_size();
+        assert!(narrow_at(px(420.), rem));
+        assert!(narrow_at(px(599.), rem));
+        assert!(!narrow_at(px(600.), rem));
+        assert!(!narrow_at(OPENING_SIZE.width, rem));
+        assert!(narrow_at(MINIMUM_SIZE.width, rem));
+    }
+
+    #[test]
+    fn enlarged_text_folds_the_sidebar_sooner() {
+        let at = |percent| TextScale::from_percent(percent).rem_size();
+        assert!(!narrow_at(OPENING_SIZE.width, at(125)));
+        assert!(narrow_at(px(749.), at(125)));
+        assert!(narrow_at(OPENING_SIZE.width, at(150)));
+        assert!(!narrow_at(px(1200.), at(200)));
+        assert!(narrow_at(px(1199.), at(200)));
     }
 
     #[test]

@@ -403,7 +403,9 @@ agrandi exigent un vrai Windows. Les cycles réels utilisent l'exécutable témo
   conteneur, pas sur l'élément (AccessKit 0.24, `accesskit_windows` 0.34).
 - Texte agrandi (risque de D16) : ignoré par GPUI comme par `src/interface/`. L'interface Slint
   l'appliquait. À construire en T068, par exemple en dérivant la taille de texte des jetons de
-  `text_scale_percent`, déjà lu par `src/windows/preferences.rs`.
+  `text_scale_percent`, déjà lu par `src/windows/preferences.rs`. Construit en T068 : la fenêtre
+  pose le rem de GPUI à 16 px × `text_scale_percent`, et les jetons qui portent du texte sont en
+  rems (écart listé dans [design/README.md](design/README.md)).
 - Budgets SC-004 (risque de D16) : 92,5 Mio fenêtre ouverte, sous les 100 Mio. **91,1 Mio
   fenêtre fermée, contre 40 Mio.** Sans aucune fenêtre, GPUI occupe déjà 59,7 Mio, et la première
   fenêtre de la sonde porte ce chiffre à 111 Mio après sa fermeture. L'interface Slint occupait 3,1 Mio

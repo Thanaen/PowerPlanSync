@@ -15,13 +15,13 @@ use gpui::{
 use crate::interface::motion::{self, Entrance};
 use crate::interface::strings;
 use crate::interface::theme::spacing::*;
-use crate::interface::theme::{Theme, TypeStyled as _, radius, size as token, text};
+use crate::interface::theme::{Theme, TypeStyled as _, radius, rem, size as token, text};
 use crate::interface::widgets::{self, Button, ButtonStyle, Select, SelectChanged, SelectOption};
 use crate::interface::window::is_narrow;
 use crate::presentation::{PlanDisplay, RuleDisplay, UiAction, UiDisplayModel};
 
 const PILL: gpui::Pixels = px(20.);
-const SELECT_WIDTH: gpui::Pixels = px(186.);
+const SELECT_WIDTH: gpui::Rems = rem(186.);
 
 /// L'entrée qui vient de valider une étape, notée au moment du clic ou de la touche : la pastille
 /// ne paraît qu'au retour de l'état, après d'autres entrées possibles.
@@ -332,7 +332,7 @@ impl FirstLaunch {
 impl Render for FirstLaunch {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = Theme::of(window, cx);
-        let narrow = is_narrow(window.viewport_size().width);
+        let narrow = is_narrow(window);
         let mut scales = [1.; 2];
         for (index, scale) in scales.iter_mut().enumerate() {
             let spring = motion::spring(motion::STEP_DONE, motion::STEP_DONE_BOUNCE);

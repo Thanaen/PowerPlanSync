@@ -2,17 +2,17 @@ use std::rc::Rc;
 
 use gpui::{
     App, Context, IntoElement, ParentElement, Render, Role, SharedString, Styled, Window, div,
-    prelude::*, px,
+    prelude::*,
 };
 
 use crate::interface::strings;
 use crate::interface::theme::spacing::*;
-use crate::interface::theme::{Theme, TypeStyled as _, text};
+use crate::interface::theme::{Theme, TypeStyled as _, rem, text};
 use crate::interface::widgets::{Button, ButtonStyle};
 use crate::interface::window::is_narrow;
 use crate::presentation::{GuideSection, UiAction};
 
-const MAX_READABLE_WIDTH: gpui::Pixels = px(680.);
+const MAX_READABLE_WIDTH: gpui::Rems = rem(680.);
 
 type OnAction = Rc<dyn Fn(UiAction, &mut App)>;
 
@@ -79,7 +79,7 @@ fn section(title: &'static str, body: &'static str, theme: &Theme) -> impl IntoE
 impl Render for HelpPage {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = Theme::of(window, cx);
-        let narrow = is_narrow(window.viewport_size().width);
+        let narrow = is_narrow(window);
         div()
             .px(if narrow { BASE_16 } else { BASE_24 })
             .pt(BASE_20)

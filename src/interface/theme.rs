@@ -6,7 +6,7 @@
 use std::borrow::Cow;
 
 use gpui::{
-    App, BoxShadow, FontWeight, Global, Hsla, Pixels, Styled, Window, WindowAppearance, hsla,
+    App, BoxShadow, FontWeight, Global, Hsla, Pixels, Rems, Styled, Window, WindowAppearance, hsla,
     point, px, rgba,
 };
 
@@ -54,6 +54,38 @@ pub struct SystemColors {
 pub struct HighContrast(pub Option<SystemColors>);
 
 impl Global for HighContrast {}
+
+/// Le réglage Windows « Taille du texte », de 100 à 225 %. GPUI l'ignore : la fenêtre en tire
+/// la taille du rem, dont dépendent les styles de [`text`] et les contrôles qui portent du texte.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TextScale(f32);
+
+impl TextScale {
+    pub const NONE: Self = Self(1.);
+
+    /// `TextScaleFactor` en pour cent ; hors des valeurs de Windows, il est ramené à ses bornes.
+    pub fn from_percent(percent: u32) -> Self {
+        Self(percent.clamp(100, 225) as f32 / 100.)
+    }
+
+    pub fn rem_size(self) -> Pixels {
+        REM * self.0
+    }
+
+    pub fn of(cx: &App) -> Self {
+        cx.try_global::<Self>().copied().unwrap_or(Self::NONE)
+    }
+}
+
+impl Global for TextScale {}
+
+/// Le rem de GPUI à 100 % : les jetons en pixels du design system s'y convertissent.
+pub const REM: Pixels = px(16.);
+
+/// Un jeton en pixels du design system, qui suit la taille du texte.
+pub const fn rem(pixels: f32) -> Rems {
+    Rems(pixels / 16.)
+}
 
 /// Apparence imposée à toutes les fenêtres au lieu de celle de Windows : sert aux captures
 /// hors écran, où le système n'en fournit pas.
@@ -432,22 +464,26 @@ pub mod radius {
 }
 
 pub mod size {
-    use gpui::{Pixels, px};
+    use gpui::{Pixels, Rems, px};
 
-    pub const BUTTON_COMPACT: Pixels = px(18.);
-    pub const BUTTON_DEFAULT: Pixels = px(22.);
-    pub const BUTTON_MEDIUM: Pixels = px(28.);
-    pub const BUTTON_LARGE: Pixels = px(32.);
+    use super::rem;
+
+    pub const BUTTON_COMPACT: Rems = rem(18.);
+    pub const BUTTON_DEFAULT: Rems = rem(22.);
+    pub const BUTTON_MEDIUM: Rems = rem(28.);
+    pub const BUTTON_LARGE: Rems = rem(32.);
     pub const ICON_XS: Pixels = px(12.);
     pub const ICON_SM: Pixels = px(14.);
     pub const ICON_MD: Pixels = px(16.);
-    pub const TITLEBAR_HEIGHT: Pixels = px(32.);
-    pub const STATUSBAR_HEIGHT: Pixels = px(28.);
+    pub const TITLEBAR_HEIGHT: Rems = rem(32.);
+    pub const STATUSBAR_HEIGHT: Rems = rem(28.);
     /// Écart : anneau de focus de 2 px.
     pub const FOCUS_RING: Pixels = px(2.);
-    pub const KEY_CAP: Pixels = px(20.);
+    pub const KEY_CAP: Rems = rem(20.);
     pub const WINDOW_CONTROL_WIDTH: Pixels = px(46.);
-    pub const PALETTE_WIDTH: Pixels = px(520.);
+    pub const PALETTE_WIDTH: Rems = rem(520.);
+    pub const PALETTE_QUERY: Rems = rem(48.);
+    pub const PALETTE_HEADING: Rems = rem(24.);
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -459,16 +495,16 @@ pub enum FontFamily {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TypeStyle {
     pub family: FontFamily,
-    pub size: Pixels,
-    pub line_height: Pixels,
+    pub size: Rems,
+    pub line_height: Rems,
     pub weight: FontWeight,
 }
 
 const fn style(family: FontFamily, size: f32, line_height: f32, weight: f32) -> TypeStyle {
     TypeStyle {
         family,
-        size: px(size),
-        line_height: px(line_height),
+        size: rem(size),
+        line_height: rem(line_height),
         weight: FontWeight(weight),
     }
 }
@@ -668,6 +704,53 @@ mod tests {
                 gray_text: 0x3ff23f,
             }
         );
+    }
+
+    #[test]
+    fn text_scale_follows_windows_text_size_within_its_bounds() {
+        let rem = |percent| TextScale::from_percent(percent).rem_size();
+        assert_eq!(TextScale::NONE.rem_size(), px(16.));
+        assert_eq!(rem(100), px(16.));
+        assert_eq!(rem(150), px(24.));
+        assert_eq!(rem(200), px(32.));
+        assert_eq!(rem(225), px(36.));
+        assert_eq!(rem(0), px(16.));
+        assert_eq!(rem(500), px(36.));
+    }
+
+    #[test]
+    fn text_styles_keep_the_design_system_sizes_at_100_percent() {
+        let at = |style: TypeStyle, percent| {
+            let rem = TextScale::from_percent(percent).rem_size();
+            (style.size.to_pixels(rem), style.line_height.to_pixels(rem))
+        };
+        assert_eq!(at(text::HEADLINE_LG, 100), (px(20.), px(28.)));
+        assert_eq!(at(text::LABEL_MD, 100), (px(14.), px(20.)));
+        assert_eq!(at(text::LABEL_SM, 100), (px(12.), px(16.)));
+        assert_eq!(at(text::VALUE, 100), (px(14.), px(20.)));
+        assert_eq!(at(text::LABEL_MD, 150), (px(21.), px(30.)));
+        assert_eq!(at(text::LABEL_MD, 200), (px(28.), px(40.)));
+        assert_eq!(at(text::HEADLINE_LG, 200), (px(40.), px(56.)));
+    }
+
+    #[test]
+    fn controls_that_carry_text_grow_with_it_and_icons_do_not() {
+        for percent in [100, 125, 150, 200, 225] {
+            let rem = TextScale::from_percent(percent).rem_size();
+            let scale = percent as f32 / 100.;
+            assert_eq!(size::BUTTON_MEDIUM.to_pixels(rem), px(28. * scale));
+            assert_eq!(size::TITLEBAR_HEIGHT.to_pixels(rem), px(32. * scale));
+            assert_eq!(size::STATUSBAR_HEIGHT.to_pixels(rem), px(28. * scale));
+            assert!(size::BUTTON_MEDIUM.to_pixels(rem) > text::LABEL_MD.line_height.to_pixels(rem));
+            assert!(
+                size::STATUSBAR_HEIGHT.to_pixels(rem) > text::LABEL_SM.line_height.to_pixels(rem)
+            );
+            assert!(
+                size::PALETTE_HEADING.to_pixels(rem) > text::LABEL_SM.line_height.to_pixels(rem)
+            );
+            assert!(size::PALETTE_QUERY.to_pixels(rem) > text::LABEL_MD.line_height.to_pixels(rem));
+        }
+        assert_eq!(size::ICON_MD, px(16.));
     }
 
     #[test]
