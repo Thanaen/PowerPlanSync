@@ -199,13 +199,13 @@ pub fn power_source(source: PowerSource) -> &'static str {
     }
 }
 
-/// Nom de plan cité dans une phrase, insécable.
 /// Un nom de plan dans une liste : l'apostrophe typographique, sans espace insécable pour que le
 /// nom puisse passer à la ligne.
 pub fn plan_label(name: &str) -> String {
     name.replace('\'', "’")
 }
 
+/// Nom de plan cité dans une phrase, insécable.
 pub fn plan_name(name: &str) -> String {
     name.replace(' ', "\u{a0}").replace('\'', "’")
 }

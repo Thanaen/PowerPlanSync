@@ -34,7 +34,9 @@ coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-da
 | `settings-light.png` | aucune | Mêmes constats en thème clair. |
 | `settings-idle.png` | aucune | Automatisation en pause : pas de message sous **Plan de retour**. |
 | `settings-narrow.png` | aucune | Fenêtre étroite : la liste et **Ouvrir le dossier** passent sous leur texte, les interrupteurs restent à droite. |
-| `settings-read-only.png` | aucune | Sans contrôle : liste et interrupteurs désactivés, **Ouvrir le dossier** reste disponible. |
+| `settings-refused.png` | aucune | Réglage refusé (**Démarrer avec Windows** avec `--data-dir`) : le message d'erreur s'affiche en tête de page. |
+| `settings-read-only.png` | aucune | Contrôle tenu par une autre session : le message de la page **Logiciels**, puis **Données** seulement. Les valeurs non lues ne sont pas montrées. |
+| `settings-read-only-unreadable.png` | aucune | Réglages illisibles : le message **Les réglages sont illisibles** seul, qui ouvre déjà le dossier des données. |
 | `settings-unreadable.png` | `ConfigError.png` | Conforme, sauf la barre d'état, qui garde le mot-clé « Automatisation arrêtée ». |
 | `settings-unreadable-light.png` | aucune | Mêmes constats en thème clair. |
 | `unavailable-dark.png` | `Unavailable.png` | Maquette tirée de cette capture. |

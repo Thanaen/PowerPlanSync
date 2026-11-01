@@ -1,7 +1,9 @@
 //! La page **Réglages** : **Après fermeture** (**Plan de retour**), **Conditions** (**Changer
 //! de plan sur batterie**, **Démarrer avec Windows**) et **Données** (**Ouvrir le dossier**).
 //! Un plan de retour changé pendant un cycle s'explique sous la liste (FR-002, FR-014, FR-020,
-//! FR-024). Sans contrôle, rien ne peut y être changé ; le dossier reste accessible.
+//! FR-024). Un réglage refusé s'explique en tête de page. Sans contrôle, la page ne montre que
+//! le message de la page **Logiciels** et le dossier : les valeurs n'ont pas été lues.
+//! Réglages illisibles, le message suffit : il ouvre déjà le dossier.
 
 use std::rc::Rc;
 
@@ -10,14 +12,14 @@ use gpui::{
     Styled, Subscription, Window, div, prelude::*, px,
 };
 
-use crate::interface::strings;
 use crate::interface::theme::spacing::*;
 use crate::interface::theme::{Theme, TypeStyled as _, radius, text};
 use crate::interface::widgets::{
     Button, ButtonStyle, Message, MessageKind, Select, SelectChanged, SelectOption, Switch,
 };
 use crate::interface::window::is_narrow;
-use crate::presentation::{PlanDisplay, UiAction, UiDisplayModel};
+use crate::interface::{messages, strings};
+use crate::presentation::{Notice, PlanDisplay, UiAction, UiDisplayModel};
 
 const SELECT_WIDTH: gpui::Pixels = px(220.);
 
@@ -69,8 +71,9 @@ impl SettingsPage {
 
     pub fn set_model(&mut self, model: UiDisplayModel, cx: &mut Context<Self>) {
         let shown = (model.plans.clone(), model.return_plan_index);
-        let read_only = model.read_only;
-        if shown != self.shown || self.plan.read(cx).disabled != read_only {
+        let selected = usize::try_from(model.return_plan_index).ok();
+        // Un choix refusé laisse la liste sur le plan enregistré.
+        if shown != self.shown || self.plan.read(cx).selected() != selected {
             let options = model
                 .plans
                 .iter()
@@ -78,9 +81,7 @@ impl SettingsPage {
                     label: strings::plan_label(&plan.name).into(),
                 })
                 .collect();
-            let selected = usize::try_from(model.return_plan_index).ok();
             self.plan.update(cx, |plan, cx| {
-                plan.disabled = read_only;
                 plan.set_options(options, selected, cx);
                 cx.notify();
             });
@@ -90,6 +91,21 @@ impl SettingsPage {
             self.model = model;
             cx.notify();
         }
+    }
+
+    /// Un réglage refusé, ou ce qui retire le contrôle : le même message que sur **Logiciels**.
+    /// Les messages d'un cycle restent sur **Logiciels**.
+    fn notice(&self, theme: &Theme) -> Option<impl IntoElement + use<>> {
+        let notice = self.model.notice.as_ref().filter(|notice| {
+            matches!(
+                notice,
+                Notice::Problem(_)
+                    | Notice::Stopped(_)
+                    | Notice::ControlUnavailable(_)
+                    | Notice::SettingsUnreadable
+            )
+        })?;
+        Some(messages::message(notice, &self.on_action, theme))
     }
 
     fn return_plan(&self, narrow: bool, theme: &Theme) -> impl IntoElement + use<> {
@@ -118,7 +134,6 @@ impl SettingsPage {
                 let on_action = Rc::clone(&self.on_action);
                 Switch::new(id, name, on)
                     .backdrop(theme.surface)
-                    .disabled(model.read_only)
                     .on_toggle(move |on, _, cx| on_action(action(on), cx))
                     .into_any_element()
             };
@@ -259,16 +274,23 @@ impl Render for SettingsPage {
                     .text_color(theme.text)
                     .child(strings::PAGE_SETTINGS),
             )
-            .child(section(
-                strings::AFTER_CLOSING,
-                self.return_plan(narrow, &theme),
-                &theme,
-            ))
-            .child(section(
-                strings::CONDITIONS,
-                self.conditions(&theme),
-                &theme,
-            ))
-            .child(section(strings::DATA, self.data(narrow, &theme), &theme))
+            .children(self.notice(&theme))
+            .when(!self.model.read_only, |page| {
+                page.child(section(
+                    strings::AFTER_CLOSING,
+                    self.return_plan(narrow, &theme),
+                    &theme,
+                ))
+                .child(section(
+                    strings::CONDITIONS,
+                    self.conditions(&theme),
+                    &theme,
+                ))
+            })
+            // **Les réglages sont illisibles** a déjà **Ouvrir le dossier des données**.
+            .when(
+                !matches!(self.model.notice, Some(Notice::SettingsUnreadable)),
+                |page| page.child(section(strings::DATA, self.data(narrow, &theme), &theme)),
+            )
     }
 }

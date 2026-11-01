@@ -42,8 +42,8 @@ mod shots {
     };
     use power_plan_sync::interface::window::{MainWindow, Page};
     use power_plan_sync::presentation::{
-        Badge, RunningAppDisplay, UiDisplayModel, after_failed_quit, display, settings_unreadable,
-        without_control,
+        Badge, Notice, RunningAppDisplay, UiDisplayModel, after_failed_quit, display,
+        settings_unreadable, without_control,
     };
 
     fn rule(id: u64, label: &str, path: &str, plan: u128, enabled: bool) -> AppRule {
@@ -652,46 +652,68 @@ mod shots {
             })?;
             capture(&mut cx, window.into(), &output.join(format!("{name}.png")))?;
         }
+        let shown = |view: ViewState| display(&view, false, false, None);
+        let refused = {
+            let mut model = shown(active());
+            model.notice = Some(Notice::Problem(
+                "Le démarrage Windows est indisponible avec un dossier de données personnalisé. \
+                 Relancez PowerPlanSync sans --data-dir pour utiliser cette option."
+                    .into(),
+            ));
+            model
+        };
         let settings = [
             (
                 "settings",
                 WindowAppearance::Dark,
                 880.,
                 620.,
-                reserved_return(),
+                shown(reserved_return()),
             ),
             (
                 "settings-light",
                 WindowAppearance::Light,
                 880.,
                 620.,
-                reserved_return(),
+                shown(reserved_return()),
             ),
             (
                 "settings-idle",
                 WindowAppearance::Dark,
                 880.,
                 620.,
-                paused(),
+                shown(paused()),
             ),
             (
                 "settings-narrow",
                 WindowAppearance::Dark,
                 420.,
                 900.,
-                reserved_return(),
+                shown(reserved_return()),
+            ),
+            (
+                "settings-refused",
+                WindowAppearance::Dark,
+                880.,
+                700.,
+                refused,
             ),
             (
                 "settings-read-only",
                 WindowAppearance::Dark,
                 880.,
                 620.,
-                paused(),
+                unavailable(),
+            ),
+            (
+                "settings-read-only-unreadable",
+                WindowAppearance::Dark,
+                880.,
+                620.,
+                unreadable(),
             ),
         ];
-        for (name, appearance, width, height, view) in settings {
-            let mut model = display(&view, false, false, None);
-            model.read_only = name.ends_with("read-only");
+        for (name, appearance, width, height, model) in settings {
             cx.update(|cx| cx.set_global(ForcedAppearance(appearance)));
             let window = cx.open_window(size(px(width), px(height)), |window, cx| {
                 let settings = cx.new(|cx| SettingsPage::new(model.clone(), |_, _| {}, window, cx));
