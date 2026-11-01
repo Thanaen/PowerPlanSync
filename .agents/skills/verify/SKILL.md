@@ -96,6 +96,7 @@ Sans le plugin Computer Use, par exemple sous Claude Code, piloter avec `agent-d
 - `scripts/uia-inspect.ps1 -ProcessId $pid -OutputPrefix …` écrit l'arbre (rôles, noms, états, position dans l'ensemble) et une capture ;
 - `scripts/uia-focus.ps1` décrit le focus entre deux touches ;
 - `scripts/uia-act.ps1 -ProcessId $pid -Name '<regex>' -Action Invoke|Toggle|Select|Focus` agit sur un élément nommé ;
+- `scripts/tray-act.ps1 -ProcessId $pid -Action Click` clique sur l'icône de notification, et `-Item '<regex>'` choisit un élément de son menu par son texte, sans souris ; le script échoue si le menu ne se ferme pas avant l'envoi de la commande ;
 - `scripts/send-keys.ps1 -Keys 0x09` envoie des touches virtuelles par `SendInput` à la fenêtre au premier plan ;
 - `scripts/uia-events.ps1` enregistre régions actives, notifications, noms et focus pendant une action ;
 - `scripts/windows-appearance.ps1` et `scripts/display-scale.ps1` changent thème, contraste et échelle ; rétablir la valeur lue avant l'essai dans un bloc `finally`.

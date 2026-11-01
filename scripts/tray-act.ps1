@@ -85,7 +85,8 @@ $items = for ($position = 0; $position -lt $native::GetMenuItemCount($menu); $po
 }
 [void]$native::PostMessageW($popup, $WM_KEYDOWN, [IntPtr]$VK_ESCAPE, [IntPtr]::Zero)
 $deadline = [DateTime]::UtcNow.AddSeconds(5)
-while (@(Get-OwnedWindows '#32768' | Where-Object { $native::IsWindowVisible($_) }).Count -and [DateTime]::UtcNow -lt $deadline) {
+while (@(Get-OwnedWindows '#32768' | Where-Object { $native::IsWindowVisible($_) }).Count) {
+    if ([DateTime]::UtcNow -ge $deadline) { throw "Le menu de l'icône ne s'est pas fermé." }
     Start-Sleep -Milliseconds 100
 }
 $chosen = @($items | Where-Object { $_.Text -match $Item })
