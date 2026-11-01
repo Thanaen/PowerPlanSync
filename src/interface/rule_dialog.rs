@@ -188,7 +188,7 @@ impl RuleDialog {
         });
         let plan = cx.new(|cx| {
             let mut select = Select::new(strings::PLAN_DURING, window, cx);
-            select.set_width(rem(520. - 32.));
+            select.set_width(CARD_WIDTH);
             select
         });
         let subscriptions = vec![

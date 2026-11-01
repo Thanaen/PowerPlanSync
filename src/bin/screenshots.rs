@@ -1028,6 +1028,14 @@ mod shots {
                 View::Dialog(DialogCase::AddInvalid),
                 shown(active()),
             ),
+            (
+                "text-200-add-rule-plan",
+                None,
+                200,
+                (880., 1500.),
+                View::Dialog(DialogCase::Add),
+                shown(active()),
+            ),
             shot("contrast-dark", night, 100, View::Software, shown(active())),
             shot("contrast-help", night, 100, View::Help, shown(active())),
             shot(
