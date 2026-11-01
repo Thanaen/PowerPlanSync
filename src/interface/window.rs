@@ -17,7 +17,7 @@ use crate::interface::theme::spacing::*;
 use crate::interface::theme::{
     TextScale, Theme, TypeStyled as _, radius, rem, size as token, text,
 };
-use crate::interface::widgets::{self, Button, ButtonStyle, FocusRing};
+use crate::interface::widgets::{self, Button, ButtonStyle, FocusRing, readable};
 use crate::presentation::{Automation, Notice, UiDisplayModel};
 
 actions!(
@@ -90,6 +90,14 @@ impl Page {
             Page::Software => "app-window",
             Page::Settings => "sliders-horizontal",
             Page::Help => "circle-help",
+        }
+    }
+
+    pub fn keys(self) -> &'static [&'static str] {
+        match self {
+            Page::Software => &[],
+            Page::Settings => &strings::SETTINGS_KEYS,
+            Page::Help => &strings::HELP_KEYS,
         }
     }
 
@@ -454,10 +462,14 @@ impl MainWindow {
                     .gap(BASE_16)
                     .child(
                         div()
+                            .flex()
+                            .items_center()
+                            .gap(BASE_06)
                             .type_style(text::LABEL_SM)
                             .text_color(theme.text_muted)
                             .whitespace_nowrap()
-                            .child(strings::APP_NAME),
+                            .child(strings::APP_NAME)
+                            .when(self.model.demo_mode, |title| title.child(demo_badge(theme))),
                     )
                     .children(commands),
             )
@@ -527,6 +539,10 @@ impl MainWindow {
             )
             .role(Role::Tab)
             .aria_selected(page == self.page)
+            .aria_position_in_set(page.index())
+            .when(!page.keys().is_empty(), |item| {
+                item.aria_keyshortcuts(page.keys().join("+"))
+            })
             .on_click(cx.listener(move |this, _, _, cx| this.show_page(page, cx)))
         });
         // Étroite, les entrées de 28 px sont centrées dans les 43 px laissés par le filet.
@@ -546,6 +562,7 @@ impl MainWindow {
                     .id("pages")
                     .role(Role::TabList)
                     .aria_label(strings::NAVIGATION)
+                    .aria_size_of_set(Page::ALL.len())
                     .flex_1()
                     .min_h_0()
                     .pt(BASE_12)
@@ -572,6 +589,7 @@ impl MainWindow {
                         item("quit".into(), strings::QUIT, "log-out", false)
                             .when(!narrow, |item| item.flex_1())
                             .role(Role::Button)
+                            .aria_keyshortcuts(strings::QUIT_KEYS.join("+"))
                             .on_click(cx.listener(|_, _, _, cx| cx.emit(ShellEvent::Quit))),
                     ),
             )
@@ -579,13 +597,13 @@ impl MainWindow {
 
     fn status_bar(&self, narrow: bool, theme: &Theme) -> impl IntoElement {
         let model = &self.model;
-        let muted = |content: SharedString| {
+        let muted = |id: &'static str, content: SharedString| {
             div()
                 .whitespace_nowrap()
                 .overflow_hidden()
                 .text_ellipsis()
                 .text_color(theme.text_muted)
-                .child(content)
+                .child(readable(id, content))
         };
         div()
             .h(token::STATUSBAR_HEIGHT)
@@ -611,11 +629,14 @@ impl MainWindow {
                             .rounded_full()
                             .bg(status_dot(model, theme)),
                     )
-                    .child(muted(strings::automation(model.automation).into())),
+                    .child(muted(
+                        "status-automation",
+                        strings::automation(model.automation).into(),
+                    )),
             )
             // Sans contrôle, la configuration n'est pas lue : le compte serait faux.
             .when(!narrow && !model.read_only, |bar| {
-                bar.child(muted(model.followed.clone().into()))
+                bar.child(muted("status-followed", model.followed.clone().into()))
             })
             .child(div().flex_1())
             .child(
@@ -628,9 +649,27 @@ impl MainWindow {
                         widgets::icon(power_icon(model.power), theme.text_muted)
                             .size(token::ICON_SM),
                     )
-                    .child(muted(model.power_source.clone().into())),
+                    .child(muted("status-power", model.power_source.clone().into())),
             )
     }
+}
+
+fn demo_badge(theme: &Theme) -> impl IntoElement {
+    div()
+        .id("demo-badge")
+        .role(Role::Label)
+        .aria_label(strings::DEMO_TITLE)
+        .flex_none()
+        .h(widgets::BADGE_HEIGHT)
+        .px(BASE_06)
+        .flex()
+        .items_center()
+        .rounded(radius::SM)
+        .border_1()
+        .border_color(theme.border_variant)
+        .bg(theme.element)
+        .font_weight(gpui::FontWeight::MEDIUM)
+        .child(strings::DEMO_BADGE)
 }
 
 impl Focusable for MainWindow {

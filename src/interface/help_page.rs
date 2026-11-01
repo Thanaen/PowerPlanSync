@@ -1,14 +1,13 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, Context, IntoElement, ParentElement, Render, Role, SharedString, Styled, Window, div,
-    prelude::*,
+    App, Context, IntoElement, ParentElement, Render, Role, Styled, Window, div, prelude::*,
 };
 
 use crate::interface::strings;
 use crate::interface::theme::spacing::*;
 use crate::interface::theme::{Theme, TypeStyled as _, rem, text};
-use crate::interface::widgets::{Button, ButtonStyle};
+use crate::interface::widgets::{Button, ButtonStyle, readable};
 use crate::interface::window::is_narrow;
 use crate::presentation::{GuideSection, UiAction};
 
@@ -72,7 +71,7 @@ fn section(title: &'static str, body: &'static str, theme: &Theme) -> impl IntoE
             div()
                 .type_style(text::LABEL_MD)
                 .text_color(theme.text)
-                .child(SharedString::from(body)),
+                .child(readable((title, 1usize), body)),
         )
 }
 
@@ -106,7 +105,7 @@ impl Render for HelpPage {
                         div()
                             .type_style(text::LABEL_SM)
                             .text_color(theme.text_muted)
-                            .child(strings::HELP_SUBTITLE),
+                            .child(readable("subtitle", strings::HELP_SUBTITLE)),
                     ),
             )
             .children(strings::HELP_SECTIONS.map(|help| section(help.title, help.body, &theme)))

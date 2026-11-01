@@ -9,8 +9,8 @@ use std::time::Duration;
 
 use gpui::{
     App, ClickEvent, Context, Entity, EventEmitter, FocusHandle, FontWeight, HighlightStyle, Hsla,
-    IntoElement, ParentElement, Pixels, Render, Role, SharedString, Styled, StyledText,
-    Subscription, Window, div, prelude::*, px,
+    IntoElement, KeyBinding, ParentElement, Pixels, Render, Role, SharedString, Styled, StyledText,
+    Subscription, Window, actions, div, prelude::*, px,
 };
 
 use crate::interface::first_launch::{self, AddRequested, FirstLaunch};
@@ -20,7 +20,8 @@ use crate::interface::strings;
 use crate::interface::theme::spacing::*;
 use crate::interface::theme::{Theme, TypeStyled as _, radius, rem, size as token, text};
 use crate::interface::widgets::{
-    self, Button, ButtonStyle, Message, MessageKind, Switch, Tooltip, message_colors,
+    self, Button, ButtonStyle, FocusRing, Message, MessageKind, Switch, Tooltip, message_colors,
+    readable,
 };
 use crate::interface::window::{is_narrow, needs_action, status_dot};
 use crate::presentation::{Automation, RuleDisplay, UiAction, UiDisplayModel};
@@ -28,6 +29,20 @@ use crate::presentation::{Automation, RuleDisplay, UiAction, UiDisplayModel};
 const PLAN_WIDTH: gpui::Rems = rem(178.);
 const ONE_LINE_ROW_WIDTH: gpui::Rems = rem(840.);
 const RANK_WIDTH: gpui::Rems = rem(12.);
+
+actions!(software_page, [PreviousRow, NextRow, FirstRow, LastRow]);
+
+const ROW_CONTEXT: &str = "SoftwareRow";
+
+pub fn bind_keys(cx: &mut App) {
+    let context = Some(ROW_CONTEXT);
+    cx.bind_keys([
+        KeyBinding::new("up", PreviousRow, context),
+        KeyBinding::new("down", NextRow, context),
+        KeyBinding::new("home", FirstRow, context),
+        KeyBinding::new("end", LastRow, context),
+    ]);
+}
 
 /// Les demandes qui ouvrent un dialogue.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -46,8 +61,7 @@ pub struct SoftwarePage {
     on_action: OnAction,
     /// « Pour commencer », créé au premier affichage qui en a besoin.
     first_launch: Option<(Entity<FirstLaunch>, Subscription)>,
-    /// **Monter** et **Descendre** de chaque logiciel, pour passer le focus de l'un à l'autre.
-    arrows: HashMap<i32, (FocusHandle, FocusHandle)>,
+    focus: HashMap<i32, RowFocus>,
     /// Le logiciel que **Monter** ou **Descendre** vient de déplacer, jusqu'à la liste suivante.
     moving: Option<Move>,
     swap: Option<Swap>,
@@ -72,7 +86,7 @@ impl SoftwarePage {
             model,
             on_action: Rc::new(on_action),
             first_launch: None,
-            arrows: HashMap::new(),
+            focus: HashMap::new(),
             moving: None,
             swap: None,
             heights: Rc::default(),
@@ -158,6 +172,9 @@ impl SoftwarePage {
             .border_color(theme.border_variant)
             .child(
                 div()
+                    .id("active-plan")
+                    .role(Role::Label)
+                    .aria_label(strings::ACTIVE_PLAN)
                     .type_style(text::LABEL_XS)
                     .text_color(theme.text_muted)
                     .child(strings::ACTIVE_PLAN.to_uppercase()),
@@ -166,7 +183,7 @@ impl SoftwarePage {
                 div()
                     .type_style(text::HEADLINE_LG)
                     .text_color(theme.text)
-                    .child(model.observed_plan.clone()),
+                    .child(readable("observed-plan", model.observed_plan.clone())),
             )
             .child(
                 div()
@@ -208,7 +225,7 @@ impl SoftwarePage {
                     div()
                         .type_style(text::LABEL_SM)
                         .text_color(theme.text_muted)
-                        .child(note),
+                        .child(readable("note", note)),
                 )
             })
     }
@@ -289,8 +306,12 @@ impl SoftwarePage {
         let ids: Vec<i32> = rules.iter().map(|rule| rule.id).collect();
         let mut rows = Vec::with_capacity(count);
         for (index, rule) in rules.into_iter().enumerate() {
-            let arrows = &self.arrows[&rule.id];
-            let row = self.row(rule, arrows, index > 0, stacked, theme, cx);
+            let focus = &self.focus[&rule.id];
+            let place = Place {
+                first: index == 0,
+                last: index + 1 == count,
+            };
+            let row = self.row(rule, focus, place, stacked, theme, cx);
             let (offset, rising) = lifts.get(&rule.id).copied().unwrap_or_default();
             rows.push(
                 div()
@@ -321,6 +342,9 @@ impl SoftwarePage {
                     .flex_col()
                     .child(
                         div()
+                            .id("associated-software")
+                            .role(Role::Heading)
+                            .aria_label(strings::ASSOCIATED_SOFTWARE)
                             .type_style(text::HEADLINE_SM)
                             .text_color(theme.text)
                             .child(strings::ASSOCIATED_SOFTWARE),
@@ -329,7 +353,7 @@ impl SoftwarePage {
                         div()
                             .type_style(text::LABEL_SM)
                             .text_color(theme.text_muted)
-                            .child(strings::PRIORITY),
+                            .child(readable("priority", strings::PRIORITY)),
                     ),
             )
             .when(count > 0, |list| {
@@ -345,6 +369,19 @@ impl SoftwarePage {
                         .id("rules")
                         .role(Role::List)
                         .aria_label(strings::ASSOCIATED_SOFTWARE)
+                        .aria_size_of_set(count)
+                        .on_action(cx.listener(|page, _: &PreviousRow, window, cx| {
+                            page.focus_row(RowStep::Previous, window, cx)
+                        }))
+                        .on_action(cx.listener(|page, _: &NextRow, window, cx| {
+                            page.focus_row(RowStep::Next, window, cx)
+                        }))
+                        .on_action(cx.listener(|page, _: &FirstRow, window, cx| {
+                            page.focus_row(RowStep::First, window, cx)
+                        }))
+                        .on_action(cx.listener(|page, _: &LastRow, window, cx| {
+                            page.focus_row(RowStep::Last, window, cx)
+                        }))
                         .flex()
                         .flex_col()
                         .rounded(radius::LG)
@@ -434,7 +471,7 @@ impl SoftwarePage {
             return;
         }
         for rule in &self.model.rules {
-            let Some((up, down)) = self.arrows.get(&rule.id) else {
+            let Some(RowFocus { up, down, .. }) = self.focus.get(&rule.id) else {
                 continue;
             };
             if rule.rank == 1 && up.is_focused(window) {
@@ -445,11 +482,33 @@ impl SoftwarePage {
         }
     }
 
+    fn focus_row(&mut self, step: RowStep, window: &mut Window, cx: &mut App) {
+        let rows: Vec<&FocusHandle> = order(&self.model)
+            .iter()
+            .filter_map(|id| self.focus.get(id).map(|focus| &focus.row))
+            .collect();
+        let Some(at) = rows.iter().position(|row| row.contains_focused(window, cx)) else {
+            return;
+        };
+        let last = rows.len() - 1;
+        let to = match step {
+            RowStep::Previous => at.saturating_sub(1),
+            RowStep::Next => (at + 1).min(last),
+            RowStep::First => 0,
+            RowStep::Last => last,
+        };
+        rows[to].focus(window, cx);
+    }
+
     fn row(
         &self,
         rule: &RuleDisplay,
-        (up, down): &(FocusHandle, FocusHandle),
-        separated: bool,
+        RowFocus {
+            row: focus,
+            up,
+            down,
+        }: &RowFocus,
+        place: Place,
         stacked: bool,
         theme: &Theme,
         cx: &mut Context<Self>,
@@ -566,18 +625,27 @@ impl SoftwarePage {
                     .backdrop(theme.surface)
                     .on_click(delete),
             );
+        let ring = FocusRing::of(theme);
+        let inside_list_border = radius::LG - px(1.);
         let row = div()
             .id(("rule", id as u64))
             .role(Role::ListItem)
             .aria_label(rule.accessible_name.clone())
             .aria_description(rule.path.clone())
+            // AccessKit compte la position à partir de 0 et lit la taille sur la liste (D17).
+            .aria_position_in_set(rule.rank.saturating_sub(1))
+            .key_context(ROW_CONTEXT)
+            .track_focus(&focus.clone().tab_index(0).tab_stop(true))
+            .focus_visible(move |style| ring.apply_inside(style))
             .pl(BASE_16)
             // Les boutons d'icône portent leur propre marge : le bord droit reste à 16 px.
             .pr(BASE_08)
             .py(BASE_08)
-            .when(separated, |row| {
+            .when(!place.first, |row| {
                 row.border_t_1().border_color(theme.border_variant)
-            });
+            })
+            .when(place.first, |row| row.rounded_t(inside_list_border))
+            .when(place.last, |row| row.rounded_b(inside_list_border));
         if stacked {
             // Étroite, la ligne passe sur trois niveaux plutôt que de serrer ses contrôles.
             return row.flex().items_start().gap(BASE_12).child(rank).child(
@@ -609,6 +677,26 @@ impl SoftwarePage {
             .child(follow)
             .child(actions)
     }
+}
+
+#[derive(Clone, Copy)]
+struct Place {
+    first: bool,
+    last: bool,
+}
+
+struct RowFocus {
+    row: FocusHandle,
+    up: FocusHandle,
+    down: FocusHandle,
+}
+
+#[derive(Clone, Copy)]
+enum RowStep {
+    Previous,
+    Next,
+    First,
+    Last,
 }
 
 #[derive(Clone, Copy)]
@@ -785,11 +873,13 @@ impl Render for SoftwarePage {
         let stacked =
             narrow || !fits_one_line_rows(window.viewport_size().width, window.rem_size());
         let ids = order(&self.model);
-        self.arrows.retain(|id, _| ids.contains(id));
+        self.focus.retain(|id, _| ids.contains(id));
         for id in ids {
-            self.arrows
-                .entry(id)
-                .or_insert_with(|| (cx.focus_handle(), cx.focus_handle()));
+            self.focus.entry(id).or_insert_with(|| RowFocus {
+                row: cx.focus_handle(),
+                up: cx.focus_handle(),
+                down: cx.focus_handle(),
+            });
         }
         self.keep_arrow_focus(window, cx);
         let undo_focus = self
@@ -868,6 +958,9 @@ impl Render for SoftwarePage {
             )
     }
 }
+
+#[cfg(test)]
+mod keyboard_tests;
 
 #[cfg(test)]
 mod tests {

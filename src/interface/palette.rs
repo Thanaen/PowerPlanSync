@@ -357,7 +357,6 @@ impl PaletteView {
     fn row(
         &self,
         index: usize,
-        count: usize,
         row: Row,
         theme: &Theme,
         cx: &mut Context<Self>,
@@ -376,8 +375,7 @@ impl PaletteView {
                 option.aria_keyshortcuts(keys.join("+"))
             })
             .aria_selected(selected)
-            .aria_position_in_set(index + 1)
-            .aria_size_of_set(count)
+            .aria_position_in_set(index)
             .h(token::BUTTON_MEDIUM)
             .flex_none()
             .px(BASE_08)
@@ -495,7 +493,7 @@ impl Render for PaletteView {
         let rows: Vec<_> = rows
             .into_iter()
             .enumerate()
-            .map(|(index, row)| self.row(index, count, row, &theme, cx).into_any_element())
+            .map(|(index, row)| self.row(index, row, &theme, cx).into_any_element())
             .collect();
         let any_row = !rows.is_empty();
         let empty = (!any_row).then(|| {
@@ -576,6 +574,7 @@ impl Render for PaletteView {
                     .id("commands")
                     .role(Role::ListBox)
                     .aria_label(strings::COMMANDS)
+                    .aria_size_of_set(count)
                     .min_h_0()
                     .overflow_y_scroll()
                     .track_scroll(&self.scroll)

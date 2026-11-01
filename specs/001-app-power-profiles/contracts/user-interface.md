@@ -133,7 +133,10 @@ et les cas demandant une action sont visibles dans la fenêtre et l'état de l'i
 
 L'ordre de tabulation suit la lecture et le focus est un anneau visible de 2 px. Les listes,
 menus et dialogues portent noms, rôles et états. Une ligne s'annonce par exemple « 1. Battlefield 6,
-plan Haute performance, appliqué », avec le chemin complet en description. Le Narrateur annonce
+plan Haute performance, appliqué », avec le chemin complet en description. Tab atteint chaque
+ligne avant ses contrôles ; ↑ et ↓ passent d'une ligne à l'autre, Origine et Fin à la première et
+à la dernière. Les textes de la page sont lus, et les entrées de la barre latérale annoncent leur
+raccourci. En démonstration, la barre de titre porte le badge « Démo », lu « Démonstration ». Le Narrateur annonce
 une modification de statut sans déplacer le focus. Après **Monter** ou **Descendre**, il annonce
 « Blender déplacé en position 1 sur 3. Plan actif : Performances optimales. » (la seconde phrase
 seulement si le plan actif change). Si le bouton utilisé devient indisponible, le focus passe au
@@ -141,8 +144,9 @@ bouton opposé de la même ligne. Fermer un dialogue rend le focus au bouton qui
 Quand le bouton utilisé disparaît, le focus passe à la suite : **Activer l'automatisation** après
 **Confirmer**, **Annuler** du message après **Supprimer**. Sinon la fenêtre le reprend, et Tab
 repart du début : le focus ne se perd jamais. Échap
-annule un dialogue et Entrée active son action principale. Un dialogue invalide explique le champ
-à corriger et conserve sa saisie.
+annule un dialogue et Entrée active son action principale. Fermée, une liste déroulante laisse
+Entrée et Échap au dialogue qui la contient ; Espace, ↑ ou ↓ l'ouvre. Un dialogue invalide
+explique le champ à corriger et conserve sa saisie.
 
 Les thèmes suivent Windows, y compris les thèmes de contraste : les jetons sont alors remplacés par
 les couleurs système et l'état reste porté par l'icône et le mot. Les parcours passent à 100 %,

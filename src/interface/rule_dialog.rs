@@ -51,6 +51,7 @@ pub fn bind_keys(cx: &mut App) {
         // Entrée valide depuis un champ ou la liste ; sur un bouton, elle presse ce bouton.
         KeyBinding::new("enter", Confirm, Some("RuleDialog > TextInput")),
         KeyBinding::new("enter", Confirm, Some("RuleDialog > RunningApps")),
+        KeyBinding::new("enter", Confirm, Some("RuleDialog > Select")),
         KeyBinding::new("escape", Cancel, context),
         KeyBinding::new("tab", FocusNext, context),
         KeyBinding::new("shift-tab", FocusPrevious, context),
@@ -569,7 +570,8 @@ impl RuleDialog {
         let visible = matching(apps, self.filter.read(cx).text());
         let ring = FocusRing::on(theme, Some(theme.editor));
         let mut rows = Vec::with_capacity(visible.len());
-        for index in visible {
+        let count = visible.len();
+        for (position, index) in visible.into_iter().enumerate() {
             let app = &apps[index];
             let chosen = self.chosen_app == Some(index);
             let detail = if app.accessible {
@@ -592,6 +594,8 @@ impl RuleDialog {
                 .role(Role::ListBoxOption)
                 .aria_label(format!("{}, {detail}", app.label))
                 .aria_selected(chosen)
+                .aria_position_in_set(position)
+                .when(chosen, |row| row.aria_active_descendant())
                 .when(!app.accessible, |row| {
                     row.a11y_synthetic_children(|children| children.parent_node().set_disabled())
                 })
@@ -676,6 +680,7 @@ impl RuleDialog {
                     .track_focus(&self.list_focus)
                     .role(Role::ListBox)
                     .aria_label(strings::RUNNING_APPS)
+                    .aria_size_of_set(count)
                     .when(!empty, |list| list.h(LIST_HEIGHT))
                     .p(BASE_04)
                     .flex()
@@ -719,13 +724,13 @@ impl RuleDialog {
                     div()
                         .type_style(text::LABEL_SM)
                         .text_color(theme.text)
-                        .child(self.path.clone()),
+                        .child(widgets::readable("path", self.path.clone())),
                 )
                 .child(
                     div()
                         .type_style(text::LABEL_SM)
                         .text_color(theme.text_muted)
-                        .child(strings::SAME_NAME),
+                        .child(widgets::readable("same-name", strings::SAME_NAME)),
                 )
             })
             .when(self.show_errors && self.path.is_empty(), |file| {
@@ -840,7 +845,7 @@ fn label(text: &'static str, theme: &Theme) -> impl IntoElement {
     div()
         .type_style(text::LABEL_STRONG)
         .text_color(theme.text)
-        .child(text)
+        .child(widgets::readable(text, text))
 }
 
 /// **Introuvable**, dans les couleurs du badge **Suspendu**.
@@ -942,7 +947,13 @@ impl Render for RuleDialog {
         div()
             .key_context(KEY_CONTEXT)
             .track_focus(&self.focus_handle)
-            .on_action(cx.listener(|this, _: &Confirm, window, cx| this.confirm(window, cx)))
+            .on_action(cx.listener(|this, _: &Confirm, window, cx| {
+                if this.plan.read(cx).is_open() {
+                    cx.propagate();
+                } else {
+                    this.confirm(window, cx)
+                }
+            }))
             .on_action(cx.listener(|this, _: &Cancel, _, cx| this.cancel(cx)))
             .on_action(
                 cx.listener(|this, _: &FocusNext, window, cx| this.cycle_focus(true, window, cx)),

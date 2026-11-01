@@ -25,6 +25,11 @@ pub fn tab_stop(cx: &App) -> FocusHandle {
     cx.focus_handle().tab_stop(true)
 }
 
+/// Un texte lu par le Narrateur : sans identifiant, GPUI ne le met pas dans l'arbre accessible.
+pub fn readable(id: impl Into<ElementId>, text: impl Into<SharedString>) -> gpui::Text {
+    gpui::Text::new(id.into(), text.into())
+}
+
 /// Une icône de `assets/icons`, de la couleur du texte qu'on lui donne.
 pub fn icon(name: &str, color: Hsla) -> Svg {
     svg()
@@ -67,6 +72,13 @@ impl FocusRing {
     pub fn apply(self, style: StyleRefinement) -> StyleRefinement {
         // GPUI peint les ombres dans l'ordre : l'anneau d'abord, l'espace par-dessus.
         style.shadow(vec![spread(self.color, px(3.)), spread(self.gap, px(1.))])
+    }
+
+    pub fn apply_inside(self, style: StyleRefinement) -> StyleRefinement {
+        style.shadow(vec![BoxShadow {
+            inset: true,
+            ..spread(self.color, px(2.))
+        }])
     }
 }
 
@@ -849,7 +861,13 @@ pub fn field_error(
 
 actions!(
     select,
-    [SelectPrevious, SelectNext, SelectConfirm, SelectDismiss]
+    [
+        SelectPrevious,
+        SelectNext,
+        SelectConfirm,
+        SelectActivate,
+        SelectDismiss
+    ]
 );
 
 const SELECT_CONTEXT: &str = "Select";
@@ -860,7 +878,7 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("up", SelectPrevious, context),
         KeyBinding::new("down", SelectNext, context),
         KeyBinding::new("enter", SelectConfirm, context),
-        KeyBinding::new("space", SelectConfirm, context),
+        KeyBinding::new("space", SelectActivate, context),
         KeyBinding::new("escape", SelectDismiss, context),
     ]);
 }
@@ -925,7 +943,7 @@ impl Choice {
         };
     }
 
-    /// Entrée ou Espace : ouvre, ou choisit l'option survolée. Rend l'index s'il a changé.
+    /// Espace, ou Entrée quand la liste est ouverte : ouvre, ou choisit l'option survolée. Rend l'index s'il a changé.
     pub fn confirm(&mut self) -> Option<usize> {
         if !self.open {
             self.toggle();
@@ -959,9 +977,10 @@ pub struct SelectOption {
 pub struct SelectChanged(pub usize);
 
 /// Liste déroulante de plans : un bouton `ComboBox` et, ouverte, la liste dessous. Le focus
-/// reste sur le bouton ; les flèches parcourent la liste, Entrée ou Espace choisit, Échap
-/// ferme. La liste est peinte hors de l'arbre du bouton : la valeur annoncée suit donc
-/// l'option survolée tant qu'elle est ouverte.
+/// reste sur le bouton ; les flèches ou Espace l'ouvrent, Entrée ou Espace choisit, Échap
+/// ferme. Fermée, elle laisse Entrée et Échap au dialogue qui la contient. La liste est
+/// peinte hors de l'arbre du bouton : la valeur annoncée suit donc l'option survolée tant
+/// qu'elle est ouverte.
 pub struct Select {
     focus_handle: FocusHandle,
     name: SharedString,
@@ -1032,6 +1051,10 @@ impl Select {
 
     pub fn selected(&self) -> Option<usize> {
         self.choice.selected()
+    }
+
+    pub fn is_open(&self) -> bool {
+        self.choice.is_open()
     }
 
     pub fn options(&self) -> &[SelectOption] {
@@ -1148,14 +1171,20 @@ impl Render for Select {
                     cx,
                 )
             }))
+            .on_action(cx.listener(|this, _: &SelectConfirm, _, cx| {
+                if this.choice.is_open() {
+                    this.update(Choice::confirm, cx)
+                } else {
+                    cx.propagate()
+                }
+            }))
             .on_action(
-                cx.listener(|this, _: &SelectConfirm, _, cx| this.update(Choice::confirm, cx)),
+                cx.listener(|this, _: &SelectActivate, _, cx| this.update(Choice::confirm, cx)),
             )
             .on_action(cx.listener(|this, _: &SelectDismiss, _, cx| {
                 if this.choice.is_open() {
                     this.dismiss(cx)
                 } else {
-                    // Fermée, la liste laisse Échap au dialogue qui la contient.
                     cx.propagate()
                 }
             }))
@@ -1200,6 +1229,7 @@ impl Render for Select {
                     .role(Role::ListBoxOption)
                     .aria_label(option.label.clone())
                     .aria_selected(chosen)
+                    .aria_position_in_set(index)
                     .h(token::BUTTON_MEDIUM)
                     .px(BASE_08)
                     .flex()
@@ -1232,6 +1262,7 @@ impl Render for Select {
                         .id("options")
                         .role(Role::ListBox)
                         .aria_label(self.name.clone())
+                        .aria_size_of_set(self.options.len())
                         .occlude()
                         .mt(BASE_04)
                         .w(self.width)

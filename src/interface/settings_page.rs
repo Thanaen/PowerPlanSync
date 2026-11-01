@@ -8,14 +8,15 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, Context, Entity, IntoElement, ParentElement, Render, Role, SharedString,
-    Styled, Subscription, Window, div, prelude::*,
+    AnyElement, App, Context, Entity, IntoElement, ParentElement, Render, Role, Styled,
+    Subscription, Window, div, prelude::*,
 };
 
 use crate::interface::theme::spacing::*;
 use crate::interface::theme::{Theme, TypeStyled as _, radius, rem, text};
 use crate::interface::widgets::{
     Button, ButtonStyle, Message, MessageKind, Select, SelectChanged, SelectOption, Switch,
+    readable,
 };
 use crate::interface::window::is_narrow;
 use crate::interface::{messages, strings};
@@ -232,13 +233,13 @@ fn setting(
             div()
                 .type_style(text::LABEL_STRONG)
                 .text_color(theme.text)
-                .child(title),
+                .child(readable((title, 0usize), title)),
         )
         .child(
             div()
                 .type_style(text::LABEL_SM)
                 .text_color(theme.text_muted)
-                .child(SharedString::from(hint)),
+                .child(readable((title, 1usize), hint)),
         );
     let row = div().px(BASE_16).py(BASE_12).flex().gap(BASE_16);
     if stack {
