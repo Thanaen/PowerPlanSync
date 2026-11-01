@@ -147,6 +147,12 @@ pub enum Notice {
     Problem(String),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum GuideSection {
+    Start,
+    UnreadableSettings,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UiAction {
     AddRule {
@@ -201,8 +207,8 @@ pub enum UiAction {
     OpenWindowsSettings,
     /// **Ouvrir le dossier des données**, où se trouvent `config.json` et sa copie de secours.
     OpenDataFolder,
-    /// **Ouvrir le guide**, à la section « Réglages illisibles ».
-    OpenGuide,
+    OpenGuide(GuideSection),
+    OpenLicenses,
     /// **Annuler** (Ctrl+Z) : remet le dernier logiciel retiré à sa position.
     UndoDelete,
     /// × sur le message de retrait : le retrait devient définitif.

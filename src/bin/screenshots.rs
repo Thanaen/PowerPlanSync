@@ -31,6 +31,7 @@ mod shots {
         ViewState,
     };
     use power_plan_sync::interface::assets::Assets;
+    use power_plan_sync::interface::help_page::HelpPage;
     use power_plan_sync::interface::rule_dialog::{RuleDialog, RuleDialogMode};
     use power_plan_sync::interface::settings_page::SettingsPage;
     use power_plan_sync::interface::software_page::SoftwarePage;
@@ -721,6 +722,25 @@ mod shots {
                     let mut main = MainWindow::new(model.clone(), window, cx);
                     main.set_page_view(Page::Settings, settings.into(), cx);
                     main.show_page(Page::Settings, cx);
+                    main
+                })
+            })?;
+            capture(&mut cx, window.into(), &output.join(format!("{name}.png")))?;
+        }
+        let help = [
+            ("help", WindowAppearance::Dark, 880., 620.),
+            ("help-light", WindowAppearance::Light, 880., 620.),
+            ("help-narrow", WindowAppearance::Dark, 420., 1100.),
+        ];
+        for (name, appearance, width, height) in help {
+            cx.update(|cx| cx.set_global(ForcedAppearance(appearance)));
+            let model = shown(active());
+            let window = cx.open_window(size(px(width), px(height)), |window, cx| {
+                let help = cx.new(|_| HelpPage::new(|_, _| {}));
+                cx.new(|cx| {
+                    let mut main = MainWindow::new(model, window, cx);
+                    main.set_page_view(Page::Help, help.into(), cx);
+                    main.show_page(Page::Help, cx);
                     main
                 })
             })?;

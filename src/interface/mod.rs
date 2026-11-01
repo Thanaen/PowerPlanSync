@@ -2,6 +2,7 @@
 pub mod app;
 pub mod assets;
 pub mod first_launch;
+pub mod help_page;
 pub mod messages;
 pub mod motion;
 pub mod rule_dialog;

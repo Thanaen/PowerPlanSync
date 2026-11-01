@@ -477,20 +477,19 @@ clientes dès le lancement fait : sans cela, l'arrêt de l'enfant ne terminerait
 des actions. Au démarrage, le processus de fenêtre reprend ses deux extrémités en propriété privée
 et non héritable, puis remplace ses handles standard par `NUL`. Un `println!` d'une dépendance ne
 peut pas corrompre une trame, et aucun processus qu'il lancerait n'hériterait du canal. Le
-processus de fenêtre ne lance d'ailleurs rien : **Ouvrir le guide** et **Ouvrir le dossier des
-données** restent des `UiAction` exécutées par le processus de suivi.
+processus de fenêtre ne lance d'ailleurs rien : **Ouvrir le guide**, **Voir les licences** et
+**Ouvrir le dossier des données** restent des `UiAction` exécutées par le processus de suivi.
 
-**Messages.** Chaque message est une trame : longueur sur 4 octets en petit-boutiste, puis un
-objet JSON `{"version": 1, "message": …}`. Le processus de fenêtre reçoit les `UiCommand`
-existantes et renvoie les `UiAction` existantes, rendues sérialisables par `serde` dans
-`src/presentation.rs`. Une trame est refusée si sa version diffère, si son message est inconnu,
-si un champ manque ou s'ajoute, ou si elle dépasse 1 Mio. Un champ manque ou s'ajoute quand le
-message lu, sérialisé à nouveau, diffère du JSON reçu : la règle vaut aussi pour un champ
-`Option`, que `serde` remplirait sinon par `None`. Un refus ferme
-le canal : le processus de fenêtre s'arrête, et le processus de suivi traite la fenêtre comme
-perdue. La version change à chaque modification de ces types. Les deux rôles viennent du même
-exécutable : un écart de version ne survient qu'après un remplacement du fichier pendant
-l'exécution.
+**Messages.** Chaque message est une trame : longueur sur 4 octets en petit-boutiste, puis un objet
+JSON `{"version": …, "message": …}`, où `version` vaut `window_protocol::VERSION`. Le processus de
+fenêtre reçoit les `UiCommand` existantes et renvoie les `UiAction` existantes, rendues
+sérialisables par `serde` dans `src/presentation.rs`. Une trame est refusée si sa version diffère,
+si son message est inconnu, si un champ manque ou s'ajoute, ou si elle dépasse 1 Mio. Un champ
+manque ou s'ajoute quand le message lu, sérialisé à nouveau, diffère du JSON reçu : la règle vaut
+aussi pour un champ `Option`, que `serde` remplirait sinon par `None`. Un refus ferme le canal : le
+processus de fenêtre s'arrête, et le processus de suivi traite la fenêtre comme perdue. La version
+change à chaque modification de ces types. Les deux rôles viennent du même exécutable : un écart de
+version ne survient qu'après un remplacement du fichier pendant l'exécution.
 
 **Cycle de vie.** Au plus un processus de fenêtre existe.
 

@@ -11,7 +11,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 /// À changer à chaque modification des messages ou des types qu'ils portent.
-pub const VERSION: u32 = 1;
+pub const VERSION: u32 = 2;
 
 /// Le plus grand message accepté, en octets de JSON.
 pub const MAX_FRAME: usize = 1 << 20;
@@ -133,8 +133,8 @@ pub fn read_frame<T: DeserializeOwned + Serialize>(
 mod tests {
     use super::*;
     use crate::presentation::{
-        Badge, Notice, PlanDisplay, RuleDisplay, RunningAppDisplay, UiAction, UiCommand,
-        UiDisplayModel,
+        Badge, GuideSection, Notice, PlanDisplay, RuleDisplay, RunningAppDisplay, UiAction,
+        UiCommand, UiDisplayModel,
     };
 
     fn frame(json: &str) -> Vec<u8> {
@@ -199,6 +199,8 @@ mod tests {
                 editing_rule_id: Some(3),
             },
             UiAction::SetAutomation(true),
+            UiAction::OpenGuide(GuideSection::Start),
+            UiAction::OpenLicenses,
             UiAction::WindowOpened,
         ];
         for action in &actions {
@@ -219,21 +221,21 @@ mod tests {
 
     #[test]
     fn another_version_is_refused_before_reading_the_message() {
-        let bytes = frame(r#"{"version":2,"message":"Ouvrir la fenêtre autrement"}"#);
+        let bytes = frame(r#"{"version":3,"message":"Ouvrir la fenêtre autrement"}"#);
         assert!(matches!(
             read_frame::<UiCommand>(&mut bytes.as_slice()),
-            Err(ProtocolError::Version(2))
+            Err(ProtocolError::Version(3))
         ));
     }
 
     #[test]
     fn unknown_messages_and_fields_are_refused() {
         for json in [
-            r#"{"version":1,"message":"Explode"}"#,
-            r#"{"version":1,"message":{"DeleteRule":{"rule_id":1,"force":true}}}"#,
-            r#"{"version":1,"message":"WindowOpened","sender":"autre"}"#,
-            r#"{"version":1,"message":{"DeleteRule":{}}}"#,
-            r#"{"version":1}"#,
+            r#"{"version":2,"message":"Explode"}"#,
+            r#"{"version":2,"message":{"DeleteRule":{"rule_id":1,"force":true}}}"#,
+            r#"{"version":2,"message":"WindowOpened","sender":"autre"}"#,
+            r#"{"version":2,"message":{"DeleteRule":{}}}"#,
+            r#"{"version":2}"#,
             r#"{"message":"WindowOpened"}"#,
             "pas du JSON",
         ] {
@@ -275,12 +277,12 @@ mod tests {
     #[test]
     fn a_missing_optional_field_never_reads_as_none() {
         let result = read_frame::<UiAction>(
-            &mut frame(r#"{"version":1,"message":{"BrowseForExecutable":{}}}"#).as_slice(),
+            &mut frame(r#"{"version":2,"message":{"BrowseForExecutable":{}}}"#).as_slice(),
         );
         assert!(matches!(result, Err(ProtocolError::Malformed(_))));
         let explicit = read_frame::<UiAction>(
             &mut frame(
-                r#"{"version":1,"message":{"BrowseForExecutable":{"editing_rule_id":null}}}"#,
+                r#"{"version":2,"message":{"BrowseForExecutable":{"editing_rule_id":null}}}"#,
             )
             .as_slice(),
         );
@@ -294,7 +296,7 @@ mod tests {
 
     #[test]
     fn a_frame_cut_short_is_truncated_not_closed() {
-        let whole = frame(r#"{"version":1,"message":"WindowOpened"}"#);
+        let whole = frame(r#"{"version":2,"message":"WindowOpened"}"#);
         for cut in [2, 4, whole.len() - 1] {
             let result = read_frame::<UiAction>(&mut &whole[..cut]);
             assert!(matches!(result, Err(ProtocolError::Truncated)), "{cut}");

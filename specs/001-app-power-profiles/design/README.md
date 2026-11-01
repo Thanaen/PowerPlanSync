@@ -78,3 +78,9 @@ La page **Réglages** (`src/interface/settings_page.rs`) s'écarte de la maquett
 un point : la description de **Dossier des données** ne cite pas `%LOCALAPPDATA%\PowerPlanSync`,
 faux quand `--data-dir` choisit un autre dossier. **Ouvrir le dossier** mène toujours au dossier
 réellement utilisé.
+
+La page **Aide et limites** (`src/interface/help_page.rs`) s'écarte de la maquette `Help.png` sur
+trois points. La section **Limites** précise que les plans s'affichent sous leur nom dans Windows,
+comme le demande le contrat. La section sur le choix fait dans Windows dit « conserve ce choix »
+au lieu de « le garde », dont le pronom était ambigu. Le texte ne dépasse pas 680 px de large :
+fenêtre agrandie, les lignes restent lisibles. Le numéro de version est celui de l'exécutable.
