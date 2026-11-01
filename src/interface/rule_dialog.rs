@@ -870,7 +870,7 @@ impl Render for RuleDialog {
         let viewport = window.viewport_size();
         let rem_size = window.rem_size();
         let width = (viewport.width - BASE_16 * 2.).min(CARD_WIDTH.to_pixels(rem_size));
-        let field = (width - BASE_16 * 2.) / rem_size;
+        let field = (width - px(2.) - BASE_16 * 2.) / rem_size;
         self.plan
             .update(cx, |select, _| select.set_width(rems(field)));
         let title: SharedString = match &self.mode {
