@@ -15,4 +15,4 @@ Le détail et les preuves sont dans `evidence/checkpoint-2026-09-20.md`.
 - [ ] Matrice batterie, veille, sessions et démarrage facultatif terminée.
 - [ ] Essais de cinq utilisateurs et validation Windows 11 24H2 terminés.
 - [ ] Rapports finaux, analyse et convergence spec-kit terminés.
-- [ ] Licence de redistribution du projet choisie avant publication publique.
+- [x] Licence de redistribution du projet choisie avant publication publique : MIT, le 2026-11-01.

@@ -132,8 +132,8 @@ Sources des alternatives, [egui](https://github.com/emilk/egui/blob/main/docs/ac
 [Win32 accessible](https://learn.microsoft.com/en-us/windows/win32/winauto/accessibility-best-practices),
 [Tauri](https://github.com/tauri-apps/tauri) et [suivi iced](https://github.com/iced-rs/iced/issues/552).
 La [licence Slint](https://github.com/slint-ui/slint/blob/master/LICENSE.md) propose plusieurs régimes.
-Le prototype vérifie les conditions applicables et l'attribution. Aucune licence du projet ni
-engagement commercial n'est décidé ici. Cette vérification précède toute distribution.
+Le prototype vérifie les conditions applicables et l'attribution. Aucun engagement commercial
+n'est décidé ici. Le 2026-11-01, PowerPlanSync est distribué sous licence MIT (T044).
 
 ## D06. Réduire les choix du premier écran
 
@@ -275,8 +275,9 @@ Rust 1.97.0 (`rust-toolchain.toml`). T046 vérifie la compilation avec 1.98.1 pa
 toute télémétrie et toute communication réseau. `gpui-pre` dépend de `gpui-pre-http-client`
 (`Cargo.lock`) ; T043 vérifie qu'aucune connexion n'est ouverte par l'application.
 
-**Licence.** La licence publiée de `gpui-pre`, `gpui-pre-platform` et de leurs dépendances n'a
-pas été vérifiée hors ligne. T044 la vérifie avant toute distribution, comme pour Slint.
+**Licence.** Les paquets `gpui-pre` sont publiés sous Apache-2.0 et leurs dépendances du graphe
+Windows sous des licences permissives, compatibles avec la licence MIT du projet (vérifié le
+2026-11-01, `THIRD_PARTY_NOTICES.md`).
 
 ## D13. Icône de notification, fenêtre et instance unique
 
@@ -385,7 +386,8 @@ agrandi exigent un vrai Windows. Les cycles réels utilisent l'exécutable témo
   exige un amendement explicite de SC-004, jamais une baisse silencieuse.
 - Captures Linux : `screenshots` exige que les modules Windows soient compilés sous
   `cfg(windows)`. T057 isole ces modules. S'il coûte trop, il reste facultatif.
-- Licence de `gpui-pre` et des polices IBM Plex : à vérifier en T044.
+- Licence de `gpui-pre` et des polices IBM Plex : Apache-2.0 et OFL 1.1, compatibles avec la
+  licence MIT du projet (vérifié le 2026-11-01 en T044).
 
 ## D17. Résultats de GPUI sur Windows réel (T048, 2026-10-31)
 
