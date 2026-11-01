@@ -336,7 +336,12 @@ mod tests {
 
     #[test]
     fn same_owner_can_request_reopening_without_a_payload() {
-        let owner = current_owner().unwrap();
+        // Une session fictive propre à ce processus : PowerPlanSync lancé sur la machine garde
+        // son signal, que le test ne doit ni prendre ni déclencher.
+        let owner = OwnerIdentity {
+            session_id: u32::MAX - std::process::id(),
+            ..current_owner().unwrap()
+        };
         let signal = OpenWindowSignal::create(&owner).unwrap();
         assert!(!signal.poll().unwrap());
         signal_existing_window(&owner).unwrap();
