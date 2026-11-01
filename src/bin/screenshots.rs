@@ -21,9 +21,12 @@ mod shots {
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
 
+    use std::time::Duration;
+
     use gpui::{
         AnyWindowHandle, AppContext as _, Context, Entity, HeadlessAppContext, IntoElement,
-        ParentElement, Render, Styled, Window, WindowAppearance, div, px, size,
+        Modifiers, MouseButton, MouseDownEvent, MouseUpEvent, ParentElement, PlatformInput, Render,
+        Styled, Window, WindowAppearance, div, point, px, size,
     };
     use power_plan_sync::domain::PowerSource;
     use power_plan_sync::domain::{
@@ -281,6 +284,7 @@ mod shots {
     fn dialog(
         case: DialogCase,
         model: &UiDisplayModel,
+        animate: bool,
         window: &mut Window,
         cx: &mut Context<RuleDialog>,
     ) -> RuleDialog {
@@ -291,7 +295,7 @@ mod shots {
                 missing: true,
             },
         };
-        let mut dialog = RuleDialog::new(mode, model, false, |_, _| {}, window, cx);
+        let mut dialog = RuleDialog::new(mode, model, animate, |_, _| {}, window, cx);
         match case {
             DialogCase::Add => {
                 let bf6 = r"C:\Jeux\EA\Battlefield 6\bf6.exe";
@@ -447,6 +451,117 @@ mod shots {
         cx.capture_screenshot(window)?.save(path)?;
         println!("{}", path.display());
         Ok(())
+    }
+
+    fn click(
+        cx: &mut HeadlessAppContext,
+        window: AnyWindowHandle,
+        (x, y): (f32, f32),
+    ) -> anyhow::Result<()> {
+        let position = point(px(x), px(y));
+        cx.update_window(window, |_, window, cx| {
+            window.dispatch_event(
+                PlatformInput::MouseDown(MouseDownEvent {
+                    button: MouseButton::Left,
+                    position,
+                    modifiers: Modifiers::none(),
+                    click_count: 1,
+                    first_mouse: false,
+                }),
+                cx,
+            );
+            window.dispatch_event(
+                PlatformInput::MouseUp(MouseUpEvent {
+                    button: MouseButton::Left,
+                    position,
+                    modifiers: Modifiers::none(),
+                    click_count: 1,
+                }),
+                cx,
+            );
+        })?;
+        cx.run_until_parked();
+        Ok(())
+    }
+
+    fn capture_motion(
+        cx: &mut HeadlessAppContext,
+        window: AnyWindowHandle,
+        output: &Path,
+        name: &str,
+        half: Duration,
+    ) -> anyhow::Result<()> {
+        capture(cx, window, &output.join(format!("motion-{name}-000.png")))?;
+        cx.advance_clock(half);
+        capture(cx, window, &output.join(format!("motion-{name}-050.png")))
+    }
+
+    fn motion(cx: &mut HeadlessAppContext, output: &Path) -> anyhow::Result<()> {
+        cx.update(|cx| cx.set_global(ForcedAppearance(WindowAppearance::Dark)));
+        let main_window = |cx: &mut HeadlessAppContext, model: UiDisplayModel| {
+            let page = cx.update(|cx| cx.new(|_| SoftwarePage::new(model.clone(), |_, _| {})));
+            let shown = page.clone();
+            let window = cx.open_window(size(px(880.), px(620.)), move |window, cx| {
+                cx.new(|cx| {
+                    let mut main = MainWindow::new(model, window, cx);
+                    main.set_page_view(Page::Software, shown.into(), cx);
+                    main
+                })
+            })?;
+            cx.run_until_parked();
+            anyhow::Ok((page, AnyWindowHandle::from(window)))
+        };
+        let set_model =
+            |cx: &mut HeadlessAppContext, page: &Entity<SoftwarePage>, model: UiDisplayModel| {
+                cx.update(|cx| page.update(cx, |page, cx| page.set_model(model, cx)));
+            };
+
+        let (page, window) = main_window(cx, display(&active(), false, false, None))?;
+        click(cx, window, (743., 354.))?;
+        let mut reordered = active();
+        reordered.configuration.rules.swap(0, 1);
+        set_model(cx, &page, display(&reordered, false, false, None));
+        capture_motion(cx, window, output, "reorder", Duration::from_millis(100))?;
+
+        let (page, window) = main_window(cx, display(&active(), false, false, None))?;
+        click(cx, window, (833., 354.))?;
+        set_model(cx, &page, removed());
+        capture_motion(cx, window, output, "removed", Duration::from_millis(100))?;
+
+        let mut pending = first_launch(true, true);
+        pending.configuration.return_plan = None;
+        let (page, window) = main_window(cx, display(&pending, false, false, None))?;
+        set_model(
+            cx,
+            &page,
+            display(&first_launch(true, true), false, false, None),
+        );
+        capture_motion(
+            cx,
+            window,
+            output,
+            "first-launch-ready",
+            Duration::from_millis(125),
+        )?;
+
+        let model = display(&active(), false, false, None);
+        let window = cx.open_window(size(px(880.), px(620.)), |window, cx| {
+            let page = cx.new(|_| SoftwarePage::new(model.clone(), |_, _| {}));
+            let dialog = cx.new(|cx| dialog(DialogCase::Add, &model, true, window, cx));
+            cx.new(|cx| {
+                let mut main = MainWindow::new(model.clone(), window, cx);
+                main.set_page_view(Page::Software, page.into(), cx);
+                main.set_dialog(Some(dialog.into()), cx);
+                main
+            })
+        })?;
+        capture_motion(
+            cx,
+            window.into(),
+            output,
+            "add-rule",
+            Duration::from_millis(125),
+        )
     }
 
     pub fn run() -> anyhow::Result<()> {
@@ -787,7 +902,7 @@ mod shots {
             cx.update(|cx| cx.set_global(ForcedAppearance(appearance)));
             let window = cx.open_window(size(px(880.), px(620.)), |window, cx| {
                 let page = cx.new(|_| SoftwarePage::new(model.clone(), |_, _| {}));
-                let dialog = cx.new(|cx| dialog(case, &model, window, cx));
+                let dialog = cx.new(|cx| dialog(case, &model, false, window, cx));
                 cx.new(|cx| {
                     let mut main = MainWindow::new(model.clone(), window, cx);
                     main.set_page_view(Page::Software, page.into(), cx);
@@ -807,6 +922,6 @@ mod shots {
             })?;
             capture(&mut cx, window.into(), &output.join(format!("{name}.png")))?;
         }
-        Ok(())
+        motion(&mut cx, &output)
     }
 }

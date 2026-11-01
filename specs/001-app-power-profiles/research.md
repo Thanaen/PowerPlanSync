@@ -346,6 +346,9 @@ PowerPlanSync reçoit déjà ce message dans sa fenêtre cachée et n'a pas beso
 Les recettes « Monter ou Descendre » et « Étape validée » de design/README.md en dépendent.
 T047 vérifie que `with_spring` existe dans `gpui-pre` 0.3.9 avec les paramètres voulus.
 Sinon, ces deux transitions passent sur `ease_in_out` et `ease_out`, après accord du design.
+T069 (2026-11-01) : `with_spring` et `with_animation` lisent `Instant::now()`, que `advance_clock`
+n'avance pas. Les ressorts gardent `SpringConfig`, mais `motion::Entrance` les évalue avec
+`SpringConfig::step` sur l'horloge de l'exécuteur, comme ses entrées.
 
 ## D16. Accessibilité, preuves et validation
 

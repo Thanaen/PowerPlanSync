@@ -57,5 +57,8 @@ gpui_wgpu = { package = "gpui-pre-wgpu", version = "=0.3.9", optional = true }
 name = "screenshots"
 required-features = ["screenshots"]
 
+[dev-dependencies]
+gpui = { package = "gpui-pre", version = "=0.3.9", features = ["test-support"] }
+
 [build-dependencies]
 slint-build = { version = "=1.18.0" }

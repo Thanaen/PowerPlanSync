@@ -1,10 +1,11 @@
 //! Durées et courbes du mouvement, reprises de `theme::motion` de Bientôt
-//! (`crates/bientot-app/src/theme/motion.rs`, licence MIT). `with_animation` et `with_spring`
-//! montrent leur état final quand `App::reduce_motion` est actif ; [`Entrance`] aussi.
+//! (`crates/bientot-app/src/theme/motion.rs`, licence MIT). [`Entrance`] montre l'état final
+//! quand `App::reduce_motion` est actif. Il suit l'horloge de l'exécuteur, que les tests
+//! avancent, alors que `with_animation` et `with_spring` de GPUI lisent l'horloge murale.
 
 use std::time::{Duration, Instant};
 
-use gpui::{App, Pixels, SpringConfig, Styled, Window};
+use gpui::{App, Pixels, SpringConfig, SpringState, Styled, Window};
 
 /// Durée d'un type d'animation. En debug, `POWERPLANSYNC_MOTION_SLOWDOWN` la multiplie.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -17,6 +18,11 @@ pub const DIALOG: Timing = Timing(Duration::from_millis(250));
 /// La pastille d'une étape validée dans « Pour commencer » : un moment unique, pas un jeton.
 pub const STEP_DONE: Timing = Timing(Duration::from_millis(250));
 pub const STEP_DONE_BOUNCE: f32 = 0.2;
+pub const SWAP: Timing = Timing(Duration::from_millis(200));
+pub const SWAP_BOUNCE: f32 = 0.;
+pub const SWAP_FALL_DELAY: Timing = Timing(Duration::from_millis(40));
+
+const SETTLED: f32 = 0.25 / 50.;
 
 impl Timing {
     pub fn duration(self) -> Duration {
@@ -77,38 +83,56 @@ impl Entrance {
 
     /// Part de `timing` écoulée, linéaire de 0 à 1, en demandant l'image suivante d'ici là.
     pub fn time(&mut self, timing: Timing, window: &mut Window, cx: &App) -> f32 {
+        let duration = timing.duration();
+        self.advance(duration, window, cx)
+            .map_or(1., |elapsed| elapsed.as_secs_f32() / duration.as_secs_f32())
+    }
+
+    /// Part du trajet qui reste à un ressort lâché à 1 vers 0, `delay` après la première
+    /// image : 1 au départ, 0 au repos, négative quand il dépasse.
+    pub fn spring(
+        &mut self,
+        config: SpringConfig,
+        delay: Duration,
+        window: &mut Window,
+        cx: &App,
+    ) -> f32 {
+        let start = SpringState {
+            position: 1.,
+            velocity: 0.,
+        };
+        let length = delay.saturating_add(config.settle_time(start, 0., SETTLED));
+        self.advance(length, window, cx).map_or(0., |elapsed| {
+            let moving = elapsed.saturating_sub(delay).as_secs_f32();
+            config.step(start, 0., moving).position
+        })
+    }
+
+    fn advance(&mut self, length: Duration, window: &mut Window, cx: &App) -> Option<Duration> {
         let now = cx.background_executor().now();
         let shown = match self.0 {
             Phase::Hidden => now,
             Phase::Coming(shown) => shown,
-            Phase::AtRest => return 1.,
+            Phase::AtRest => return None,
         };
-        match share(
-            now.saturating_duration_since(shown),
-            timing.duration(),
-            cx.reduce_motion(),
-        ) {
-            Some(time) => {
-                self.0 = Phase::Coming(shown);
-                window.request_animation_frame();
-                time
-            }
-            None => {
-                self.0 = Phase::AtRest;
-                1.
-            }
+        let elapsed = now.saturating_duration_since(shown);
+        if cx.reduce_motion() || elapsed >= length {
+            self.0 = Phase::AtRest;
+            return None;
         }
+        self.0 = Phase::Coming(shown);
+        window.request_animation_frame();
+        Some(elapsed)
+    }
+
+    pub fn is_moving(&self) -> bool {
+        !matches!(self.0, Phase::AtRest)
     }
 
     /// Pour ce qui n'est plus affiché : l'entrée rejouera la prochaine fois.
     pub fn reset(&mut self) {
         self.0 = Phase::Hidden;
     }
-}
-
-/// Part écoulée pendant l'entrée, `None` une fois au repos ou en mouvement réduit.
-fn share(elapsed: Duration, duration: Duration, reduce_motion: bool) -> Option<f32> {
-    (!reduce_motion && elapsed < duration).then(|| elapsed.as_secs_f32() / duration.as_secs_f32())
 }
 
 /// Part de l'entrée à laquelle ce qui passe au-dessus du contenu devient opaque : une image à
@@ -271,17 +295,6 @@ mod tests {
         let (frequency, damping_ratio) = spring(STEP_DONE, STEP_DONE_BOUNCE).canonical();
         assert_close(frequency, std::f32::consts::TAU / 0.25);
         assert_close(damping_ratio, 0.8);
-    }
-
-    #[test]
-    fn an_entrance_runs_to_rest_and_reduced_motion_skips_it() {
-        let duration = Duration::from_millis(250);
-        let at = |millis, reduce| share(Duration::from_millis(millis), duration, reduce);
-        assert_eq!(at(0, false), Some(0.));
-        assert_close(at(125, false).unwrap(), 0.5);
-        assert_eq!(at(250, false), None);
-        assert_eq!(at(0, true), None);
-        assert_eq!(at(125, true), None);
     }
 
     #[test]

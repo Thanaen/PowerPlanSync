@@ -920,6 +920,7 @@ impl Render for RuleDialog {
         }
         body = body.child(self.fields(&theme, cx));
         let card = div()
+            .debug_selector(|| "rule-dialog".into())
             .id("rule-dialog")
             .role(Role::Dialog)
             .aria_label(title)

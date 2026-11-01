@@ -4,14 +4,15 @@
 //! (FR-002, FR-025). Un logiciel qui ne compte pas pour l'étape 1 reste dans la liste dessous.
 
 use std::rc::Rc;
+use std::time::Duration;
 
 use gpui::{
-    AnimationExt as _, AnyElement, App, ClickEvent, Context, Entity, EventEmitter, FocusHandle,
-    FontWeight, IntoElement, ParentElement, Render, Role, SharedString, SpringAnimation, Styled,
-    Subscription, Window, div, prelude::*, px,
+    AnyElement, App, ClickEvent, Context, Entity, EventEmitter, FocusHandle, FontWeight,
+    IntoElement, ParentElement, Render, Role, SharedString, Styled, Subscription, Window, div,
+    prelude::*, px,
 };
 
-use crate::interface::motion;
+use crate::interface::motion::{self, Entrance};
 use crate::interface::strings;
 use crate::interface::theme::spacing::*;
 use crate::interface::theme::{Theme, TypeStyled as _, radius, size as token, text};
@@ -104,6 +105,7 @@ struct Step {
     title: &'static str,
     hint: String,
     done: bool,
+    scale: f32,
     control: AnyElement,
 }
 
@@ -117,9 +119,8 @@ pub struct FirstLaunch {
     /// Les plans et la proposition déjà posés dans la liste : un état reçu sans changement
     /// ne remplace pas le choix en cours.
     proposed: (Vec<PlanDisplay>, i32),
-    /// Les étapes validées pendant l'affichage : leur pastille entre avec un rebond. Celles
-    /// déjà faites à l'ouverture paraissent au repos.
-    fresh: [bool; 2],
+    just_validated: [bool; 2],
+    pills: [Entrance; 2],
     /// **Confirmer** disparaît une fois l'étape validée : le focus passe à l'étape suivante
     /// plutôt que de tomber sur la fenêtre.
     add_focus: FocusHandle,
@@ -147,7 +148,8 @@ impl FirstLaunch {
             on_action,
             plan,
             proposed: (Vec::new(), -1),
-            fresh: [false; 2],
+            just_validated: [false; 2],
+            pills: [Entrance::at_rest(), Entrance::at_rest()],
             add_focus: cx.focus_handle(),
             activate_focus: cx.focus_handle(),
             _subscription: subscription,
@@ -162,8 +164,8 @@ impl FirstLaunch {
             return;
         }
         let (before, after) = (Steps::of(&self.model), Steps::of(&model));
-        self.fresh[0] |= !before.software && after.software;
-        self.fresh[1] |= !before.return_plan && after.return_plan;
+        self.just_validated[0] |= !before.software && after.software;
+        self.just_validated[1] |= !before.return_plan && after.return_plan;
         self.propose(&model, cx);
         self.model = model;
         cx.notify();
@@ -202,9 +204,9 @@ impl FirstLaunch {
             title,
             hint,
             done,
+            scale,
             control,
         } = step;
-        let fresh = self.fresh.get(number - 1).copied().unwrap_or(false);
         let pill = div()
             .size(PILL)
             .flex()
@@ -212,10 +214,6 @@ impl FirstLaunch {
             .justify_center()
             .rounded_full();
         let pill = if done {
-            let spring =
-                SpringAnimation::new(motion::spring(motion::STEP_DONE, motion::STEP_DONE_BOUNCE))
-                    .to(1_f32);
-            let spring = if fresh { spring.from(0.) } else { spring };
             // La pastille entre dans une place fixe : la ligne ne bouge pas pendant le rebond.
             div()
                 .size(PILL)
@@ -224,13 +222,13 @@ impl FirstLaunch {
                 .items_center()
                 .justify_center()
                 .child(
-                    pill.bg(theme.success_background)
+                    pill.debug_selector(|| format!("step-done-{number}"))
+                        .size(PILL * scale.max(0.))
+                        .opacity(scale.clamp(0., 1.))
+                        .bg(theme.success_background)
                         .border_1()
                         .border_color(theme.success_border)
-                        .child(widgets::icon("check", theme.success).size(token::ICON_XS))
-                        .with_spring(("step-done", number), spring, |pill, scale| {
-                            pill.size(PILL * scale.max(0.)).opacity(scale.clamp(0., 1.))
-                        }),
+                        .child(widgets::icon("check", theme.success).size(token::ICON_XS)),
                 )
                 .into_any_element()
         } else {
@@ -310,6 +308,19 @@ impl Render for FirstLaunch {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = Theme::of(window, cx);
         let narrow = is_narrow(window.viewport_size().width);
+        let keyboard = window.last_input_was_keyboard();
+        let mut scales = [1.; 2];
+        for (index, scale) in scales.iter_mut().enumerate() {
+            if std::mem::take(&mut self.just_validated[index]) {
+                self.pills[index] = if keyboard {
+                    Entrance::at_rest()
+                } else {
+                    Entrance::default()
+                };
+            }
+            let spring = motion::spring(motion::STEP_DONE, motion::STEP_DONE_BOUNCE);
+            *scale = 1. - self.pills[index].spring(spring, Duration::ZERO, window, cx);
+        }
         let model = &self.model;
         let steps = Steps::of(model);
         let followed = followed(model);
@@ -400,6 +411,7 @@ impl Render for FirstLaunch {
                     title: strings::ADD_SOFTWARE,
                     hint: add_hint(model).into(),
                     done: steps.software,
+                    scale: scales[0],
                     control: add,
                 },
                 narrow,
@@ -411,6 +423,7 @@ impl Render for FirstLaunch {
                     title: strings::STEP_RETURN,
                     hint: return_hint.into(),
                     done: steps.return_plan,
+                    scale: scales[1],
                     control: return_plan,
                 },
                 narrow,
@@ -426,6 +439,7 @@ impl Render for FirstLaunch {
                         strings::STEP_ACTIVATE_LOCKED.into()
                     },
                     done: false,
+                    scale: 1.,
                     control: activate,
                 },
                 narrow,

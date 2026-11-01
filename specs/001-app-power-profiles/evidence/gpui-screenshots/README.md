@@ -55,4 +55,16 @@ coins sont carrés : hors écran, aucun compositeur ne les arrondit. `widgets-da
 | `first-launch-light.png` | aucune | Mêmes constats en thème clair. |
 | `first-launch-narrow.png` | aucune | Fenêtre étroite : chaque commande passe sous le texte de son étape. |
 
+## Mouvement (T069)
+
+`motion-*-000.png` est la première image d'une transition déclenchée comme à la souris,
+`motion-*-050.png` la mi-course. L'image au repos est la capture sans préfixe.
+
+| Capture | Maquette | Constat |
+| --- | --- | --- |
+| `motion-reorder-000.png`, `motion-reorder-050.png` | `Reorder-000.png`, `Reorder-050.png` | Conforme : Blender monte par-dessus Battlefield 6 avec une bordure de 1 px, sans ombre ; numéros et badges déjà à jour. À mi-course, la ligne qui descend a parcouru 30 px sur 54, un peu moins que la maquette : le ressort sans rebond ralentit tôt. |
+| `motion-removed-000.png`, `motion-removed-050.png` | `Idle-000.png`, `Idle-050.png` | Conforme : le message glisse de 4 px sous la liste. Le bouton **Supprimer** de la ligne remontée reste survolé, là où le pointeur a cliqué. |
+| `motion-add-rule-000.png`, `motion-add-rule-050.png` | `AddRule-000.png`, `AddRule-050.png` | Conforme : rien à la première image, puis voile et carte opaques, la carte à quelques pixels de sa place. La maquette ouvre le dialogue depuis « Pour commencer », la capture depuis la liste. |
+| `motion-first-launch-ready-000.png`, `motion-first-launch-ready-050.png` | `FirstLaunchReady-000.png`, `FirstLaunchReady-050.png` | Conforme : la pastille de l'étape 2 part de rien et a presque atteint sa taille à mi-course. |
+
 Aucun écart hors de ceux listés dans `design/README.md`.

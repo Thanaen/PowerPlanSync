@@ -1,3 +1,5 @@
+#[cfg(test)]
+mod animation_tests;
 #[cfg(windows)]
 pub mod app;
 pub mod assets;
