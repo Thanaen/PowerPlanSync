@@ -5,7 +5,9 @@
 Régénère l'inventaire de `THIRD_PARTY_NOTICES.md` et `notices/THIRD_PARTY_LICENSES.txt` à partir
 du graphe verrouillé Windows x64 (dépendances normales et de compilation, sans celles de
 développement). Les textes viennent des sources Cargo hors ligne : fichiers `LICENSE*`,
-`LICENCE*` et `COPYING*` à la racine du paquet. Les textes identiques sont regroupés.
+`LICENCE*` et `COPYING*` à la racine du paquet. Les textes identiques sont regroupés. Un paquet
+publié sans fichier de licence prend celui de `notices/upstream/<nom>-<version>/`, copié de son
+dépôt amont, s'il existe.
 #>
 [CmdletBinding()]
 param(
@@ -63,11 +65,27 @@ foreach ($expression in $expressions) {
 }
 
 $texts = [ordered]@{}
+$upstream = [Collections.Generic.List[object]]::new()
 $unlicensed = [Collections.Generic.List[string]]::new()
 foreach ($name in $names) {
     $directory = $directories[$name]
     $files = @(Get-ChildItem -LiteralPath $directory -File | Where-Object Name -Match '^(licen[cs]e|copying)')
-    if ($files.Count -eq 0) { $unlicensed.Add($name); continue }
+    if ($files.Count -eq 0) {
+        $folder = $name -replace ' v', '-'
+        $supplement = Join-Path $root "notices/upstream/$folder"
+        $copies = if (Test-Path -LiteralPath $supplement -PathType Container) { @(Get-ChildItem -LiteralPath $supplement -File) } else { @() }
+        if ($copies.Count -eq 0) { $unlicensed.Add($name); continue }
+        $copyNames = [string[]]@($copies.Name)
+        [Array]::Sort($copyNames, [StringComparer]::Ordinal)
+        foreach ($file in $copyNames) {
+            $upstream.Add([pscustomobject]@{
+                Package = $name
+                Source = "notices/upstream/$folder/$file"
+                Text = [IO.File]::ReadAllText((Join-Path $supplement $file)).Replace("`r`n", "`n").TrimEnd()
+            })
+        }
+        continue
+    }
     $sorted = [string[]]@($files.Name)
     [Array]::Sort($sorted, [StringComparer]::Ordinal)
     foreach ($file in $sorted) {
@@ -90,6 +108,9 @@ foreach ($text in $texts.Keys) {
     $entry = $texts[$text]
     [void]$output.Append("`n$separator`nPACKAGES`n$($entry.Packages -join ', ')`nSOURCE FILES`n$($entry.Sources -join ', ')`n$separator`n`n$text`n")
 }
+foreach ($item in $upstream) {
+    [void]$output.Append("`n$separator`nPACKAGES`n$($item.Package)`nSOURCE FILES`n$($item.Source), copied from the upstream repository: the published crate has no license file`n$separator`n`n$($item.Text)`n")
+}
 if ($unlicensed.Count -gt 0) {
     [void]$output.Append("`n$separator`nPACKAGES WITHOUT A LICENSE FILE IN THE PUBLISHED CRATE`n$separator`n`n$($unlicensed -join ', ')`n`nTheir SPDX expressions remain listed in THIRD_PARTY_NOTICES.md.`n")
 }
@@ -100,4 +121,4 @@ $notices = [IO.File]::ReadAllText($noticesPath).Replace("`r`n", "`n")
 $start = $notices.IndexOf('## Locked Windows dependency inventory')
 if ($start -lt 0) { throw "Section d'inventaire absente de THIRD_PARTY_NOTICES.md." }
 [IO.File]::WriteAllText($noticesPath, $notices.Substring(0, $start) + $inventory.ToString(), $utf8)
-Write-Output "$($names.Count) paquets, $($texts.Count) textes de licence, $($unlicensed.Count) sans fichier de licence."
+Write-Output "$($names.Count) paquets, $($texts.Count) textes de licence, $($upstream.Count) copiés de l'amont, $($unlicensed.Count) sans fichier de licence."
