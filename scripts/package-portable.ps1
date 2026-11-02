@@ -43,6 +43,14 @@ $peOffset = [BitConverter]::ToInt32($binary, 60)
 if ($peOffset -lt 0 -or $peOffset -gt $binary.Length - 94 -or [BitConverter]::ToUInt32($binary, $peOffset) -ne 0x00004550) { throw 'En-tête PE invalide.' }
 if ([BitConverter]::ToUInt16($binary, $peOffset + 4) -ne 0x8664) { throw 'Le paquet exige un exécutable Windows x64.' }
 if ([BitConverter]::ToUInt16($binary, $peOffset + 92) -ne 2) { throw 'Le paquet exige le binaire graphique release, sans console.' }
+# Le nom du compte de construction ne doit pas être publié (T043) : le binaire vient de
+# scripts/build-release.ps1, qui retire ces chemins.
+$text = [Text.Encoding]::UTF8.GetString($binary)
+foreach ($buildPath in @($env:USERPROFILE, $repo) | Where-Object { $_ }) {
+    if ($text.Contains($buildPath, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Le binaire contient le chemin de construction $buildPath. Construire avec scripts/build-release.ps1."
+    }
+}
 
 [IO.Directory]::CreateDirectory($output) | Out-Null
 $lockPath = Join-Path $output ".$packageName.packaging.lock"

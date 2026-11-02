@@ -74,6 +74,10 @@ cargo build --locked --release --bins --examples
 
 `cargo run -- --demo` ouvre la démonstration. Les sondes restent des exemples séparés.
 
+Pour publier, `scripts/build-release.ps1` construit `target/release/power-plan-sync.exe` sans les
+chemins de la machine de construction, puis `scripts/package-portable.ps1` crée l'archive dans
+`dist/`. Le paquet refuse un binaire qui contient encore le dossier du compte ou du dépôt.
+
 Les contrôles du code sont `cargo test --locked --all-targets`, `cargo fmt --check` et
 `cargo clippy --locked --all-targets -- -D warnings`. Le harnais
 `scripts/verify-windows.ps1 -AllowPowerSwitch` vérifie cent cycles sur l'application réelle

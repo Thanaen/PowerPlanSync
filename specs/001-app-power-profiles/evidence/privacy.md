@@ -267,7 +267,10 @@ que la personne peut ouvrir et supprimer.
    `C:\Users\<compte>\.cargo\…` de la machine de construction, et deux chemins vers le dossier de
    travail. Ce sont des emplacements de panique, pas des données de l'utilisateur. Pour T044, une
    construction avec `--remap-path-prefix` (ou `trim-paths`) éviterait de publier le nom du compte
-   de construction.
+   de construction. Suite du 2026-11-02 : `scripts/build-release.ps1` construit avec ces options
+   (`trim-paths` n'est pas stable avec Cargo 1.98) et réduit le chemin du PDB à son nom ;
+   `scripts/package-portable.ps1` refuse un binaire qui contient encore `%USERPROFILE%` ou le
+   dossier du dépôt.
 3. **Verrou global avec DACL par défaut.** Un autre compte local peut créer
    `Global\PowerPlanSync.Controller` avant PowerPlanSync. L'application refuse alors le contrôle
    avec un message (D07, FR-016), sans écrire de plan et sans élévation. C'est un refus de service

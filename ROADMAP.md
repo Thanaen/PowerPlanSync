@@ -114,4 +114,5 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
 | 2026-11-01 | [#60](https://github.com/Thanaen/PowerPlanSync/pull/60) | Licence MIT ; dépendances compatibles (autre fil). |
 | 2026-11-01 | [#61](https://github.com/Thanaen/PowerPlanSync/pull/61) | « Application ouverte » liste chaque logiciel une seule fois (autre fil). |
 | 2026-11-01 | [#62](https://github.com/Thanaen/PowerPlanSync/pull/62) | Test du signal de réouverture isolé d'une instance lancée (autre fil). |
-| 2026-11-01 | #63 | T072 : le guide GPUI remplace le guide Slint de `docs/`, avec la section « Réglages illisibles » visée par **Ouvrir le guide**. |
+| 2026-11-01 | [#63](https://github.com/Thanaen/PowerPlanSync/pull/63) | T072 : le guide GPUI remplace le guide Slint de `docs/`, avec la section « Réglages illisibles » visée par **Ouvrir le guide**. |
+| 2026-11-02 | #64 | T044 (partie) : binaire release construit sans les chemins de la machine de construction, paquet qui refuse un binaire qui en contient encore. |
