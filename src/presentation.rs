@@ -532,6 +532,10 @@ fn badge(view: &ViewState, rule: &AppRule) -> Option<Badge> {
         Status::Active | Status::ExitGrace { .. } if reserved => Some(Badge::Applied),
         Status::ManualOverride if reserved => Some(Badge::Suspended),
         Status::Blocked(_) if refused(view, rule) => Some(Badge::Refused),
+        // Un retour échoué laisse le plan du logiciel réservé actif dans Windows.
+        Status::Blocked(_) if reserved && view.observed_plan == Some(rule.plan) => {
+            Some(Badge::Applied)
+        }
         // En pause, les processus ne sont plus relus : « Ouvert » serait périmé.
         _ if view.configuration.paused => None,
         _ if rule.enabled && view.open_rules.contains(&rule.id) => Some(Badge::Open),
