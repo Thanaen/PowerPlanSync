@@ -221,6 +221,28 @@ fn a_failed_return_while_quitting_keeps_the_active_plan_in_view() {
 }
 
 #[test]
+fn a_failed_return_marks_the_plan_still_active_as_applied() {
+    let mut view = active_view();
+    view.status = Status::Blocked(Error::Power("refus".into()));
+    view.open_rules.clear();
+    let model = display(&view, false, false, None);
+    assert_eq!(model.rules[0].badge, Some(Badge::Applied));
+    assert_eq!(model.rules[0].state, "Appliqué");
+    assert_eq!(model.rules[1].badge, None);
+    let model = after_failed_quit(model, &view);
+    assert_eq!(model.rules[0].badge, Some(Badge::Applied));
+}
+
+#[test]
+fn a_blocked_cycle_whose_plan_left_windows_is_not_applied() {
+    let mut view = active_view();
+    view.status = Status::Blocked(Error::Storage("disque".into()));
+    view.observed_plan = Some(PlanId(3));
+    let model = display(&view, false, false, None);
+    assert_eq!(model.rules[0].badge, Some(Badge::Open));
+}
+
+#[test]
 fn unreadable_settings_stop_the_automation_without_control() {
     let model = settings_unreadable(display(&active_view(), false, false, None));
     assert!(model.read_only);
