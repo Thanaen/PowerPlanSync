@@ -116,4 +116,5 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
 | 2026-11-01 | [#62](https://github.com/Thanaen/PowerPlanSync/pull/62) | Test du signal de réouverture isolé d'une instance lancée (autre fil). |
 | 2026-11-01 | [#63](https://github.com/Thanaen/PowerPlanSync/pull/63) | T072 : le guide GPUI remplace le guide Slint de `docs/`, avec la section « Réglages illisibles » visée par **Ouvrir le guide**. |
 | 2026-11-02 | [#64](https://github.com/Thanaen/PowerPlanSync/pull/64) | T044 (partie) : binaire release construit sans les chemins de la machine de construction, paquet qui refuse un binaire qui en contient encore. |
-| 2026-11-02 | #65 | T044 (partie) : textes MIT amont de `pulp-wasm-simd-flag`, `seahash` et `taffy` ajoutés aux notices. |
+| 2026-11-02 | [#65](https://github.com/Thanaen/PowerPlanSync/pull/65) | T044 (partie) : textes MIT amont de `pulp-wasm-simd-flag`, `seahash` et `taffy` ajoutés aux notices. |
+| 2026-11-03 | #66 | T044 (partie) : guide d'installation et de retrait du paquet portable ; le `README.md` du dépôt ne le dit plus en pause ni privé. |

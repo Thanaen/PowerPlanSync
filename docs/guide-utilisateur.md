@@ -4,7 +4,11 @@ PowerPlanSync associe les plans d'alimentation déjà installés dans Windows au
 
 ## Ouvrir l'application
 
-Extrayez entièrement l'archive dans un dossier de votre choix, puis ouvrez `power-plan-sync.exe`. Conservez les fichiers de notices fournis à côté de l'application. Aucun programme d'installation, service Windows ou changement global du PATH n'est nécessaire pour ce paquet.
+PowerPlanSync est livré dans une archive portable : aucun programme d'installation, service Windows ou changement global du PATH n'est nécessaire.
+
+1. Facultatif : comparez l'empreinte de l'archive avec celle du fichier `.zip.sha256` fourni à côté. Dans un terminal ouvert dans le dossier de téléchargement, `Get-FileHash .\<archive>.zip -Algorithm SHA256` affiche l'empreinte à comparer.
+2. Extrayez entièrement l'archive dans un dossier de votre choix, par exemple `%LOCALAPPDATA%\Programs\PowerPlanSync`. Choisissez un dossier où l'application pourra rester : **Démarrer avec Windows** retient cet emplacement.
+3. Ouvrez `power-plan-sync.exe`. Conservez les fichiers de notices fournis à côté de l'application.
 
 La page **Logiciels** affiche **Plan actif dans Windows**, puis un statut qui dit ce que fait l'automatisation, par exemple « Automatisation active · Battlefield 6 est ouvert ». Au premier lancement, l'automatisation est désactivée et rien ne change dans Windows. Pour explorer l'interface avec des plans simulés, ouvrez un terminal dans le dossier extrait et exécutez cette commande facultative.
 
@@ -74,7 +78,14 @@ Si la copie de secours est elle aussi illisible, renommez `config.json` : PowerP
 
 Un arrêt forcé, un crash ou l'arrêt de Windows peut laisser le dernier plan actif. Au prochain lancement, PowerPlanSync examine son journal et vérifie le plan actif avant de récupérer le cycle. Si un autre plan a été choisi entre-temps, il est conservé. Vérifiez le plan affiché et les éventuels messages au redémarrage.
 
-Si vous n'avez plus besoin de l'application, désactivez son démarrage avec Windows puis quittez-la normalement. Vous pouvez ensuite retirer le dossier extrait. Les données locales restent séparées ; leur conservation ou leur suppression vous appartient.
+## Retirer PowerPlanSync
+
+1. Dans **Réglages**, désactivez **Démarrer avec Windows** si l'option est active.
+2. Choisissez **Quitter**. PowerPlanSync tente de revenir au plan de retour choisi.
+3. Supprimez le dossier extrait.
+4. Facultatif : supprimez vos données, `%LOCALAPPDATA%\PowerPlanSync`, et celles de la démonstration, `%LOCALAPPDATA%\PowerPlanSyncDemo`. Gardez-en une copie si vous comptez réutiliser vos réglages.
+
+Si le dossier a été supprimé alors que **Démarrer avec Windows** était actif, désactivez PowerPlanSync dans **Paramètres Windows > Applications > Démarrage**. Les plans d'alimentation de Windows ne sont pas modifiés par le retrait.
 
 ## Limites et notices
 

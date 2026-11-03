@@ -9,14 +9,22 @@ Windows est en cours avec un petit exécutable témoin. Aucun essai ne lance Bat
 Les cases ouvertes du [plan de réalisation](specs/001-app-power-profiles/tasks.md)
 identifient les essais restant à effectuer avant une distribution publique.
 
-Le travail est en pause à la demande de l'utilisateur depuis le 20 septembre 2026.
-La [note de reprise](specs/001-app-power-profiles/evidence/checkpoint-2026-09-20.md)
-indique les résultats vérifiés et la première action à reprendre. Le dépôt GitHub est privé.
-Le [guide utilisateur](docs/guide-utilisateur.md) décrit le fonctionnement actuel.
+Le [guide utilisateur](docs/guide-utilisateur.md) décrit le fonctionnement actuel. La
+[feuille de route](ROADMAP.md) suit les travaux restants.
+
+## Installer et retirer
+
+PowerPlanSync est livré en archive portable, sans programme d'installation ni service Windows.
+Extraire l'archive dans un dossier durable, puis ouvrir `power-plan-sync.exe`. Pour le retirer,
+désactiver **Démarrer avec Windows**, choisir **Quitter**, puis supprimer le dossier extrait et,
+au besoin, les données de `%LOCALAPPDATA%\PowerPlanSync`. Les étapes détaillées, dont la
+vérification de l'empreinte de l'archive, sont dans
+[« Ouvrir l'application »](docs/guide-utilisateur.md#ouvrir-lapplication) et
+[« Retirer PowerPlanSync »](docs/guide-utilisateur.md#retirer-powerplansync).
 
 ## Utiliser l'application
 
-Lancer `target/release/power-plan-sync.exe`, puis suivre « Pour commencer » : **Ajouter un
+Depuis une construction locale, lancer `target/release/power-plan-sync.exe`, puis suivre « Pour commencer » : **Ajouter un
 logiciel** avec **Parcourir…** ou **Application ouverte** et choisir son plan, **Confirmer le plan
 de retour**, puis **Activer l'automatisation**.
 L'application utilise uniquement les plans déjà disponibles sur le PC.
