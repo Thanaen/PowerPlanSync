@@ -227,10 +227,22 @@ impl Worker {
             None
         } else {
             match windows::startup::current_executable_state() {
-            Ok(windows::startup::StartupState::Enabled) if !controller.view().configuration.start_at_login => Some("Le démarrage Windows est actif mais la configuration le déclare désactivé. Vérifiez ce réglage.".into()),
-            Ok(windows::startup::StartupState::Disabled) if controller.view().configuration.start_at_login => Some("Le démarrage Windows est désactivé. Activez-le explicitement dans les réglages si vous le souhaitez.".into()),
-            Ok(windows::startup::StartupState::Conflict(_)) => Some("Une autre commande occupe le réglage de démarrage Windows. Elle est conservée.".into()),
-            Err(_) => Some("Le réglage de démarrage Windows ne peut pas être vérifié.".into()), _ => None }
+                Ok(windows::startup::StartupState::Enabled)
+                    if !controller.view().configuration.start_at_login =>
+                {
+                    Some(crate::interface::strings::START_AT_LOGIN_STILL_ENABLED.into())
+                }
+                Ok(windows::startup::StartupState::Disabled)
+                    if controller.view().configuration.start_at_login =>
+                {
+                    Some(crate::interface::strings::START_AT_LOGIN_NO_LONGER_ENABLED.into())
+                }
+                Ok(windows::startup::StartupState::Conflict(_)) => {
+                    Some(crate::interface::strings::START_AT_LOGIN_CONFLICT.into())
+                }
+                Err(_) => Some(crate::interface::strings::START_AT_LOGIN_UNCHECKED.into()),
+                _ => None,
+            }
         };
         self.controller = Some(controller);
         self.open_listener = open_listener;
@@ -692,9 +704,9 @@ impl Worker {
                     return Err(crate::interface::strings::START_AT_LOGIN_CUSTOM_DATA.into());
                 }
                 let previous = windows::startup::current_executable_state()
-                    .map_err(|_| "Le démarrage Windows ne peut pas être vérifié.")?;
+                    .map_err(|_| crate::interface::strings::START_AT_LOGIN_UNCHECKED)?;
                 windows::startup::set_current_executable_enabled(value)
-                    .map_err(|_| "Le réglage de démarrage Windows n’a pas pu être modifié.")?;
+                    .map_err(|_| crate::interface::strings::START_AT_LOGIN_UNCHANGED)?;
                 startup_change = Some(previous);
                 config.start_at_login = value;
             }

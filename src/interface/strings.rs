@@ -266,6 +266,17 @@ pub const START_AT_LOGIN_CUSTOM_DATA: &str = "«\u{202f}Démarrer avec Windows\u
 avec un dossier de données personnalisé. Relancez PowerPlanSync sans --data-dir pour changer cette option.";
 pub const START_AT_LOGIN_DEMO: &str =
     "«\u{202f}Démarrer avec Windows\u{202f}» est indisponible en démonstration.";
+/// État de l'entrée de démarrage relu au lancement, quand il contredit les réglages.
+pub const START_AT_LOGIN_STILL_ENABLED: &str = "Windows lance PowerPlanSync à la connexion alors que \
+«\u{202f}Démarrer avec Windows\u{202f}» est désactivé. Activez puis désactivez l'option pour arrêter ce lancement.";
+pub const START_AT_LOGIN_NO_LONGER_ENABLED: &str = "Windows ne lance plus PowerPlanSync à la connexion \
+alors que «\u{202f}Démarrer avec Windows\u{202f}» est activé. Désactivez puis réactivez l'option pour le rétablir.";
+pub const START_AT_LOGIN_CONFLICT: &str = "L'entrée de démarrage de PowerPlanSync dans Windows lance \
+un autre emplacement. Elle est conservée et «\u{202f}Démarrer avec Windows\u{202f}» ne la modifie pas.";
+pub const START_AT_LOGIN_UNCHECKED: &str =
+    "«\u{202f}Démarrer avec Windows\u{202f}» ne peut pas être vérifié dans Windows.";
+pub const START_AT_LOGIN_UNCHANGED: &str =
+    "«\u{202f}Démarrer avec Windows\u{202f}» n’a pas pu être modifié dans Windows.";
 pub const DATA: &str = "Données";
 pub const DATA_FOLDER: &str = "Dossier des données";
 pub const DATA_FOLDER_HINT: &str =
