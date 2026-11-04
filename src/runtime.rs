@@ -682,14 +682,14 @@ impl Worker {
             UiAction::SetAllowOnBattery(value) => config.allow_on_battery = value,
             UiAction::SetStartAtLogin(value) => {
                 if self.options.demo {
-                    return Err("Le démarrage Windows est désactivé en démonstration.".into());
+                    return Err(crate::interface::strings::START_AT_LOGIN_DEMO.into());
                 }
                 let default_directory = std::env::var_os("LOCALAPPDATA")
                     .map(|base| PathBuf::from(base).join("PowerPlanSync"));
                 if !default_directory.as_ref().is_some_and(|path| {
                     windows::processes::paths_equal(path, &self.options.data_directory)
                 }) {
-                    return Err("Le démarrage Windows est indisponible avec un dossier de données personnalisé. Relancez PowerPlanSync sans --data-dir pour utiliser cette option.".into());
+                    return Err(crate::interface::strings::START_AT_LOGIN_CUSTOM_DATA.into());
                 }
                 let previous = windows::startup::current_executable_state()
                     .map_err(|_| "Le démarrage Windows ne peut pas être vérifié.")?;

@@ -261,6 +261,11 @@ cycle en cours revient au plan\u{a0}de\u{a0}retour.";
 pub const START_AT_LOGIN: &str = "Démarrer avec Windows";
 pub const START_AT_LOGIN_HINT: &str = "Ouvre PowerPlanSync dans la zone de notification à votre \
 connexion. Ne déplacez pas le dossier de PowerPlanSync tant que cette option est activée.";
+/// Refus de **Démarrer avec Windows** : la clé Run ne vise que le dossier de données normal.
+pub const START_AT_LOGIN_CUSTOM_DATA: &str = "«\u{202f}Démarrer avec Windows\u{202f}» est indisponible \
+avec un dossier de données personnalisé. Relancez PowerPlanSync sans --data-dir pour changer cette option.";
+pub const START_AT_LOGIN_DEMO: &str =
+    "«\u{202f}Démarrer avec Windows\u{202f}» est indisponible en démonstration.";
 pub const DATA: &str = "Données";
 pub const DATA_FOLDER: &str = "Dossier des données";
 pub const DATA_FOLDER_HINT: &str =

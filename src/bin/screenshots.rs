@@ -867,11 +867,7 @@ mod shots {
         let shown = |view: ViewState| display(&view, false, false, None);
         let refused = {
             let mut model = shown(active());
-            model.notice = Some(Notice::Problem(
-                "Le démarrage Windows est indisponible avec un dossier de données personnalisé. \
-                 Relancez PowerPlanSync sans --data-dir pour utiliser cette option."
-                    .into(),
-            ));
+            model.notice = Some(Notice::Problem(strings::START_AT_LOGIN_CUSTOM_DATA.into()));
             model
         };
         let settings = [
