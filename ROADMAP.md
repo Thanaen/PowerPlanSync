@@ -121,4 +121,5 @@ approuvée, validée sur un Windows réel avec l'exécutable témoin, puis la ma
 | 2026-11-03 | [#67](https://github.com/Thanaen/PowerPlanSync/pull/67) | Après un retour échoué, le logiciel dont le plan reste actif porte « Appliqué » au lieu de « Ouvert » ou d'aucune pastille. |
 | 2026-11-04 | [#68](https://github.com/Thanaen/PowerPlanSync/pull/68) | Les refus de « Démarrer avec Windows » (dossier personnalisé, démonstration) nomment l'option telle qu'elle s'affiche. |
 | 2026-11-04 | [#69](https://github.com/Thanaen/PowerPlanSync/pull/69) | Les messages de vérification et d'échec du démarrage nomment « Démarrer avec Windows » et disent comment rétablir l'accord avec Windows. |
-| 2026-11-05 | #70 | Captures étroites de Réglages avec un refus et sans contrôle. |
+| 2026-11-05 | [#70](https://github.com/Thanaen/PowerPlanSync/pull/70) | Captures étroites de Réglages avec un refus et sans contrôle. |
+| 2026-11-05 | #71 | Un chemin `\\?\UNC\` raccourci garde son serveur et son partage. |

@@ -544,10 +544,19 @@ fn badge(view: &ViewState, rule: &AppRule) -> Option<Badge> {
 }
 
 /// Garde la racine et les deux derniers éléments : `C:\…\Blender 4.5\blender.exe`,
-/// `\\serveur\partage\…\jeu\jeu.exe`.
+/// `\\serveur\partage\…\jeu\jeu.exe`, `\\?\UNC\serveur\partage\…\jeu\jeu.exe`.
 pub fn short_path(path: &str) -> String {
     let parts: Vec<&str> = path.split('\\').collect();
-    let root = if path.starts_with(r"\\") { 4 } else { 1 };
+    let root = if path
+        .get(..8)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(r"\\?\UNC\"))
+    {
+        6
+    } else if path.starts_with(r"\\") {
+        4
+    } else {
+        1
+    };
     if parts.len() <= root + 3 {
         return path.into();
     }
