@@ -904,13 +904,27 @@ mod shots {
                 WindowAppearance::Dark,
                 880.,
                 700.,
-                refused,
+                refused.clone(),
+            ),
+            (
+                "settings-refused-narrow",
+                WindowAppearance::Dark,
+                420.,
+                1000.,
+                refused.clone(),
             ),
             (
                 "settings-read-only",
                 WindowAppearance::Dark,
                 880.,
                 620.,
+                unavailable(),
+            ),
+            (
+                "settings-read-only-narrow",
+                WindowAppearance::Dark,
+                420.,
+                900.,
                 unavailable(),
             ),
             (
