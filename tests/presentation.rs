@@ -366,6 +366,15 @@ fn network_and_verbatim_paths_keep_their_root() {
     view.configuration.rules[2].executable =
         ExecutablePath(r"C:\Jeux\Bloom\bloom.exe".encode_utf16().collect());
     let model = display(&view, false, false, None);
+    view.configuration.rules[2].executable = ExecutablePath(
+        r"\\?\UNC\serveur\jeux\Studio\2026\Bloom\bloom.exe"
+            .encode_utf16()
+            .collect(),
+    );
+    assert_eq!(
+        display(&view, false, false, None).rules[2].short_path,
+        r"\\?\UNC\serveur\jeux\…\Bloom\bloom.exe"
+    );
     assert_eq!(
         model.rules[0].short_path,
         r"\\serveur\jeux\…\bin\temoin.exe"
