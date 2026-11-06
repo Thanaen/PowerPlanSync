@@ -319,4 +319,34 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn over_content_fades_in_before_opaque_at() {
+        let early = slide_over(OPAQUE_AT / 4., px(6.));
+        assert_close(early.opacity, ease_out()(0.25));
+        assert!(early.opacity < 1.);
+        assert_eq!(slide_over(0., px(6.)).opacity, 0.);
+        assert_eq!(early.offset, slide_in(OPAQUE_AT / 4., px(6.)).offset);
+    }
+
+    #[test]
+    fn a_linear_curve_returns_its_input() {
+        let linear = cubic_bezier(0., 0., 1., 1.);
+        for x in [0.1, 0.25, 0.5, 0.75, 0.9] {
+            assert_close(linear(x), x);
+        }
+    }
+
+    #[test]
+    fn entering_offsets_and_fades_the_element_in_place() {
+        let mut element = Entering {
+            opacity: 0.5,
+            offset: px(3.),
+        }
+        .apply(gpui::div());
+        let style = element.style();
+        assert_eq!(style.position, Some(gpui::Position::Relative));
+        assert_eq!(style.inset.top, Some(px(3.).into()));
+        assert_eq!(style.opacity, Some(0.5));
+    }
 }
